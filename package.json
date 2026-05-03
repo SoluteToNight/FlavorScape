@@ -1,0 +1,32 @@
+{
+  "name": "xunwei-dili",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "寻味地理 · 风味博物志",
+  "scripts": {
+    "dev": "concurrently \"node server.js\" \"vite\"",
+    "build": "vite build",
+    "start": "NODE_ENV=production node server.js",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "http-proxy-middleware": "^3.0.5"
+  },
+  "devDependencies": {
+    "@deck.gl/core": "^9.0.10",
+    "@deck.gl/extensions": "^9.3.2",
+    "@deck.gl/geo-layers": "^9.0.10",
+    "@deck.gl/layers": "^9.0.10",
+    "@deck.gl/mapbox": "^9.0.10",
+    "@vitejs/plugin-vue": "^5.1.2",
+    "concurrently": "^8.2.2",
+    "echarts": "^5.5.1",
+    "maplibre-gl": "^4.5.0",
+    "pinia": "^2.1.7",
+    "vite": "^5.3.4",
+    "vue": "^3.4.31",
+    "vue-router": "^4.4.0"
+  }
+}

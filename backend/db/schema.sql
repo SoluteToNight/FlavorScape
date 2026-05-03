@@ -1,0 +1,138 @@
+-- 寻味地理 Flavor 库 schema
+-- EcoGeoUnit 现含 boundary GEOMETRY + 827 行 WWF TEOW 生态区
+-- 开发期 DROP-CREATE 模式，可任意次重跑。
+
+DROP TABLE IF EXISTS chapter CASCADE;
+DROP TABLE IF EXISTS genotype_lineage CASCADE;
+DROP TABLE IF EXISTS recipe_link CASCADE;
+DROP TABLE IF EXISTS dispersal_event CASCADE;
+DROP TABLE IF EXISTS flavor_genotype CASCADE;
+DROP TABLE IF EXISTS ingredient_origin CASCADE;
+DROP TABLE IF EXISTS ingredient CASCADE;
+DROP TABLE IF EXISTS eco_geo_unit CASCADE;
+DROP TYPE  IF EXISTS ingredient_type CASCADE;
+
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+CREATE TYPE ingredient_type AS ENUM ('香辛料','油脂','谷物','蛋白','蔬果','发酵','其他');
+
+-- ============================================================================
+-- 生态地理单元（827 行，WWF TEOW 全域）
+-- ============================================================================
+CREATE TABLE eco_geo_unit (
+    eco_name            VARCHAR(150) PRIMARY KEY,          -- SHP ECO_NAME
+    eco_name_cn         VARCHAR(100),                      -- 中文名（暂留空）
+    eco_code            VARCHAR(20),                       -- SHP eco_code, e.g. "AA0101"
+    realm               VARCHAR(20),                       -- SHP REALM_1, e.g. "Palearctic"
+    biome               VARCHAR(80),                       -- BIOME 查表英文名
+    biome_cn            VARCHAR(30),                       -- BIOME 查表中文名
+    area_km2            NUMERIC,                           -- SHP area_km2
+    climate             JSONB,                             -- 气候属性（暂 NULL）
+    adjacent_ecos       TEXT[],                            -- 相邻生态区（暂空）
+    dominant_ingredients TEXT[],                           -- 本地优势原材料（暂空）
+    description         TEXT,                              -- 中文环境描述（暂 NULL）
+    boundary            GEOMETRY(MultiPolygon, 4326)       -- SHP 矢量边界
+);
+
+-- ============================================================================
+-- 原材料
+-- ============================================================================
+CREATE TABLE ingredient (
+    ingredient_id   CHAR(8)  PRIMARY KEY,
+    name            VARCHAR(50) NOT NULL,
+    type            ingredient_type NOT NULL,
+    flavor_tags     TEXT[]
+);
+
+-- ============================================================================
+-- 原材料原产地（M:N）
+-- ============================================================================
+CREATE TABLE ingredient_origin (
+    ingredient_id   CHAR(8)       REFERENCES ingredient(ingredient_id),
+    eco_name        VARCHAR(150)  REFERENCES eco_geo_unit(eco_name),
+    PRIMARY KEY (ingredient_id, eco_name)
+);
+
+-- ============================================================================
+-- 成品风味基因型
+-- ============================================================================
+CREATE TABLE flavor_genotype (
+    genotype_id     CHAR(12) PRIMARY KEY,
+    dish_name       VARCHAR(50) NOT NULL,
+    category        VARCHAR(30),
+    eco_name        VARCHAR(150) REFERENCES eco_geo_unit(eco_name),
+    genome_vector   JSONB,
+    coordinates     GEOMETRY(Point, 4326)
+);
+
+-- ============================================================================
+-- 传播事件
+-- ============================================================================
+CREATE TABLE dispersal_event (
+    event_id        CHAR(12) PRIMARY KEY,
+    ingredient_id   CHAR(8)       REFERENCES ingredient(ingredient_id),
+    from_eco_name   VARCHAR(150)  REFERENCES eco_geo_unit(eco_name),
+    to_eco_name     VARCHAR(150)  REFERENCES eco_geo_unit(eco_name),
+    route_geom      GEOMETRY(LineString, 4326),
+    CHECK (from_eco_name IS NULL OR to_eco_name IS NULL OR from_eco_name <> to_eco_name)
+);
+
+-- ============================================================================
+-- 配方连结（M:N）
+-- ============================================================================
+CREATE TABLE recipe_link (
+    genotype_id     CHAR(12) REFERENCES flavor_genotype(genotype_id),
+    ingredient_id   CHAR(8)  REFERENCES ingredient(ingredient_id),
+    role            VARCHAR(20),
+    importance      NUMERIC(3,2) CHECK (importance BETWEEN 0 AND 1),
+    is_native       BOOLEAN,
+    PRIMARY KEY (genotype_id, ingredient_id)
+);
+
+-- ============================================================================
+-- 基因溯源链（M:N 自引用）— 当前无数据
+-- ============================================================================
+CREATE TABLE genotype_lineage (
+    ancestor_id     CHAR(12) REFERENCES flavor_genotype(genotype_id),
+    descendant_id   CHAR(12) REFERENCES flavor_genotype(genotype_id),
+    mutation_desc   TEXT,
+    PRIMARY KEY (ancestor_id, descendant_id),
+    CHECK (ancestor_id <> descendant_id)
+);
+
+-- ============================================================================
+-- C1 扩展：CHAPTERS 史料表
+-- ============================================================================
+CREATE TABLE chapter (
+    chapter_id      INT PRIMARY KEY,
+    title           VARCHAR(50) NOT NULL,
+    date_label      VARCHAR(40),
+    body            TEXT,
+    cite            TEXT,
+    source          VARCHAR(80),
+    route_name      VARCHAR(40)
+);
+
+-- ============================================================================
+-- 索引
+-- ============================================================================
+
+-- GiST 空间索引
+CREATE INDEX idx_eco_boundary       ON eco_geo_unit    USING GIST (boundary);
+CREATE INDEX idx_genotype_coord     ON flavor_genotype USING GIST (coordinates);
+CREATE INDEX idx_dispersal_route    ON dispersal_event USING GIST (route_geom);
+
+-- GIN（JSONB / 数组）索引
+CREATE INDEX idx_eco_climate        ON eco_geo_unit    USING GIN (climate);
+CREATE INDEX idx_genotype_genome    ON flavor_genotype USING GIN (genome_vector);
+CREATE INDEX idx_ingredient_tag     ON ingredient      USING GIN (flavor_tags);
+
+-- B-Tree 索引
+CREATE INDEX idx_eco_code           ON eco_geo_unit    (eco_code);
+CREATE INDEX idx_genotype_eco       ON flavor_genotype (eco_name);
+CREATE INDEX idx_dispersal_ing      ON dispersal_event (ingredient_id);
+CREATE INDEX idx_dispersal_from     ON dispersal_event (from_eco_name);
+CREATE INDEX idx_dispersal_to       ON dispersal_event (to_eco_name);
+CREATE INDEX idx_recipe_ing         ON recipe_link     (ingredient_id);
+CREATE INDEX idx_ing_origin_eco     ON ingredient_origin (eco_name);
+CREATE INDEX idx_chapter_route      ON chapter         (route_name);

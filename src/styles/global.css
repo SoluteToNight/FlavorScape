@@ -1,0 +1,93 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F8F4EF;
+  --bg-warm: #F2EDE6;
+  --glass: rgba(255, 252, 248, 0.88);
+  --glass-border: rgba(180, 165, 140, 0.25);
+  --amber: #E8A917;
+  --amber-soft: rgba(232, 169, 23, 0.12);
+  --carmine: #E5394E;
+  --carmine-soft: rgba(229, 57, 78, 0.12);
+  --turquoise: #0FB89A;
+  --turq-soft: rgba(15, 184, 154, 0.12);
+  --sage: #7FA961;
+  --text: #1C1917;
+  --text-mid: #57534E;
+  --text-muted: #A8A29E;
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.09);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.13);
+  --blur: blur(24px);
+  --blur-sm: blur(12px);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --transition: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --navbar-h: 58px;
+  --font-sans: 'Noto Sans SC', 'Inter', sans-serif;
+  --font-serif: 'Noto Serif SC', serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  width: 100%; height: 100%;
+  position: relative;
+}
+
+/* Page transitions */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* Glass panel mixin */
+.glass-panel {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow-md);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
+
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 169, 23, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(232, 169, 23, 0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes radarIn {
+  from { transform-origin: center; transform: scale(0.4); opacity: 0; }
+  to   { transform-origin: center; transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
