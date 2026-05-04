@@ -183,6 +183,77 @@ ROUTES = [
     },
 ]
 
+FLAVOR_MEDIA = {
+    "chengdu-mala": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Hot_pot_dinner.jpg/500px-Hot_pot_dinner.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Hot_pot_dinner.jpg",
+    },
+    "shunde-rawfish": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Yusheng_%28_in_Shunde%2C_Guangdong%29.jpg/500px-Yusheng_%28_in_Shunde%2C_Guangdong%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Yusheng_(_in_Shunde,_Guangdong).jpg",
+    },
+    "lanzhou-beef-noodle": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Lanzhou-style_beef_noodle_soup_at_Qiaotou_%2820190610190359%29.jpg/500px-Lanzhou-style_beef_noodle_soup_at_Qiaotou_%2820190610190359%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Lanzhou-style_beef_noodle_soup_at_Qiaotou_(20190610190359).jpg",
+    },
+    "xinjiang-naan": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Naan_2.jpg/500px-Naan_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Naan_2.jpg",
+    },
+    "beijing-roast-duck": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Peking_duck_by_Mr_Wabu_in_Beijing.jpg/500px-Peking_duck_by_Mr_Wabu_in_Beijing.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Peking_duck_by_Mr_Wabu_in_Beijing.jpg",
+    },
+    "hangzhou-longjing": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Dongpo_pork_%28a_Hangzhou_dish%29.jpg/500px-Dongpo_pork_%28a_Hangzhou_dish%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Dongpo_pork_(a_Hangzhou_dish).jpg",
+    },
+    "yunnan-stone-tofu": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/%E7%9F%B3%E5%B1%8F%E7%83%A7%E8%B1%86%E8%85%90.jpg/500px-%E7%9F%B3%E5%B1%8F%E7%83%A7%E8%B1%86%E8%85%90.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:%E7%9F%B3%E5%B1%8F%E7%83%A7%E8%B1%86%E8%85%90.jpg",
+    },
+    "chaoshan-beef-hotpot": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Chaoshan_Beef_Hot_Pot_at_Baheli_Haiji%2C_ZGC1_%2820221003132726%29.jpg/500px-Chaoshan_Beef_Hot_Pot_at_Baheli_Haiji%2C_ZGC1_%2820221003132726%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Chaoshan_Beef_Hot_Pot_at_Baheli_Haiji,_ZGC1_(20221003132726).jpg",
+    },
+    "chongqing-mala-hotpot": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Chongqing_hotpot_2.jpg/500px-Chongqing_hotpot_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Chongqing_hotpot_2.jpg",
+    },
+    "haikou-coconut-chicken": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Yeziji_Hainanese_coconut_chicken_soup.jpg/500px-Yeziji_Hainanese_coconut_chicken_soup.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Yeziji_Hainanese_coconut_chicken_soup.jpg",
+    },
+    "guangzhou-congee-hotpot": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/%E7%B2%A5%E5%BA%95%E7%81%AB%E9%8D%8B.jpg/500px-%E7%B2%A5%E5%BA%95%E7%81%AB%E9%8D%8B.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:%E7%B2%A5%E5%BA%95%E7%81%AB%E9%8D%8B.jpg",
+    },
+    "beijing-shuanyangrou": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Instant-boiled_mutton_hot_pot_at_Yangfang_Shengli_%2820200111153612%29.jpg/500px-Instant-boiled_mutton_hot_pot_at_Yangfang_Shengli_%2820200111153612%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Instant-boiled_mutton_hot_pot_at_Yangfang_Shengli_(20200111153612).jpg",
+    },
+    "guiyang-sour-fish-hotpot": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Hot_and_Sour_%28Suan_La%29_fish_soup_%2813973840683%29.jpg/500px-Hot_and_Sour_%28Suan_La%29_fish_soup_%2813973840683%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Hot_and_Sour_(Suan_La)_fish_soup_(13973840683).jpg",
+    },
+    "harbin-suancai-bairou": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Suan_cai_pork_stew.jpg/500px-Suan_cai_pork_stew.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Suan_cai_pork_stew.jpg",
+    },
+    "chuxiong-mushroom-hotpot": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Mushroom_hot_pot_in_Yunnan.jpg/500px-Mushroom_hot_pot_in_Yunnan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Mushroom_hot_pot_in_Yunnan.jpg",
+    },
+    "taizhou-yipin-hotpot": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/GD_%E5%BB%A3%E6%9D%B1_Guangdong_%E6%9D%B1%E8%8E%9E_Dongguan_mall_Saint_Joan_Seafood_Hot_Pot_Restaurant_March_2024_R12S_113.jpg/500px-GD_%E5%BB%A3%E6%9D%B1_Guangdong_%E6%9D%B1%E8%8E%9E_Dongguan_mall_Saint_Joan_Seafood_Hot_Pot_Restaurant_March_2024_R12S_113.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:GD_%E5%BB%A3%E6%9D%B1_Guangdong_%E6%9D%B1%E8%8E%9E_Dongguan_mall_Saint_Joan_Seafood_Hot_Pot_Restaurant_March_2024_R12S_113.jpg",
+    },
+    "nanjing-roast-duck": {
+        "bubbleImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Nanjing_roast_duck_before_adding_sauce_%2820240614082330%29.jpg/500px-Nanjing_roast_duck_before_adding_sauce_%2820240614082330%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "bubbleImageSource": "https://commons.wikimedia.org/wiki/File:Nanjing_roast_duck_before_adding_sauce_(20240614082330).jpg",
+    },
+}
+
 CHAPTERS = [
     {
         "id": 1, "title": "大运河漕运", "date": "公元605年 · 隋朝",

@@ -2,6 +2,7 @@
 -- EcoGeoUnit 现含 boundary GEOMETRY + 827 行 WWF TEOW 生态区
 -- 开发期 DROP-CREATE 模式，可任意次重跑。
 
+DROP TABLE IF EXISTS data_source CASCADE;
 DROP TABLE IF EXISTS chapter CASCADE;
 DROP TABLE IF EXISTS genotype_lineage CASCADE;
 DROP TABLE IF EXISTS recipe_link CASCADE;
@@ -58,10 +59,18 @@ CREATE TABLE ingredient_origin (
 -- ============================================================================
 CREATE TABLE flavor_genotype (
     genotype_id     CHAR(12) PRIMARY KEY,
+    node_key        VARCHAR(80) UNIQUE NOT NULL,          -- 原 app_data id / 前端稳定标识
+    city_name       VARCHAR(50) NOT NULL,                 -- 城市展示名
     dish_name       VARCHAR(50) NOT NULL,
+    dish_family     VARCHAR(50),
+    region_label    VARCHAR(100),                         -- 原 app_data region
+    eco_label       VARCHAR(80),                          -- 原 app_data eco（展示标签）
     category        VARCHAR(30),
     eco_name        VARCHAR(150) REFERENCES eco_geo_unit(eco_name),
     genome_vector   JSONB,
+    primary_labels  TEXT[],                               -- 原 app_data primary
+    primary_values  NUMERIC(4,2)[],                       -- 原 app_data vals
+    color_hex       VARCHAR(7),                           -- 原 app_data color
     coordinates     GEOMETRY(Point, 4326)
 );
 
@@ -70,6 +79,10 @@ CREATE TABLE flavor_genotype (
 -- ============================================================================
 CREATE TABLE dispersal_event (
     event_id        CHAR(12) PRIMARY KEY,
+    route_name      VARCHAR(40) UNIQUE NOT NULL,
+    route_type      VARCHAR(10) NOT NULL CHECK (route_type IN ('land', 'sea')),
+    route_color     VARCHAR(7) NOT NULL,
+    display_order   SMALLINT NOT NULL,
     ingredient_id   CHAR(8)       REFERENCES ingredient(ingredient_id),
     from_eco_name   VARCHAR(150)  REFERENCES eco_geo_unit(eco_name),
     to_eco_name     VARCHAR(150)  REFERENCES eco_geo_unit(eco_name),
@@ -110,7 +123,18 @@ CREATE TABLE chapter (
     body            TEXT,
     cite            TEXT,
     source          VARCHAR(80),
-    route_name      VARCHAR(40)
+    route_name      VARCHAR(40) REFERENCES dispersal_event(route_name)
+);
+
+-- ============================================================================
+-- 数据来源说明
+-- ============================================================================
+CREATE TABLE data_source (
+    source_id       INT PRIMARY KEY,
+    name            VARCHAR(80) NOT NULL,
+    description     TEXT NOT NULL,
+    color_hex       VARCHAR(7) NOT NULL,
+    url             TEXT NOT NULL
 );
 
 -- ============================================================================
@@ -130,7 +154,11 @@ CREATE INDEX idx_ingredient_tag     ON ingredient      USING GIN (flavor_tags);
 -- B-Tree 索引
 CREATE INDEX idx_eco_code           ON eco_geo_unit    (eco_code);
 CREATE INDEX idx_genotype_eco       ON flavor_genotype (eco_name);
+CREATE INDEX idx_genotype_city      ON flavor_genotype (city_name);
+CREATE INDEX idx_genotype_dish      ON flavor_genotype (dish_name);
 CREATE INDEX idx_dispersal_ing      ON dispersal_event (ingredient_id);
+CREATE INDEX idx_dispersal_name     ON dispersal_event (route_name);
+CREATE INDEX idx_dispersal_order    ON dispersal_event (display_order);
 CREATE INDEX idx_dispersal_from     ON dispersal_event (from_eco_name);
 CREATE INDEX idx_dispersal_to       ON dispersal_event (to_eco_name);
 CREATE INDEX idx_recipe_ing         ON recipe_link     (ingredient_id);

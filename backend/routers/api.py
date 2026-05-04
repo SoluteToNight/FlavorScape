@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 
-from ..data.app_data import DATA_SOURCES
 from ..db import query
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -23,7 +22,7 @@ def get_chapters():
 
 @router.get("/data-sources")
 def get_data_sources():
-    return DATA_SOURCES
+    return query.fetch_data_sources()
 
 
 @router.get("/search")

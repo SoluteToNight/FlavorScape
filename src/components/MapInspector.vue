@@ -1,47 +1,57 @@
 <template>
   <div class="inspector glass-panel">
     <Transition name="panel" mode="out-in">
-      <!-- Empty state -->
-      <div v-if="!selectedNode && !selectedRoute" key="empty" class="empty-state">
-        <div class="empty-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
-        </div>
-        <p>点击地图节点<br>或搜索食材查看详情</p>
-      </div>
-
       <!-- Node panel -->
-      <div v-else-if="selectedNode" key="node" class="panel-content">
+      <div v-if="selectedNode" key="node" class="panel-content">
         <div class="panel-tab">风味节点</div>
         <div class="panel-title">{{ selectedNode.dish || selectedNode.city }}</div>
         <div class="panel-subtitle">{{ selectedNode.city }} · {{ selectedNode.region }} · {{ selectedNode.eco }}</div>
 
         <div class="section-label">风味雷达图</div>
-        <div class="radar-wrap">
-          <FlavorRadar :scores="selectedNode.scores" :color="selectedNode.color" :size="148" :animated="true" />
+        <div class="panel-card">
+          <div class="radar-wrap">
+            <FlavorRadar :scores="selectedNode.scores" :color="selectedNode.color" :size="148" :animated="true" />
+          </div>
         </div>
 
-        <div class="section-label">维度得分</div>
-        <div ref="barEl" class="echart-wrap echart-bar" />
+        <div class="section-label">风味描述</div>
+        <div class="panel-card">
+          <p class="node-description">
+            {{ selectedNode.description }}
+          </p>
+        </div>
 
         <div class="section-label" style="margin-top:16px">食材基因</div>
-        <div class="chips">
-          <span v-for="ing in selectedNode.ingredients" :key="ing" class="chip"
-            :style="{ background: selectedNode.color + '18', color: selectedNode.color }">
-            {{ ing }}
-          </span>
+        <div class="panel-card">
+          <div class="chips">
+            <span
+              v-for="ing in selectedNode.ingredients"
+              :key="ing"
+              class="chip"
+              :class="{ active: hoveredIngredient === ing }"
+              :style="buildTagStyle(selectedNode.color, hoveredIngredient === ing)"
+              @mouseenter="hoveredIngredient = ing"
+              @mouseleave="hoveredIngredient = null"
+            >
+              {{ ing }}
+            </span>
+          </div>
         </div>
 
         <template v-if="siblings.length">
           <div class="section-label" style="margin-top:16px">同族成品 · {{ selectedNode.dish_family }}</div>
-          <div class="chips">
-            <span v-for="sib in siblings" :key="sib.id" class="chip chip-clickable"
-              :style="{ background: sib.color + '18', color: sib.color }"
-              @click="appStore.selectNode(sib)">
-              {{ sib.city }} · {{ sib.dish }}
-            </span>
+          <div class="panel-card">
+            <div class="chips">
+              <span
+                v-for="sib in siblings"
+                :key="sib.id"
+                class="chip chip-clickable"
+                :style="buildTagStyle(sib.color, false)"
+                @click="appStore.selectNode(sib)"
+              >
+                {{ sib.city }} · {{ sib.dish }}
+              </span>
+            </div>
           </div>
         </template>
       </div>
@@ -59,7 +69,9 @@
         </div>
 
         <div class="section-label" style="margin-top:16px">气候特征（模拟示意）</div>
-        <div ref="climateEl" class="echart-wrap echart-climate" />
+        <div class="panel-card">
+          <div ref="climateEl" class="echart-wrap echart-climate" />
+        </div>
 
         <div v-if="selectedEcozone.realm" class="panel-source" style="margin-top:16px">
           生物地理界：{{ selectedEcozone.realm }}
@@ -71,18 +83,30 @@
         <div class="panel-tab">传播路径</div>
         <div class="panel-title">{{ selectedRoute.name }}</div>
         <div class="panel-subtitle">{{ selectedRoute.type === 'sea' ? '海路传播' : '陆路传播' }} · {{ selectedRoute.path.length }} 个节点</div>
-        <div class="route-line" :style="{ background: selectedRoute.color }" />
-        <p class="route-desc">
-          这条{{ selectedRoute.type === 'sea' ? '海上' : '陆上' }}路线是风味基因跨越地理屏障的核心通道。
-          沿途经过的生态区差异与气候梯度，塑造了食材在传播过程中的逐步"变异"——
-          每一个中继节点都是一次自然环境对风味基因的再筛选。
-        </p>
-        <div class="waypoints">
-          <div v-for="(pt, i) in selectedRoute.path" :key="i" class="waypoint">
-            <span class="wpt-dot" :style="{ background: selectedRoute.color }" />
-            <span class="wpt-coord">{{ pt[0].toFixed(1) }}°, {{ pt[1].toFixed(1) }}°</span>
+        <div class="panel-card route-card">
+          <div class="route-line" :style="{ background: selectedRoute.color }" />
+          <p class="route-desc">
+            这条{{ selectedRoute.type === 'sea' ? '海上' : '陆上' }}路线是风味基因跨越地理屏障的核心通道。
+            沿途经过的生态区差异与气候梯度，塑造了食材在传播过程中的逐步"变异"。
+          </p>
+          <div class="waypoints">
+            <div v-for="(pt, i) in selectedRoute.path" :key="i" class="waypoint">
+              <span class="wpt-dot" :style="{ background: selectedRoute.color }" />
+              <span class="wpt-coord">{{ pt[0].toFixed(1) }}°, {{ pt[1].toFixed(1) }}°</span>
+            </div>
           </div>
         </div>
+      </div>
+
+      <!-- Empty state -->
+      <div v-else key="empty" class="empty-state">
+        <div class="empty-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </div>
+        <p>点击地图节点<br>或搜索食材查看详情</p>
       </div>
     </Transition>
   </div>
@@ -98,7 +122,7 @@ const appStore = useAppStore()
 const selectedNode   = computed(() => appStore.selectedNode)
 const selectedRoute  = computed(() => appStore.selectedRoute)
 const selectedEcozone = computed(() => appStore.selectedEcozone)
-const dims = ['麻', '辣', '咸', '酸', '甜', '鲜']
+const hoveredIngredient = ref(null)
 
 const siblings = computed(() => {
   const node = appStore.selectedNode
@@ -107,36 +131,8 @@ const siblings = computed(() => {
 })
 
 // ── ECharts instances ──────────────────────────────────────────────────────
-const barEl = ref(null)
 const climateEl = ref(null)
-let barChart = null
 let climateChart = null
-
-// ── Score bars → ECharts horizontal bar ────────────────────────────────────
-function buildBarOption(node) {
-  if (!node) return {}
-  const c = node.color || '#C8960F'
-  const labels = dims
-  const values = (node.scores || []).map(v => +(v || 0).toFixed(2))
-  return {
-    grid: { left: 28, right: 36, top: 4, bottom: 4 },
-    xAxis: { type: 'value', min: 0, max: 1, show: false },
-    yAxis: {
-      type: 'category', data: labels, inverse: true,
-      axisLine: { show: false }, axisTick: { show: false },
-      axisLabel: { color: 'rgba(87,83,78,0.6)', fontSize: 10, fontFamily: "'Noto Sans SC',sans-serif", margin: 8 },
-    },
-    series: [{
-      type: 'bar',
-      data: values.map((v, i) => ({ value: v, itemStyle: { color: c, borderRadius: [0, 2, 2, 0], opacity: 0.78 } })),
-      barWidth: 8,
-      label: { show: true, position: 'right', fontSize: 9, color: 'rgba(87,83,78,0.5)', fontFamily: 'Inter,sans-serif', formatter: p => p.value.toFixed(2) },
-      animation: true,
-      animationDuration: 600,
-      silent: true,
-    }],
-  }
-}
 
 // ── Climate chart → ECharts dual-axis line ─────────────────────────────────
 const MONTHS = ['J','F','M','A','M','J','J','A','S','O','N','D']
@@ -145,6 +141,23 @@ function biomeHash(str) {
   let h = 0
   for (let i = 0; i < (str || '').length; i++) h = ((h << 5) - h) + str.charCodeAt(i)
   return Math.abs(h)
+}
+
+function hexToRgba(hex, alpha) {
+  const value = hex.replace('#', '')
+  const r = parseInt(value.slice(0, 2), 16)
+  const g = parseInt(value.slice(2, 4), 16)
+  const b = parseInt(value.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function buildTagStyle(color, active = false) {
+  return {
+    background: active ? hexToRgba(color, 0.2) : hexToRgba(color, 0.1),
+    color,
+    borderColor: active ? hexToRgba(color, 0.28) : hexToRgba(color, 0.14),
+    boxShadow: active ? `0 12px 26px ${hexToRgba(color, 0.16)}` : 'none',
+  }
 }
 
 function buildClimateOption(ecozone) {
@@ -157,12 +170,12 @@ function buildClimateOption(ecozone) {
     grid: { left: 32, right: 32, top: 22, bottom: 18 },
     xAxis: { type: 'category', data: MONTHS, axisLine: { lineStyle: { color: 'rgba(0,0,0,0.07)' } }, axisTick: { show: false }, axisLabel: { fontSize: 8, color: 'rgba(87,83,78,0.45)', fontFamily: 'Inter,sans-serif' } },
     yAxis: [
-      { type: 'value', name: '°C', nameTextStyle: { fontSize: 8, color: '#C84B4B' }, splitLine: { lineStyle: { color: 'rgba(0,0,0,0.04)' } }, axisLabel: { fontSize: 8, color: 'rgba(87,83,78,0.4)' }, min: -5 },
-      { type: 'value', name: 'mm', nameTextStyle: { fontSize: 8, color: '#2BB89C' }, splitLine: { show: false }, axisLabel: { fontSize: 8, color: 'rgba(87,83,78,0.4)' } },
+      { type: 'value', name: '°C', nameTextStyle: { fontSize: 8, color: '#E5394E' }, splitLine: { lineStyle: { color: 'rgba(0,0,0,0.04)' } }, axisLabel: { fontSize: 8, color: 'rgba(87,83,78,0.4)' }, min: -5 },
+      { type: 'value', name: 'mm', nameTextStyle: { fontSize: 8, color: '#0FB89A' }, splitLine: { show: false }, axisLabel: { fontSize: 8, color: 'rgba(87,83,78,0.4)' } },
     ],
     series: [
-      { type: 'line', data: temps, smooth: true, lineStyle: { color: '#C84B4B', width: 1.5 }, itemStyle: { color: '#C84B4B' }, symbol: 'none', animation: true, animationDuration: 800, silent: true },
-      { type: 'line', yAxisIndex: 1, data: precips, smooth: true, lineStyle: { color: '#2BB89C', width: 1.5, type: 'dashed' }, itemStyle: { color: '#2BB89C' }, symbol: 'none', animation: true, animationDuration: 800, silent: true, areaStyle: { color: 'rgba(43,184,156,0.06)' } },
+      { type: 'line', data: temps, smooth: true, lineStyle: { color: '#E5394E', width: 1.5 }, itemStyle: { color: '#E5394E' }, symbol: 'none', animation: true, animationDuration: 800, silent: true },
+      { type: 'line', yAxisIndex: 1, data: precips, smooth: true, lineStyle: { color: '#0FB89A', width: 1.5, type: 'dashed' }, itemStyle: { color: '#0FB89A' }, symbol: 'none', animation: true, animationDuration: 800, silent: true, areaStyle: { color: 'rgba(15,184,154,0.08)' } },
     ],
     legend: { show: false },
     tooltip: { show: false },
@@ -170,16 +183,6 @@ function buildClimateOption(ecozone) {
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
-// Charts are lazy-initialized via ensure*() helpers — refs are null until the
-// relevant panel (node/ecozone) renders inside v-if/v-else-if.
-
-function ensureBarChart() {
-  if (!barChart && barEl.value) {
-    barChart = echarts.init(barEl.value, null, { renderer: 'canvas' })
-  }
-  return barChart
-}
-
 function ensureClimateChart() {
   if (!climateChart && climateEl.value) {
     climateChart = echarts.init(climateEl.value, null, { renderer: 'canvas' })
@@ -189,14 +192,12 @@ function ensureClimateChart() {
 
 onMounted(async () => {
   await nextTick()
-  if (selectedNode.value) ensureBarChart()?.setOption(buildBarOption(selectedNode.value), true)
   if (selectedEcozone.value) ensureClimateChart()?.setOption(buildClimateOption(selectedEcozone.value), true)
 })
 
 watch(selectedNode, async (node) => {
+  hoveredIngredient.value = null
   if (!node) return
-  await nextTick()
-  ensureBarChart()?.setOption(buildBarOption(node), true)
 })
 
 watch(selectedEcozone, async (eco) => {
@@ -205,7 +206,7 @@ watch(selectedEcozone, async (eco) => {
   ensureClimateChart()?.setOption(buildClimateOption(eco), true)
 })
 
-onUnmounted(() => { barChart?.dispose(); climateChart?.dispose() })
+onUnmounted(() => { climateChart?.dispose() })
 
 // ── Biome palette ──────────────────────────────────────────────────────────
 const biomePalette = {
@@ -243,33 +244,57 @@ const biomePaletteFallback = '#C4B49A'
   height: 100%;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 14px; opacity: 0.45; padding: 24px;
+  gap: 16px; opacity: 0.58; padding: 24px;
   text-align: center;
 }
 .empty-icon {
-  width: 36px; height: 36px;
+  width: 42px; height: 42px;
   border-radius: 50%;
-  border: 1.5px solid var(--glass-border);
+  border: 1px solid rgba(180, 165, 140, 0.22);
   display: flex; align-items: center; justify-content: center;
   color: var(--text-muted);
+  background: radial-gradient(circle, rgba(255,252,248,0.82) 0%, rgba(255,252,248,0.36) 100%);
+  box-shadow: 0 14px 28px rgba(42, 31, 18, 0.08);
 }
-.empty-state p { font-size: 12px; color: var(--text-muted); line-height: 1.9; letter-spacing: 0.04em; }
+.empty-state p { font-size: 12px; color: rgba(87,83,78,0.72); line-height: 1.9; letter-spacing: 0.04em; }
 
 .panel-content { padding: 24px; overflow-y: auto; height: 100%; }
 .panel-tab { font-size: 10px; letter-spacing: 0.18em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 14px; }
 .panel-title { font-family: var(--font-serif); font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
 .panel-subtitle { font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; margin-bottom: 18px; }
 .section-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
-.radar-wrap { display: flex; justify-content: center; margin-bottom: 18px; }
+.panel-card {
+  border-radius: 18px;
+  border: 1px solid rgba(180, 165, 140, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 248, 0.74) 0%, rgba(255, 252, 248, 0.58) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+}
+.radar-wrap { display: flex; justify-content: center; padding: 12px 0; }
 
 .echart-wrap { width: 100%; }
-.echart-bar    { height: 140px; }
-.echart-climate { height: 130px; margin-top: 4px; }
+.echart-climate { height: 130px; padding: 10px 0 6px; }
 
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { padding: 4px 12px; border-radius: 12px; font-size: 11px; }
-.chip-clickable { cursor: pointer; transition: transform 150ms ease, opacity 150ms ease; }
-.chip-clickable:hover { transform: translateY(-1px); opacity: 0.85; }
+.node-description {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 12px;
+  line-height: 1.85;
+  color: var(--text-mid);
+  letter-spacing: 0.03em;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid transparent;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+.chip.active,
+.chip:hover { transform: translateY(-1px); }
+.chip-clickable { cursor: pointer; }
 
 .eco-biome-badge {
   display: inline-flex; align-items: center; gap: 8px;
@@ -280,7 +305,8 @@ const biomePaletteFallback = '#C4B49A'
 .biome-num { font-family: 'Inter',sans-serif; font-size: 11px; color: var(--text-muted); }
 .biome-name { font-size: 12px; color: var(--text-mid); }
 
-.route-line { height: 2px; border-radius: 1px; margin: 14px 0; opacity: 0.6; }
+.route-card { padding: 14px 14px 12px; }
+.route-line { height: 2px; border-radius: 999px; margin: 2px 0 14px; opacity: 0.72; box-shadow: 0 0 16px rgba(232,169,23,0.18); }
 .route-desc { font-size: 12px; line-height: 1.9; color: var(--text-mid); font-weight: 300; margin-bottom: 16px; }
 .waypoints { display: flex; flex-direction: column; gap: 8px; }
 .waypoint { display: flex; align-items: center; gap: 10px; }

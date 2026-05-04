@@ -1,0 +1,18 @@
+[
+  {
+    "id": "example-flavor-001",
+    "city": "示例城市",
+    "dish": "示例风味成品",
+    "dish_family": "示例菜系",
+    "region": "示例地域",
+    "eco": "亚热带常绿阔叶林",
+    "eco_name": "Sichuan Basin evergreen broadleaf forests",
+    "scores": [0.2, 0.4, 0.6, 0.3, 0.5, 0.7],
+    "primary": ["麻", "鲜"],
+    "vals": [0.4, 0.7],
+    "color": "#E5394E",
+    "cat": "辛辣",
+    "ingredients": ["花椒", "示例原料A", "示例原料B"],
+    "coordinates": [104.1, 30.7]
+  }
+]

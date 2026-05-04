@@ -38,3 +38,7 @@ Thumbs.db
 # AI / temp
 .sisyphus/
 .claude/
+.playwright-mcp/
+
+# Development captures
+dev/screenshots/*.png

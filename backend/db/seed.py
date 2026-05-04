@@ -2,12 +2,12 @@
 
 来源：
   - eco_geo_unit: wwf_terr_ecos_merged.shp（827 行 WWF TEOW 全域）
-  - 其余表: backend/data/app_data.py 的 FLAVORS / ROUTES / CHAPTERS
+  - 其余业务表: backend/data/app_data.py 的导入快照
 """
 from __future__ import annotations
 import json
 import logging
-from typing import Dict
+from typing import Any, Dict
 
 import fiona
 import psycopg2.extras
@@ -15,9 +15,16 @@ from shapely.geometry import shape
 from shapely import wkb
 
 from backend.config import TEOW_MERGED
-from backend.data.app_data import FLAVORS, ROUTES, CHAPTERS
+from backend.data.app_data import (
+    CHAPTERS as APP_CHAPTERS,
+    DATA_SOURCES as APP_DATA_SOURCES,
+    FLAVORS as APP_FLAVORS,
+    ROUTES as APP_ROUTES,
+)
 
 log = logging.getLogger("seed")
+
+DataBundle = dict[str, list[dict[str, Any]]]
 
 # ---- BIOME 编码 → (英文名, 中文名) -------------------------------------------
 BIOME_MAP: Dict[int, tuple] = {
@@ -133,6 +140,35 @@ def make_id(prefix: str, total_len: int, idx: int) -> str:
     return prefix + str(idx).zfill(total_len - len(prefix))
 
 
+def load_app_data_bundle() -> DataBundle:
+    return {
+        "flavors": [dict(item) for item in APP_FLAVORS],
+        "routes": [dict(item) for item in APP_ROUTES],
+        "chapters": [dict(item) for item in APP_CHAPTERS],
+        "data_sources": [dict(item) for item in APP_DATA_SOURCES],
+    }
+
+
+def reset_business_tables(conn) -> None:
+    """清空业务表，保留 eco_geo_unit。适合从 JSON 全量重导。"""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            TRUNCATE TABLE
+                data_source,
+                chapter,
+                genotype_lineage,
+                recipe_link,
+                dispersal_event,
+                flavor_genotype,
+                ingredient_origin,
+                ingredient
+            RESTART IDENTITY CASCADE
+            """
+        )
+    conn.commit()
+
+
 # ============================================================================
 # _seed_eco_geo_unit — 从 SHP 导入全部 827 个 WWF TEOW 生态区
 # ============================================================================
@@ -184,15 +220,20 @@ def _seed_eco_geo_unit(conn) -> dict:
 # ============================================================================
 # 其余表 — 不变逻辑（仅列名从 eco_id → eco_name）
 # ============================================================================
-def _seed_ingredient(conn) -> dict:
+def _seed_ingredient(conn, flavors: list[dict], routes: list[dict]) -> dict:
     """返回 {ingredient_name: ingredient_id}。"""
     all_names = set()
-    for f in FLAVORS:
+    for f in flavors:
         all_names.update(f["ingredients"])
-    all_names.update(ROUTE_INGREDIENT_MAP.values())
+    for route in routes:
+        ingredient_name = route.get("ingredient_name") or route.get("ingredientName")
+        if ingredient_name:
+            all_names.add(ingredient_name)
+        elif route["name"] in ROUTE_INGREDIENT_MAP:
+            all_names.add(ROUTE_INGREDIENT_MAP[route["name"]])
 
     name_to_tags: dict = {n: set() for n in all_names}
-    for f in FLAVORS:
+    for f in flavors:
         for ing in f["ingredients"]:
             name_to_tags[ing].update(f["primary"])
 
@@ -214,10 +255,10 @@ def _seed_ingredient(conn) -> dict:
     return name_to_id
 
 
-def _seed_ingredient_origin(conn, eco_map, ing_map) -> int:
+def _seed_ingredient_origin(conn, eco_map, ing_map, flavors: list[dict]) -> int:
     pairs = set()
-    for f in FLAVORS:
-        eco_name = eco_map.get(f["eco"])
+    for f in flavors:
+        eco_name = f.get("eco_name") or f.get("ecoName") or eco_map.get(f["eco"])
         if not eco_name:
             continue
         for ing in f["ingredients"]:
@@ -233,37 +274,50 @@ def _seed_ingredient_origin(conn, eco_map, ing_map) -> int:
     return len(rows)
 
 
-def _seed_flavor_genotype(conn, eco_map) -> dict:
+def _seed_flavor_genotype(conn, eco_map, flavors: list[dict]) -> dict:
     """返回 {flavor.id (来自 app_data): genotype_id}。"""
     SCORE_KEYS = ["spicy", "numbing", "salty", "sour", "sweet", "umami"]
     flavor_id_to_gid: dict = {}
     rows = []
-    for i, f in enumerate(FLAVORS, start=1):
+    for i, f in enumerate(flavors, start=1):
         gid = make_id("GEN", 12, i)
         flavor_id_to_gid[f["id"]] = gid
         genome = {k: v for k, v in zip(SCORE_KEYS, f["scores"])}
         lon, lat = f["coordinates"]
-        eco_name = eco_map.get(f["eco"])
+        eco_name = f.get("eco_name") or f.get("ecoName") or eco_map.get(f["eco"])
         rows.append((
-            gid, f["dish"], f["cat"], eco_name,
+            gid,
+            f["id"],
+            f["city"],
+            f["dish"],
+            f["dish_family"],
+            f["region"],
+            f["eco"],
+            f["cat"],
+            eco_name,
             json.dumps(genome, ensure_ascii=False),
+            list(f["primary"]),
+            list(f["vals"]),
+            f["color"],
             lon, lat,
         ))
     with conn.cursor() as cur:
         psycopg2.extras.execute_batch(
             cur,
             "INSERT INTO flavor_genotype "
-            "(genotype_id, dish_name, category, eco_name, genome_vector, coordinates) "
-            "VALUES (%s, %s, %s, %s, %s::jsonb, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) "
+            "(genotype_id, node_key, city_name, dish_name, dish_family, region_label, eco_label, "
+            " category, eco_name, genome_vector, primary_labels, primary_values, color_hex, coordinates) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, "
+            "        ST_SetSRID(ST_MakePoint(%s, %s), 4326)) "
             "ON CONFLICT DO NOTHING",
             rows,
         )
     return flavor_id_to_gid
 
 
-def _seed_recipe_link(conn, gid_map, ing_map) -> int:
+def _seed_recipe_link(conn, gid_map, ing_map, flavors: list[dict]) -> int:
     rows = []
-    for f in FLAVORS:
+    for f in flavors:
         gid = gid_map[f["id"]]
         n = len(f["ingredients"])
         importance = round(1.0 / n, 2) if n else 0.0
@@ -281,48 +335,54 @@ def _seed_recipe_link(conn, gid_map, ing_map) -> int:
     return len(rows)
 
 
-def _nearest_eco_name(lon, lat, eco_map):
+def _nearest_eco_name(lon, lat, eco_map, flavors: list[dict]):
     """从 FLAVORS 中找离 (lon,lat) 最近的菜，返回其 eco_name；距离过远（>10°）返回 None。"""
     best = None
     best_d = float("inf")
-    for f in FLAVORS:
+    for f in flavors:
         flon, flat = f["coordinates"]
         d = (flon - lon) ** 2 + (flat - lat) ** 2
         if d < best_d:
             best_d = d
-            best = eco_map.get(f["eco"])
+            best = f.get("eco_name") or f.get("ecoName") or eco_map.get(f["eco"])
     return best if best_d < 100 else None
 
 
-def _seed_dispersal_event(conn, ing_map, eco_map) -> int:
+def _seed_dispersal_event(conn, ing_map, eco_map, routes: list[dict], flavors: list[dict]) -> int:
     rows = []
-    for i, route in enumerate(ROUTES, start=1):
+    for i, route in enumerate(routes, start=1):
         eid = make_id("EVT", 12, i)
-        ing_name = ROUTE_INGREDIENT_MAP[route["name"]]
+        ing_name = route.get("ingredient_name") or route.get("ingredientName") or ROUTE_INGREDIENT_MAP.get(route["name"])
+        if not ing_name:
+            raise KeyError(f"Route '{route['name']}' 缺少 ingredient_name，且无默认映射。")
         ing_id = ing_map.get(ing_name)
         path = route["path"]
         from_lon, from_lat = path[0]
         to_lon, to_lat = path[-1]
-        from_eco = _nearest_eco_name(from_lon, from_lat, eco_map)
-        to_eco = _nearest_eco_name(to_lon, to_lat, eco_map)
+        from_eco = _nearest_eco_name(from_lon, from_lat, eco_map, flavors)
+        to_eco = _nearest_eco_name(to_lon, to_lat, eco_map, flavors)
         wkt_pts = ",".join(f"{x} {y}" for x, y in path)
         wkt = f"LINESTRING({wkt_pts})"
-        rows.append((eid, ing_id, from_eco, to_eco, wkt))
+        rows.append((
+            eid, route["name"], route["type"], route["color"], i,
+            ing_id, from_eco, to_eco, wkt,
+        ))
     with conn.cursor() as cur:
         psycopg2.extras.execute_batch(
             cur,
             "INSERT INTO dispersal_event "
-            "(event_id, ingredient_id, from_eco_name, to_eco_name, route_geom) "
-            "VALUES (%s, %s, %s, %s, ST_GeomFromText(%s, 4326)) "
+            "(event_id, route_name, route_type, route_color, display_order, "
+            " ingredient_id, from_eco_name, to_eco_name, route_geom) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, ST_GeomFromText(%s, 4326)) "
             "ON CONFLICT DO NOTHING",
             rows,
         )
     return len(rows)
 
 
-def _seed_chapter(conn) -> int:
+def _seed_chapter(conn, chapters: list[dict]) -> int:
     rows = []
-    for c in CHAPTERS:
+    for c in chapters:
         rows.append((
             c["id"], c["title"], c["date"], c["body"],
             c["cite"], c["source"], c["routeName"],
@@ -338,17 +398,39 @@ def _seed_chapter(conn) -> int:
     return len(rows)
 
 
+def _seed_data_source(conn, data_sources: list[dict]) -> int:
+    rows = []
+    for i, ds in enumerate(data_sources, start=1):
+        rows.append((i, ds["name"], ds["desc"], ds["color"], ds["url"]))
+    with conn.cursor() as cur:
+        psycopg2.extras.execute_batch(
+            cur,
+            "INSERT INTO data_source "
+            "(source_id, name, description, color_hex, url) "
+            "VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+            rows,
+        )
+    return len(rows)
+
+
 # ============================================================================
 # 主入口
 # ============================================================================
-def seed_all(conn) -> dict:
+def seed_all(conn, bundle: DataBundle | None = None) -> dict:
+    bundle = bundle or load_app_data_bundle()
+    flavors = bundle["flavors"]
+    routes = bundle["routes"]
+    chapters = bundle["chapters"]
+    data_sources = bundle["data_sources"]
+
     eco_map = _seed_eco_geo_unit(conn)
-    ing_map = _seed_ingredient(conn)
-    n_ing_origin = _seed_ingredient_origin(conn, eco_map, ing_map)
-    gid_map = _seed_flavor_genotype(conn, eco_map)
-    n_recipe = _seed_recipe_link(conn, gid_map, ing_map)
-    n_disp = _seed_dispersal_event(conn, ing_map, eco_map)
-    n_chap = _seed_chapter(conn)
+    ing_map = _seed_ingredient(conn, flavors, routes)
+    n_ing_origin = _seed_ingredient_origin(conn, eco_map, ing_map, flavors)
+    gid_map = _seed_flavor_genotype(conn, eco_map, flavors)
+    n_recipe = _seed_recipe_link(conn, gid_map, ing_map, flavors)
+    n_disp = _seed_dispersal_event(conn, ing_map, eco_map, routes, flavors)
+    n_chap = _seed_chapter(conn, chapters)
+    n_sources = _seed_data_source(conn, data_sources)
     conn.commit()
     return {
         "eco_geo_unit": _count(conn, "eco_geo_unit"),
@@ -359,6 +441,7 @@ def seed_all(conn) -> dict:
         "dispersal_event": n_disp,
         "genotype_lineage": 0,
         "chapter": n_chap,
+        "data_source": n_sources,
     }
 
 

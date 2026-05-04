@@ -19,6 +19,11 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 - Ignore `backend/main.py`'s docstring command using port 8000; `backend/config.py`, scripts, and Vite proxy all use 8001.
 - `.claude/settings.local.json` also contains stale 8000 permission examples; do not copy them into new docs or commands.
 
+## Development artifacts
+
+- Save development screenshots in `dev/screenshots/`; do not leave generated PNGs in the repo root.
+- Playwright validation screenshots and map UI review captures should use `dev/screenshots/` as the default output folder.
+
 ## Architecture traps
 
 - Dev is three-process when fully running: FastAPI 8001 from `start.ps1`/`start.sh`, plus `npm run dev` launching Express 3001 and Vite 5173.

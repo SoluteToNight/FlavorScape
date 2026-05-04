@@ -28,6 +28,7 @@ EXPECTED_COUNTS = {
     "dispersal_event":   (5, 5),
     "genotype_lineage":  (0, 0),
     "chapter":           (5, 5),
+    "data_source":       (4, 4),
 }
 
 
