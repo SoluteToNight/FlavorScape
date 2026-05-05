@@ -1,59 +1,46 @@
 <template>
   <div class="map-page">
-    <div
-      class="map-scene flat-scene"
-      :class="{ active: activeScene === 'flat' }"
-      :style="{ opacity: flatSceneOpacity }"
-    >
-      <div ref="flatMapContainer" class="map-container" />
-      <div class="bubble-layer">
-        <button
-          v-for="item in projectedNodes"
-          :key="item.id"
-          type="button"
-          class="bubble-node"
-          :class="[item.mode, item.placement, item.kind, { selected: item.selected, hovered: item.hovered }]"
-          :style="{
-            transform: `translate3d(${item.x}px, ${item.y}px, 0)`,
-            zIndex: String(item.zIndex),
-            '--node-color': item.color,
-          }"
-          @mouseenter="hoverBubble(item.id)"
-          @mouseleave="hoverBubble(null)"
-          @focus="hoverBubble(item.id)"
-          @blur="hoverBubble(null)"
-          @click="selectBubbleNode(item)"
-        >
-          <span class="bubble-card">
-            <span class="bubble-thumb-wrap" :class="{ stacked: item.kind === 'cluster' }">
-              <template v-if="item.kind === 'cluster'">
-                <img
-                  v-for="(src, index) in item.bubbleImages"
-                  :key="`${item.id}-thumb-${index}`"
-                  class="bubble-thumb bubble-thumb-stack"
-                  :class="`stack-${index}`"
-                  :src="src"
-                  :alt="item.title"
-                />
-                <span class="bubble-count">{{ item.count }}</span>
-              </template>
-              <img v-else class="bubble-thumb" :src="item.bubbleImage" :alt="item.dish" />
-            </span>
-            <span class="bubble-copy">
-              <span class="bubble-city">{{ item.city }}</span>
-              <span class="bubble-title">{{ item.title }}</span>
-              <span class="bubble-desc">{{ item.description }}</span>
-            </span>
+    <div ref="mapContainer" class="map-container" />
+    <div v-if="!isGlobeMode" class="bubble-layer">
+      <button
+        v-for="item in projectedNodes"
+        :key="item.id"
+        type="button"
+        class="bubble-node"
+        :class="[item.mode, item.placement, item.kind, { selected: item.selected, hovered: item.hovered }]"
+        :style="{
+          transform: `translate3d(${item.x}px, ${item.y}px, 0)`,
+          zIndex: String(item.zIndex),
+          '--node-color': item.color,
+        }"
+        @mouseenter="hoverBubble(item.id)"
+        @mouseleave="hoverBubble(null)"
+        @focus="hoverBubble(item.id)"
+        @blur="hoverBubble(null)"
+        @click="selectBubbleNode(item)"
+      >
+        <span class="bubble-card">
+          <span class="bubble-thumb-wrap" :class="{ stacked: item.kind === 'cluster' }">
+            <template v-if="item.kind === 'cluster'">
+              <img
+                v-for="(src, index) in item.bubbleImages"
+                :key="`${item.id}-thumb-${index}`"
+                class="bubble-thumb bubble-thumb-stack"
+                :class="`stack-${index}`"
+                :src="src"
+                :alt="item.title"
+              />
+              <span class="bubble-count">{{ item.count }}</span>
+            </template>
+            <img v-else class="bubble-thumb" :src="item.bubbleImage" :alt="item.dish" />
           </span>
-        </button>
-      </div>
-    </div>
-    <div
-      class="map-scene globe-scene"
-      :class="{ active: activeScene === 'globe' }"
-      :style="{ opacity: globeSceneOpacity }"
-    >
-      <div ref="globeMapContainer" class="map-container" />
+          <span class="bubble-copy">
+            <span class="bubble-city">{{ item.city }}</span>
+            <span class="bubble-title">{{ item.title }}</span>
+            <span class="bubble-desc">{{ item.description }}</span>
+          </span>
+        </span>
+      </button>
     </div>
     <div class="map-vignette map-vignette-top" aria-hidden="true" />
     <div class="map-vignette map-vignette-bottom" aria-hidden="true" />
@@ -147,25 +134,20 @@ import { MapboxOverlay } from '@deck.gl/mapbox'
 import { PathLayer, ScatterplotLayer } from '@deck.gl/layers'
 import { TripsLayer } from '@deck.gl/geo-layers'
 
-const flatMapContainer = ref(null)
-const globeMapContainer = ref(null)
+const mapContainer = ref(null)
 const appStore = useAppStore()
 const tooltip = ref({ visible: false, x: 0, y: 0, text: '' })
 const rasterReady = ref(false)
 const devToolsOpen = ref(false)
 const projectedNodes = ref([])
 const hoveredBubbleId = ref(null)
-const activeScene = ref('flat')
-const flatSceneOpacity = ref(1)
-const globeSceneOpacity = ref(0)
+const isGlobeMode = ref(false)
 
 const L1_OPACITY_WEAK = 0.35
 const L1_OPACITY_STRONG = 0.85
 const INITIAL_MAP_CENTER = [100, 35]
 const GLOBE_ENTER_ZOOM = 2.2
 const GLOBE_EXIT_ZOOM = 2.8
-const GLOBE_BLEND_START_ZOOM = 2.95
-const GLOBE_BLEND_END_ZOOM = 2.05
 const POLAR_TILE_LIMIT = 85.051129
 const LOOP_LENGTH = 2200
 const ANIMATION_SPEED = 1.2
@@ -191,8 +173,8 @@ const layerVisibility = computed(() => ({
 const selectedNodeId = computed(() => appStore.selectedNode?.id ?? null)
 const selectedRouteName = computed(() => appStore.selectedRoute?.name ?? null)
 
-let flatScene = null
-let globeScene = null
+let map = null
+let deckOverlay = null
 let animId = null
 let currentTime = 0
 let flavors = []
@@ -200,9 +182,10 @@ let routes = []
 let projectFrame = 0
 let ignoreBackgroundClickUntil = 0
 let pitchBeforeGlobe = 36
-let cameraSyncFrame = 0
-let syncingCamera = false
-let sceneModeFrame = 0
+let needsMercatorPitchRestore = false
+let renderWorldCopiesEnabled = true
+let projectionModeFrame = 0
+let pendingPitchTarget = null
 
 const POLAR_CAPS_GEOJSON = {
   type: 'FeatureCollection',
@@ -261,6 +244,17 @@ const lightingEffect = new LightingEffect({
 
 const MAP_STYLE = {
   version: 8,
+  projection: {
+    type: [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      GLOBE_ENTER_ZOOM,
+      'vertical-perspective',
+      GLOBE_EXIT_ZOOM,
+      'mercator',
+    ],
+  },
   sky: {
     'sky-color': '#D9E7EC',
     'sky-horizon-blend': 0.12,
@@ -412,127 +406,61 @@ function buildLayers(time, flavorList, routeList, vis, activeNodeId, activeRoute
   return layers
 }
 
-function sceneList() {
-  return [flatScene, globeScene].filter(Boolean)
-}
-
-function getScene(kind) {
-  return kind === 'globe' ? globeScene : flatScene
-}
-
-function getActiveScene() {
-  return getScene(activeScene.value)
-}
-
 function getActiveMap() {
-  return getActiveScene()?.map ?? null
+  return map
 }
 
-function createMapStyle(kind) {
-  const style = JSON.parse(JSON.stringify(MAP_STYLE))
-  style.projection = { type: kind === 'globe' ? 'globe' : 'mercator' }
-  return style
-}
+function syncProjectionMode() {
+  if (!map) return
 
-function getCameraOptions(sourceMap, targetKind) {
-  const center = sourceMap.getCenter()
-  return {
-    center: [center.lng, center.lat],
-    zoom: sourceMap.getZoom(),
-    bearing: sourceMap.getBearing(),
-    pitch: targetKind === 'globe' ? 0 : pitchBeforeGlobe,
+  const zoom = map.getZoom()
+  const shouldBeFullGlobe = zoom <= GLOBE_ENTER_ZOOM
+  const shouldUseSingleWorld = zoom < GLOBE_EXIT_ZOOM
+  const nextWorldCopiesEnabled = !shouldUseSingleWorld
+
+  if (renderWorldCopiesEnabled !== nextWorldCopiesEnabled) {
+    renderWorldCopiesEnabled = nextWorldCopiesEnabled
+    map.setRenderWorldCopies(renderWorldCopiesEnabled)
   }
-}
 
-function syncCameraToScene(sourceScene, targetScene) {
-  if (!sourceScene?.map || !targetScene?.map) return
-
-  syncingCamera = true
-  try {
-    targetScene.map.jumpTo(getCameraOptions(sourceScene.map, targetScene.kind))
-  } finally {
-    syncingCamera = false
+  if (shouldBeFullGlobe && !isGlobeMode.value) {
+    pitchBeforeGlobe = map.getPitch()
+    needsMercatorPitchRestore = true
+    isGlobeMode.value = true
+    queueProjectionPitch(0)
+  } else if (!shouldBeFullGlobe && isGlobeMode.value) {
+    isGlobeMode.value = false
   }
+
+  if (zoom >= GLOBE_EXIT_ZOOM && needsMercatorPitchRestore) {
+    needsMercatorPitchRestore = false
+    queueProjectionPitch(pitchBeforeGlobe)
+  }
+
+  syncPolarCapsState()
+  scheduleProjectedNodesUpdate()
+  applyQueuedProjectionPitch()
 }
 
-function scheduleInactiveCameraSync() {
-  if (syncingCamera || cameraSyncFrame) return
-
-  cameraSyncFrame = requestAnimationFrame(() => {
-    cameraSyncFrame = 0
-    const sourceScene = getActiveScene()
-    const targetScene = sourceScene?.kind === 'globe' ? flatScene : globeScene
-    syncCameraToScene(sourceScene, targetScene)
+function scheduleProjectionModeSync() {
+  if (projectionModeFrame) return
+  projectionModeFrame = requestAnimationFrame(() => {
+    projectionModeFrame = 0
+    syncProjectionMode()
   })
 }
 
-function smoothStep(value) {
-  const t = Math.min(Math.max(value, 0), 1)
-  return t * t * (3 - 2 * t)
+function queueProjectionPitch(pitch) {
+  pendingPitchTarget = pitch
 }
 
-function updateSceneBlend(zoom) {
-  if (!flatScene?.loaded || !globeScene?.loaded) {
-    flatSceneOpacity.value = activeScene.value === 'flat' ? 1 : 0
-    globeSceneOpacity.value = activeScene.value === 'globe' ? 1 : 0
-    return
-  }
+function applyQueuedProjectionPitch() {
+  if (!map || pendingPitchTarget === null || map.isMoving()) return
 
-  const range = GLOBE_BLEND_START_ZOOM - GLOBE_BLEND_END_ZOOM
-  const globeWeight = smoothStep((GLOBE_BLEND_START_ZOOM - zoom) / range)
-  globeSceneOpacity.value = Number(globeWeight.toFixed(3))
-  flatSceneOpacity.value = Number((1 - globeWeight).toFixed(3))
-}
-
-function checkSceneMode() {
-  sceneModeFrame = 0
-
-  const scene = getActiveScene()
-  if (!scene?.map) return
-
-  const zoom = scene.map.getZoom()
-  updateSceneBlend(zoom)
-
-  if (scene.kind === 'flat' && zoom <= GLOBE_ENTER_ZOOM) {
-    activateScene('globe')
-  } else if (scene.kind === 'globe' && zoom >= GLOBE_EXIT_ZOOM) {
-    activateScene('flat')
-  }
-}
-
-function scheduleSceneModeCheck() {
-  if (sceneModeFrame) return
-  sceneModeFrame = requestAnimationFrame(checkSceneMode)
-}
-
-function activateScene(targetKind) {
-  if (targetKind === activeScene.value) return
-
-  const fromScene = getActiveScene()
-  const targetScene = getScene(targetKind)
-  if (!fromScene?.map || !targetScene?.map || !targetScene.loaded) return
-
-  if (fromScene.kind === 'flat') {
-    pitchBeforeGlobe = fromScene.map.getPitch()
-  }
-
-  syncCameraToScene(fromScene, targetScene)
-  activeScene.value = targetKind
-  tooltip.value = { ...tooltip.value, visible: false }
-  updateSceneBlend(targetScene.map.getZoom())
-  syncCameraToScene(targetScene, targetKind === 'globe' ? flatScene : globeScene)
-  scheduleProjectedNodesUpdate()
-}
-
-function handleSceneCameraChange(scene) {
-  if (syncingCamera || scene.kind !== activeScene.value) return
-
-  scheduleInactiveCameraSync()
-  updateSceneBlend(scene.map.getZoom())
-  scheduleSceneModeCheck()
-  if (scene.kind === 'flat') {
-    scheduleProjectedNodesUpdate()
-  }
+  const pitch = pendingPitchTarget
+  pendingPitchTarget = null
+  if (Math.abs(map.getPitch() - pitch) < 0.25) return
+  map.easeTo({ pitch, duration: 420, essential: true })
 }
 
 function getClusterDistance(zoom) {
@@ -555,9 +483,8 @@ function getBubbleMode(flavor, zoom) {
 }
 
 function isPointVisible(point) {
-  const flatMap = flatScene?.map
-  if (!flatMap) return false
-  const { width, height } = flatMap.getContainer().getBoundingClientRect()
+  if (!map) return false
+  const { width, height } = map.getContainer().getBoundingClientRect()
   const pad = 120
   return point.x > -pad && point.x < width + pad && point.y > -pad && point.y < height + pad
 }
@@ -665,18 +592,16 @@ function createClusterBubble(members) {
 }
 
 function updateProjectedNodes() {
-  const flatMap = flatScene?.map
-  const flatSceneVisible = flatSceneOpacity.value > 0.02
-  if (!flatMap || !flatSceneVisible || !layerVisibility.value.L3) {
+  if (!map || isGlobeMode.value || !layerVisibility.value.L3) {
     projectedNodes.value = []
     return
   }
 
-  const zoom = flatMap.getZoom()
+  const zoom = map.getZoom()
   const baseNodes = flavors
     .map((flavor, index) => {
       flavor.__bubbleIndex = index
-      const point = flatMap.project(flavor.coordinates)
+      const point = map.project(flavor.coordinates)
       if (!isPointVisible(point)) return null
       return {
         id: flavor.id,
@@ -772,26 +697,25 @@ function selectBubbleNode(item) {
 }
 
 function redrawDeck() {
-  sceneList().forEach(scene => {
-    scene.deckOverlay?.setProps({
-      layers: buildLayers(
-        currentTime,
-        flavors,
-        routes,
-        layerVisibility.value,
-        selectedNodeId.value,
-        selectedRouteName.value,
-      ),
-    })
+  deckOverlay?.setProps({
+    layers: buildLayers(
+      currentTime,
+      flavors,
+      routes,
+      layerVisibility.value,
+      selectedNodeId.value,
+      selectedRouteName.value,
+    ),
   })
 }
 
 function setPolarCapsVisibility(visible) {
-  setMapLayerVisibility('polar-caps', visible, globeScene)
+  setMapLayerVisibility('polar-caps', visible)
 }
 
 function syncPolarCapsState() {
-  setPolarCapsVisibility(layerVisibility.value.L0)
+  if (!map) return
+  setPolarCapsVisibility(map.getZoom() < GLOBE_EXIT_ZOOM && layerVisibility.value.L0)
 }
 
 function startAnimation() {
@@ -804,8 +728,7 @@ function startAnimation() {
   frame()
 }
 
-async function addVectorLayers(scene) {
-  const sceneMap = scene.map
+async function addVectorLayers() {
   const physLayers = [
     { id: 'coastline', url: '/tiles/vector/coastline', type: 'line', paint: { 'line-color': '#8A7560', 'line-width': 0.6, 'line-opacity': 0.65 } },
     { id: 'rivers', url: '/tiles/vector/rivers', type: 'line', paint: { 'line-color': '#5BA0B8', 'line-width': 0.4, 'line-opacity': 0.6 } },
@@ -813,16 +736,16 @@ async function addVectorLayers(scene) {
 
   for (const layer of physLayers) {
     try {
-      sceneMap.addSource(layer.id, { type: 'geojson', data: layer.url })
-      sceneMap.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: layer.paint })
+      map.addSource(layer.id, { type: 'geojson', data: layer.url })
+      map.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: layer.paint })
     } catch (err) {
       console.warn(`Vector layer [${layer.id}] skipped:`, err.message)
     }
   }
 
   try {
-    sceneMap.addSource('ecoregions', { type: 'geojson', data: '/tiles/vector/ecoregions' })
-    sceneMap.addLayer({
+    map.addSource('ecoregions', { type: 'geojson', data: '/tiles/vector/ecoregions' })
+    map.addLayer({
       id: 'ecoregions',
       type: 'line',
       source: 'ecoregions',
@@ -832,31 +755,25 @@ async function addVectorLayers(scene) {
     console.warn('ecoregions skipped:', err.message)
   }
 
-  sceneMap.on('click', 'ecoregions', e => {
-    if (scene.kind !== activeScene.value) return
+  map.on('click', 'ecoregions', e => {
     const props = e.features?.[0]?.properties
     if (props) {
       consumeMapClick()
       appStore.selectEcozone(props)
     }
   })
-  sceneMap.on('mouseenter', 'ecoregions', () => {
-    if (scene.kind === activeScene.value) {
-      sceneMap.getCanvas().style.cursor = 'pointer'
-    }
-  })
-  sceneMap.on('mouseleave', 'ecoregions', () => { sceneMap.getCanvas().style.cursor = '' })
+  map.on('mouseenter', 'ecoregions', () => { map.getCanvas().style.cursor = 'pointer' })
+  map.on('mouseleave', 'ecoregions', () => { map.getCanvas().style.cursor = '' })
 }
 
-function addPolarCapLayer(scene) {
-  const sceneMap = scene.map
+function addPolarCapLayer() {
   try {
-    sceneMap.addSource('polar-caps', { type: 'geojson', data: POLAR_CAPS_GEOJSON })
-    sceneMap.addLayer({
+    map.addSource('polar-caps', { type: 'geojson', data: POLAR_CAPS_GEOJSON })
+    map.addLayer({
       id: 'polar-caps',
       type: 'fill',
       source: 'polar-caps',
-      layout: { visibility: layerVisibility.value.L0 ? 'visible' : 'none' },
+      layout: { visibility: 'none' },
       paint: {
         'fill-color': [
           'match',
@@ -867,85 +784,20 @@ function addPolarCapLayer(scene) {
           '#F4F1EA',
           '#D9E7EC',
         ],
-        'fill-opacity': 1,
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          GLOBE_ENTER_ZOOM,
+          1,
+          GLOBE_EXIT_ZOOM,
+          0,
+        ],
       },
     })
   } catch (err) {
     console.warn('polar caps skipped:', err.message)
   }
-}
-
-function createMapScene(kind, container) {
-  const scene = {
-    kind,
-    map: new maplibregl.Map({
-      container,
-      style: createMapStyle(kind),
-      center: INITIAL_MAP_CENTER,
-      zoom: 3.5,
-      pitch: kind === 'globe' ? 0 : 36,
-      bearing: -8,
-      antialias: true,
-      attributionControl: false,
-    }),
-    deckOverlay: null,
-    loaded: false,
-  }
-
-  scene.map.setRenderWorldCopies(kind === 'flat')
-  scene.map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-  scene.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
-
-  scene.map.on('load', async () => {
-    scene.loaded = true
-    rasterReady.value = true
-
-    scene.deckOverlay = new MapboxOverlay({
-      interleaved: true,
-      effects: [lightingEffect],
-      layers: buildLayers(0, flavors, routes, layerVisibility.value, selectedNodeId.value, selectedRouteName.value),
-      getCursor: ({ isHovering }) => (isHovering ? 'pointer' : 'grab'),
-    })
-
-    scene.map.addControl(scene.deckOverlay)
-    if (kind === 'globe') {
-      addPolarCapLayer(scene)
-    }
-    await addVectorLayers(scene)
-    syncBaseLayerState()
-    syncEcoregionState()
-    redrawDeck()
-
-    if (kind === 'globe' && flatScene?.map) {
-      syncCameraToScene(flatScene, scene)
-    }
-
-    if (kind === 'flat') {
-      updateProjectedNodes()
-    }
-
-    updateSceneBlend(scene.map.getZoom())
-    scheduleSceneModeCheck()
-  })
-
-  scene.map.on('move', () => handleSceneCameraChange(scene))
-  scene.map.on('zoom', () => handleSceneCameraChange(scene))
-  scene.map.on('rotate', () => handleSceneCameraChange(scene))
-  scene.map.on('pitch', () => handleSceneCameraChange(scene))
-  scene.map.on('zoomend', scheduleSceneModeCheck)
-  scene.map.on('moveend', scheduleSceneModeCheck)
-  scene.map.on('resize', () => {
-    if (kind === 'flat') scheduleProjectedNodesUpdate()
-  })
-  scene.map.on('render', () => {
-    if (kind === 'flat') updateProjectedNodes()
-  })
-  scene.map.on('click', () => {
-    if (kind !== activeScene.value) return
-    handleMapBackgroundClick()
-  })
-
-  return scene
 }
 
 onMounted(async () => {
@@ -963,45 +815,76 @@ onMounted(async () => {
       rasterReady.value = false
     })
 
-  flatScene = createMapScene('flat', flatMapContainer.value)
-  globeScene = createMapScene('globe', globeMapContainer.value)
-  startAnimation()
+  map = new maplibregl.Map({
+    container: mapContainer.value,
+    style: MAP_STYLE,
+    center: INITIAL_MAP_CENTER,
+    zoom: 3.5,
+    pitch: 36,
+    bearing: -8,
+    antialias: true,
+    attributionControl: false,
+  })
+
+  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+
+  map.on('load', async () => {
+    rasterReady.value = true
+
+    deckOverlay = new MapboxOverlay({
+      interleaved: true,
+      effects: [lightingEffect],
+      layers: buildLayers(0, flavors, routes, layerVisibility.value, selectedNodeId.value, selectedRouteName.value),
+      getCursor: ({ isHovering }) => (isHovering ? 'pointer' : 'grab'),
+    })
+
+    map.addControl(deckOverlay)
+    startAnimation()
+    addPolarCapLayer()
+    await addVectorLayers()
+    syncBaseLayerState()
+    syncEcoregionState()
+    syncProjectionMode()
+    updateProjectedNodes()
+  })
+
+  map.on('render', updateProjectedNodes)
+  map.on('zoom', scheduleProjectionModeSync)
+  map.on('zoomend', syncProjectionMode)
+  map.on('moveend', syncProjectionMode)
+  map.on('resize', updateProjectedNodes)
+  map.on('click', handleMapBackgroundClick)
   window.addEventListener('keydown', handleWindowKeydown)
 })
 
 onUnmounted(() => {
   cancelAnimationFrame(animId)
   cancelAnimationFrame(projectFrame)
-  cancelAnimationFrame(cameraSyncFrame)
-  cancelAnimationFrame(sceneModeFrame)
+  cancelAnimationFrame(projectionModeFrame)
   window.removeEventListener('keydown', handleWindowKeydown)
-  flatScene?.map.remove()
-  globeScene?.map.remove()
+  map?.remove()
 })
 
-function setL1Strength(opacity, scene = null) {
-  const targets = scene ? [scene] : sceneList()
+function setL1Strength(opacity) {
+  if (!map) return
 
-  targets.forEach(target => {
-    try {
-      target.map.setPaintProperty('ecoregions', 'line-opacity', opacity)
-      target.map.setPaintProperty('ecoregions', 'line-width', opacity > 0.5 ? 1.8 : 1.4)
-    } catch (_) {
-      // ecoregions layer may not be added yet
-    }
-  })
+  try {
+    map.setPaintProperty('ecoregions', 'line-opacity', opacity)
+    map.setPaintProperty('ecoregions', 'line-width', opacity > 0.5 ? 1.8 : 1.4)
+  } catch (_) {
+    // ecoregions layer may not be added yet
+  }
 }
 
-function setMapLayerVisibility(id, visible, scene = null) {
-  const targets = scene ? [scene] : sceneList()
+function setMapLayerVisibility(id, visible) {
+  if (!map) return
 
-  targets.forEach(target => {
-    try {
-      target.map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
-    } catch (_) {
-      // layer may not be added yet
-    }
-  })
+  try {
+    map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
+  } catch (_) {
+    // layer may not be added yet
+  }
 }
 
 function syncBaseLayerState() {
@@ -1035,7 +918,7 @@ watch(
       activeMap.flyTo({
         center: node.coordinates,
         zoom: 5.5,
-        pitch: activeScene.value === 'globe' ? 0 : 44,
+        pitch: isGlobeMode.value ? 0 : 44,
         duration: 1200,
         essential: true,
       })
@@ -1163,21 +1046,6 @@ const layerToggles = computed(() => [
   inset: 0;
   background: #c8dde8;
   overflow: hidden;
-}
-
-.map-scene {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 140ms linear;
-  will-change: opacity;
-}
-
-.map-scene.active {
-  z-index: 2;
-  pointer-events: auto;
 }
 
 .map-container {
