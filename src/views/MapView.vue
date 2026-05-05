@@ -1,46 +1,51 @@
 <template>
-  <div class="map-page">
-    <div ref="mapContainer" class="map-container" />
-    <div class="bubble-layer">
-      <button
-        v-for="item in projectedNodes"
-        :key="item.id"
-        type="button"
-        class="bubble-node"
-        :class="[item.mode, item.placement, item.kind, { selected: item.selected, hovered: item.hovered }]"
-        :style="{
-          transform: `translate3d(${item.x}px, ${item.y}px, 0)`,
-          zIndex: String(item.zIndex),
-          '--node-color': item.color,
-        }"
-        @mouseenter="hoverBubble(item.id)"
-        @mouseleave="hoverBubble(null)"
-        @focus="hoverBubble(item.id)"
-        @blur="hoverBubble(null)"
-        @click="selectBubbleNode(item)"
-      >
-        <span class="bubble-card">
-          <span class="bubble-thumb-wrap" :class="{ stacked: item.kind === 'cluster' }">
-            <template v-if="item.kind === 'cluster'">
-              <img
-                v-for="(src, index) in item.bubbleImages"
-                :key="`${item.id}-thumb-${index}`"
-                class="bubble-thumb bubble-thumb-stack"
-                :class="`stack-${index}`"
-                :src="src"
-                :alt="item.title"
-              />
-              <span class="bubble-count">{{ item.count }}</span>
-            </template>
-            <img v-else class="bubble-thumb" :src="item.bubbleImage" :alt="item.dish" />
+  <div class="map-page" :class="{ 'map-transitioning': isMapTransitioning }">
+    <div class="map-scene flat-scene" :class="{ active: activeScene === 'flat' }">
+      <div ref="flatMapContainer" class="map-container" />
+      <div class="bubble-layer">
+        <button
+          v-for="item in projectedNodes"
+          :key="item.id"
+          type="button"
+          class="bubble-node"
+          :class="[item.mode, item.placement, item.kind, { selected: item.selected, hovered: item.hovered }]"
+          :style="{
+            transform: `translate3d(${item.x}px, ${item.y}px, 0)`,
+            zIndex: String(item.zIndex),
+            '--node-color': item.color,
+          }"
+          @mouseenter="hoverBubble(item.id)"
+          @mouseleave="hoverBubble(null)"
+          @focus="hoverBubble(item.id)"
+          @blur="hoverBubble(null)"
+          @click="selectBubbleNode(item)"
+        >
+          <span class="bubble-card">
+            <span class="bubble-thumb-wrap" :class="{ stacked: item.kind === 'cluster' }">
+              <template v-if="item.kind === 'cluster'">
+                <img
+                  v-for="(src, index) in item.bubbleImages"
+                  :key="`${item.id}-thumb-${index}`"
+                  class="bubble-thumb bubble-thumb-stack"
+                  :class="`stack-${index}`"
+                  :src="src"
+                  :alt="item.title"
+                />
+                <span class="bubble-count">{{ item.count }}</span>
+              </template>
+              <img v-else class="bubble-thumb" :src="item.bubbleImage" :alt="item.dish" />
+            </span>
+            <span class="bubble-copy">
+              <span class="bubble-city">{{ item.city }}</span>
+              <span class="bubble-title">{{ item.title }}</span>
+              <span class="bubble-desc">{{ item.description }}</span>
+            </span>
           </span>
-          <span class="bubble-copy">
-            <span class="bubble-city">{{ item.city }}</span>
-            <span class="bubble-title">{{ item.title }}</span>
-            <span class="bubble-desc">{{ item.description }}</span>
-          </span>
-        </span>
-      </button>
+        </button>
+      </div>
+    </div>
+    <div class="map-scene globe-scene" :class="{ active: activeScene === 'globe' }">
+      <div ref="globeMapContainer" class="map-container" />
     </div>
     <div class="map-vignette map-vignette-top" aria-hidden="true" />
     <div class="map-vignette map-vignette-bottom" aria-hidden="true" />
@@ -134,16 +139,25 @@ import { MapboxOverlay } from '@deck.gl/mapbox'
 import { PathLayer, ScatterplotLayer } from '@deck.gl/layers'
 import { TripsLayer } from '@deck.gl/geo-layers'
 
-const mapContainer = ref(null)
+const flatMapContainer = ref(null)
+const globeMapContainer = ref(null)
 const appStore = useAppStore()
 const tooltip = ref({ visible: false, x: 0, y: 0, text: '' })
 const rasterReady = ref(false)
 const devToolsOpen = ref(false)
 const projectedNodes = ref([])
 const hoveredBubbleId = ref(null)
+const activeScene = ref('flat')
+const isMapTransitioning = ref(false)
+const transitionFromScene = ref(null)
 
 const L1_OPACITY_WEAK = 0.35
 const L1_OPACITY_STRONG = 0.85
+const INITIAL_MAP_CENTER = [100, 35]
+const GLOBE_ENTER_ZOOM = 2.2
+const GLOBE_EXIT_ZOOM = 2.8
+const SCENE_FADE_MS = 680
+const POLAR_TILE_LIMIT = 85.051129
 const LOOP_LENGTH = 2200
 const ANIMATION_SPEED = 1.2
 const ARC_BLEND_PARAMETERS = {
@@ -168,14 +182,54 @@ const layerVisibility = computed(() => ({
 const selectedNodeId = computed(() => appStore.selectedNode?.id ?? null)
 const selectedRouteName = computed(() => appStore.selectedRoute?.name ?? null)
 
-let map = null
-let deckOverlay = null
+let flatScene = null
+let globeScene = null
 let animId = null
 let currentTime = 0
 let flavors = []
 let routes = []
 let projectFrame = 0
 let ignoreBackgroundClickUntil = 0
+let pitchBeforeGlobe = 36
+let cameraSyncFrame = 0
+let syncingCamera = false
+let sceneModeFrame = 0
+let transitionTimer = 0
+let transitionToken = 0
+
+const POLAR_CAPS_GEOJSON = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      properties: { cap: 'north' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [-180, POLAR_TILE_LIMIT],
+          [180, POLAR_TILE_LIMIT],
+          [180, 90],
+          [-180, 90],
+          [-180, POLAR_TILE_LIMIT],
+        ]],
+      },
+    },
+    {
+      type: 'Feature',
+      properties: { cap: 'south' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [-180, -90],
+          [180, -90],
+          [180, -POLAR_TILE_LIMIT],
+          [-180, -POLAR_TILE_LIMIT],
+          [-180, -90],
+        ]],
+      },
+    },
+  ],
+}
 
 const ambientLight = new AmbientLight({
   color: [255, 248, 236],
@@ -200,6 +254,24 @@ const lightingEffect = new LightingEffect({
 
 const MAP_STYLE = {
   version: 8,
+  sky: {
+    'sky-color': '#D9E7EC',
+    'sky-horizon-blend': 0.12,
+    'horizon-color': '#F4F1EA',
+    'horizon-fog-blend': 0.18,
+    'fog-color': '#D9E7EC',
+    'atmosphere-blend': [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      0,
+      0.34,
+      GLOBE_ENTER_ZOOM,
+      0.24,
+      GLOBE_EXIT_ZOOM,
+      0,
+    ],
+  },
   sources: {
     'hyp-tiles': {
       type: 'raster',
@@ -333,6 +405,145 @@ function buildLayers(time, flavorList, routeList, vis, activeNodeId, activeRoute
   return layers
 }
 
+function sceneList() {
+  return [flatScene, globeScene].filter(Boolean)
+}
+
+function getScene(kind) {
+  return kind === 'globe' ? globeScene : flatScene
+}
+
+function getActiveScene() {
+  return getScene(activeScene.value)
+}
+
+function getActiveMap() {
+  return getActiveScene()?.map ?? null
+}
+
+function createMapStyle(kind) {
+  const style = JSON.parse(JSON.stringify(MAP_STYLE))
+  style.projection = { type: kind === 'globe' ? 'globe' : 'mercator' }
+  return style
+}
+
+function getCameraOptions(sourceMap, targetKind) {
+  const center = sourceMap.getCenter()
+  return {
+    center: [center.lng, center.lat],
+    zoom: sourceMap.getZoom(),
+    bearing: sourceMap.getBearing(),
+    pitch: targetKind === 'globe' ? 0 : pitchBeforeGlobe,
+  }
+}
+
+function syncCameraToScene(sourceScene, targetScene) {
+  if (!sourceScene?.map || !targetScene?.map) return
+
+  syncingCamera = true
+  try {
+    targetScene.map.jumpTo(getCameraOptions(sourceScene.map, targetScene.kind))
+  } finally {
+    syncingCamera = false
+  }
+}
+
+function scheduleInactiveCameraSync() {
+  if (syncingCamera || cameraSyncFrame) return
+
+  cameraSyncFrame = requestAnimationFrame(() => {
+    cameraSyncFrame = 0
+    const sourceScene = getActiveScene()
+    const targetScene = sourceScene?.kind === 'globe' ? flatScene : globeScene
+    syncCameraToScene(sourceScene, targetScene)
+  })
+}
+
+function setSceneInteractionEnabled(enabled) {
+  sceneList().forEach(scene => {
+    const controls = [
+      scene.map.dragPan,
+      scene.map.scrollZoom,
+      scene.map.boxZoom,
+      scene.map.dragRotate,
+      scene.map.keyboard,
+      scene.map.doubleClickZoom,
+      scene.map.touchZoomRotate,
+    ]
+
+    controls.forEach(control => {
+      try {
+        enabled ? control.enable() : control.disable()
+      } catch (_) {
+        // Some controls are optional across MapLibre versions.
+      }
+    })
+  })
+}
+
+function checkSceneMode() {
+  sceneModeFrame = 0
+  if (isMapTransitioning.value) return
+
+  const scene = getActiveScene()
+  if (!scene?.map) return
+
+  const zoom = scene.map.getZoom()
+  if (scene.kind === 'flat' && zoom <= GLOBE_ENTER_ZOOM) {
+    transitionToScene('globe')
+  } else if (scene.kind === 'globe' && zoom >= GLOBE_EXIT_ZOOM) {
+    transitionToScene('flat')
+  }
+}
+
+function scheduleSceneModeCheck() {
+  if (sceneModeFrame) return
+  sceneModeFrame = requestAnimationFrame(checkSceneMode)
+}
+
+function transitionToScene(targetKind) {
+  if (targetKind === activeScene.value || isMapTransitioning.value) return
+
+  const fromScene = getActiveScene()
+  const targetScene = getScene(targetKind)
+  if (!fromScene?.map || !targetScene?.map || !targetScene.loaded) return
+
+  if (fromScene.kind === 'flat') {
+    pitchBeforeGlobe = fromScene.map.getPitch()
+  }
+
+  syncCameraToScene(fromScene, targetScene)
+  transitionToken += 1
+  const token = transitionToken
+  transitionFromScene.value = fromScene.kind
+  isMapTransitioning.value = true
+  activeScene.value = targetKind
+  tooltip.value = { ...tooltip.value, visible: false }
+  setSceneInteractionEnabled(false)
+  scheduleProjectedNodesUpdate()
+
+  window.clearTimeout(transitionTimer)
+  transitionTimer = window.setTimeout(() => {
+    if (token !== transitionToken) return
+
+    isMapTransitioning.value = false
+    transitionFromScene.value = null
+    setSceneInteractionEnabled(true)
+    syncCameraToScene(getActiveScene(), getActiveScene()?.kind === 'globe' ? flatScene : globeScene)
+    scheduleProjectedNodesUpdate()
+  }, SCENE_FADE_MS)
+}
+
+function handleSceneCameraChange(scene) {
+  if (syncingCamera || scene.kind !== activeScene.value) return
+
+  scheduleInactiveCameraSync()
+  scheduleSceneModeCheck()
+  if (scene.kind === 'flat') {
+    scheduleProjectedNodesUpdate()
+  }
+}
+
 function getClusterDistance(zoom) {
   if (zoom < 3.4) return 118
   if (zoom < 4.15) return 84
@@ -353,8 +564,9 @@ function getBubbleMode(flavor, zoom) {
 }
 
 function isPointVisible(point) {
-  if (!map) return false
-  const { width, height } = map.getContainer().getBoundingClientRect()
+  const flatMap = flatScene?.map
+  if (!flatMap) return false
+  const { width, height } = flatMap.getContainer().getBoundingClientRect()
   const pad = 120
   return point.x > -pad && point.x < width + pad && point.y > -pad && point.y < height + pad
 }
@@ -462,16 +674,18 @@ function createClusterBubble(members) {
 }
 
 function updateProjectedNodes() {
-  if (!map || !layerVisibility.value.L3) {
+  const flatMap = flatScene?.map
+  const flatSceneVisible = activeScene.value === 'flat' || transitionFromScene.value === 'flat'
+  if (!flatMap || !flatSceneVisible || !layerVisibility.value.L3) {
     projectedNodes.value = []
     return
   }
 
-  const zoom = map.getZoom()
+  const zoom = flatMap.getZoom()
   const baseNodes = flavors
     .map((flavor, index) => {
       flavor.__bubbleIndex = index
-      const point = map.project(flavor.coordinates)
+      const point = flatMap.project(flavor.coordinates)
       if (!isPointVisible(point)) return null
       return {
         id: flavor.id,
@@ -551,12 +765,13 @@ function handleWindowKeydown(event) {
 function selectBubbleNode(item) {
   consumeMapClick()
 
-  if (item.kind === 'cluster' && map && item.coordinates?.length) {
+  const activeMap = getActiveMap()
+  if (item.kind === 'cluster' && activeMap && item.coordinates?.length) {
     const bounds = item.coordinates.reduce(
       (acc, point) => acc.extend(point),
       new maplibregl.LngLatBounds(item.coordinates[0], item.coordinates[0]),
     )
-    map.fitBounds(bounds, { padding: 120, maxZoom: 5.25, duration: 900, essential: true })
+    activeMap.fitBounds(bounds, { padding: 120, maxZoom: 5.25, duration: 900, essential: true })
     return
   }
 
@@ -566,16 +781,26 @@ function selectBubbleNode(item) {
 }
 
 function redrawDeck() {
-  deckOverlay?.setProps({
-    layers: buildLayers(
-      currentTime,
-      flavors,
-      routes,
-      layerVisibility.value,
-      selectedNodeId.value,
-      selectedRouteName.value,
-    ),
+  sceneList().forEach(scene => {
+    scene.deckOverlay?.setProps({
+      layers: buildLayers(
+        currentTime,
+        flavors,
+        routes,
+        layerVisibility.value,
+        selectedNodeId.value,
+        selectedRouteName.value,
+      ),
+    })
   })
+}
+
+function setPolarCapsVisibility(visible) {
+  setMapLayerVisibility('polar-caps', visible, globeScene)
+}
+
+function syncPolarCapsState() {
+  setPolarCapsVisibility(layerVisibility.value.L0)
 }
 
 function startAnimation() {
@@ -588,7 +813,8 @@ function startAnimation() {
   frame()
 }
 
-async function addVectorLayers() {
+async function addVectorLayers(scene) {
+  const sceneMap = scene.map
   const physLayers = [
     { id: 'coastline', url: '/tiles/vector/coastline', type: 'line', paint: { 'line-color': '#8A7560', 'line-width': 0.6, 'line-opacity': 0.65 } },
     { id: 'rivers', url: '/tiles/vector/rivers', type: 'line', paint: { 'line-color': '#5BA0B8', 'line-width': 0.4, 'line-opacity': 0.6 } },
@@ -596,16 +822,16 @@ async function addVectorLayers() {
 
   for (const layer of physLayers) {
     try {
-      map.addSource(layer.id, { type: 'geojson', data: layer.url })
-      map.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: layer.paint })
+      sceneMap.addSource(layer.id, { type: 'geojson', data: layer.url })
+      sceneMap.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: layer.paint })
     } catch (err) {
       console.warn(`Vector layer [${layer.id}] skipped:`, err.message)
     }
   }
 
   try {
-    map.addSource('ecoregions', { type: 'geojson', data: '/tiles/vector/ecoregions' })
-    map.addLayer({
+    sceneMap.addSource('ecoregions', { type: 'geojson', data: '/tiles/vector/ecoregions' })
+    sceneMap.addLayer({
       id: 'ecoregions',
       type: 'line',
       source: 'ecoregions',
@@ -615,15 +841,119 @@ async function addVectorLayers() {
     console.warn('ecoregions skipped:', err.message)
   }
 
-  map.on('click', 'ecoregions', e => {
+  sceneMap.on('click', 'ecoregions', e => {
+    if (scene.kind !== activeScene.value || isMapTransitioning.value) return
     const props = e.features?.[0]?.properties
     if (props) {
       consumeMapClick()
       appStore.selectEcozone(props)
     }
   })
-  map.on('mouseenter', 'ecoregions', () => { map.getCanvas().style.cursor = 'pointer' })
-  map.on('mouseleave', 'ecoregions', () => { map.getCanvas().style.cursor = '' })
+  sceneMap.on('mouseenter', 'ecoregions', () => {
+    if (scene.kind === activeScene.value && !isMapTransitioning.value) {
+      sceneMap.getCanvas().style.cursor = 'pointer'
+    }
+  })
+  sceneMap.on('mouseleave', 'ecoregions', () => { sceneMap.getCanvas().style.cursor = '' })
+}
+
+function addPolarCapLayer(scene) {
+  const sceneMap = scene.map
+  try {
+    sceneMap.addSource('polar-caps', { type: 'geojson', data: POLAR_CAPS_GEOJSON })
+    sceneMap.addLayer({
+      id: 'polar-caps',
+      type: 'fill',
+      source: 'polar-caps',
+      layout: { visibility: layerVisibility.value.L0 ? 'visible' : 'none' },
+      paint: {
+        'fill-color': [
+          'match',
+          ['get', 'cap'],
+          'north',
+          '#C8DDE8',
+          'south',
+          '#F4F1EA',
+          '#D9E7EC',
+        ],
+        'fill-opacity': 1,
+      },
+    })
+  } catch (err) {
+    console.warn('polar caps skipped:', err.message)
+  }
+}
+
+function createMapScene(kind, container) {
+  const scene = {
+    kind,
+    map: new maplibregl.Map({
+      container,
+      style: createMapStyle(kind),
+      center: INITIAL_MAP_CENTER,
+      zoom: 3.5,
+      pitch: kind === 'globe' ? 0 : 36,
+      bearing: -8,
+      antialias: true,
+      attributionControl: false,
+    }),
+    deckOverlay: null,
+    loaded: false,
+  }
+
+  scene.map.setRenderWorldCopies(kind === 'flat')
+  scene.map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
+  scene.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+
+  scene.map.on('load', async () => {
+    scene.loaded = true
+    rasterReady.value = true
+
+    scene.deckOverlay = new MapboxOverlay({
+      interleaved: true,
+      effects: [lightingEffect],
+      layers: buildLayers(0, flavors, routes, layerVisibility.value, selectedNodeId.value, selectedRouteName.value),
+      getCursor: ({ isHovering }) => (isHovering ? 'pointer' : 'grab'),
+    })
+
+    scene.map.addControl(scene.deckOverlay)
+    if (kind === 'globe') {
+      addPolarCapLayer(scene)
+    }
+    await addVectorLayers(scene)
+    syncBaseLayerState()
+    syncEcoregionState()
+    redrawDeck()
+
+    if (kind === 'globe' && flatScene?.map) {
+      syncCameraToScene(flatScene, scene)
+    }
+
+    if (kind === 'flat') {
+      updateProjectedNodes()
+    }
+
+    scheduleSceneModeCheck()
+  })
+
+  scene.map.on('move', () => handleSceneCameraChange(scene))
+  scene.map.on('zoom', () => handleSceneCameraChange(scene))
+  scene.map.on('rotate', () => handleSceneCameraChange(scene))
+  scene.map.on('pitch', () => handleSceneCameraChange(scene))
+  scene.map.on('zoomend', scheduleSceneModeCheck)
+  scene.map.on('moveend', scheduleSceneModeCheck)
+  scene.map.on('resize', () => {
+    if (kind === 'flat') scheduleProjectedNodesUpdate()
+  })
+  scene.map.on('render', () => {
+    if (kind === 'flat') updateProjectedNodes()
+  })
+  scene.map.on('click', () => {
+    if (kind !== activeScene.value || isMapTransitioning.value) return
+    handleMapBackgroundClick()
+  })
+
+  return scene
 }
 
 onMounted(async () => {
@@ -641,70 +971,46 @@ onMounted(async () => {
       rasterReady.value = false
     })
 
-  map = new maplibregl.Map({
-    container: mapContainer.value,
-    style: MAP_STYLE,
-    center: [100, 35],
-    zoom: 3.5,
-    pitch: 36,
-    bearing: -8,
-    antialias: true,
-    attributionControl: false,
-  })
-
-  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
-
-  map.on('load', async () => {
-    rasterReady.value = true
-
-    deckOverlay = new MapboxOverlay({
-      interleaved: true,
-      effects: [lightingEffect],
-      layers: buildLayers(0, flavors, routes, layerVisibility.value, selectedNodeId.value, selectedRouteName.value),
-      getCursor: ({ isHovering }) => (isHovering ? 'pointer' : 'grab'),
-    })
-
-    map.addControl(deckOverlay)
-    startAnimation()
-    addVectorLayers()
-    syncBaseLayerState()
-    syncEcoregionState()
-    updateProjectedNodes()
-  })
-
-  map.on('render', updateProjectedNodes)
-  map.on('resize', updateProjectedNodes)
-  map.on('click', handleMapBackgroundClick)
+  flatScene = createMapScene('flat', flatMapContainer.value)
+  globeScene = createMapScene('globe', globeMapContainer.value)
+  startAnimation()
   window.addEventListener('keydown', handleWindowKeydown)
 })
 
 onUnmounted(() => {
   cancelAnimationFrame(animId)
   cancelAnimationFrame(projectFrame)
+  cancelAnimationFrame(cameraSyncFrame)
+  cancelAnimationFrame(sceneModeFrame)
+  window.clearTimeout(transitionTimer)
   window.removeEventListener('keydown', handleWindowKeydown)
-  map?.remove()
+  flatScene?.map.remove()
+  globeScene?.map.remove()
 })
 
-function setL1Strength(opacity) {
-  if (!map) return
+function setL1Strength(opacity, scene = null) {
+  const targets = scene ? [scene] : sceneList()
 
-  try {
-    map.setPaintProperty('ecoregions', 'line-opacity', opacity)
-    map.setPaintProperty('ecoregions', 'line-width', opacity > 0.5 ? 1.8 : 1.4)
-  } catch (_) {
-    // ecoregions layer may not be added yet
-  }
+  targets.forEach(target => {
+    try {
+      target.map.setPaintProperty('ecoregions', 'line-opacity', opacity)
+      target.map.setPaintProperty('ecoregions', 'line-width', opacity > 0.5 ? 1.8 : 1.4)
+    } catch (_) {
+      // ecoregions layer may not be added yet
+    }
+  })
 }
 
-function setMapLayerVisibility(id, visible) {
-  if (!map) return
+function setMapLayerVisibility(id, visible, scene = null) {
+  const targets = scene ? [scene] : sceneList()
 
-  try {
-    map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
-  } catch (_) {
-    // layer may not be added yet
-  }
+  targets.forEach(target => {
+    try {
+      target.map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
+    } catch (_) {
+      // layer may not be added yet
+    }
+  })
 }
 
 function syncBaseLayerState() {
@@ -713,6 +1019,7 @@ function syncBaseLayerState() {
   setMapLayerVisibility('hyp', showL0)
   setMapLayerVisibility('coastline', showL0)
   setMapLayerVisibility('rivers', showL0)
+  syncPolarCapsState()
 }
 
 function syncEcoregionState() {
@@ -731,16 +1038,24 @@ function toggleLayer(layer) {
 watch(
   () => [appStore.selectedNode, appStore.selectedRoute, appStore.selectedEcozone],
   ([node, route]) => {
-    if (node && map) {
-      map.flyTo({ center: node.coordinates, zoom: 5.5, pitch: 44, duration: 1200, essential: true })
+    const activeMap = getActiveMap()
+
+    if (node && activeMap) {
+      activeMap.flyTo({
+        center: node.coordinates,
+        zoom: 5.5,
+        pitch: activeScene.value === 'globe' ? 0 : 44,
+        duration: 1200,
+        essential: true,
+      })
     }
 
-    if (route && map && route.path?.length) {
+    if (route && activeMap && route.path?.length) {
       const bounds = route.path.reduce(
         (b, point) => b.extend(point),
         new maplibregl.LngLatBounds(route.path[0], route.path[0]),
       )
-      map.fitBounds(bounds, { padding: 88, duration: 1200, essential: true })
+      activeMap.fitBounds(bounds, { padding: 88, duration: 1200, essential: true })
     }
 
     redrawDeck()
@@ -859,11 +1174,32 @@ const layerToggles = computed(() => [
   overflow: hidden;
 }
 
+.map-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 680ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
+}
+
+.map-scene.active {
+  z-index: 2;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.map-transitioning .map-scene {
+  pointer-events: none;
+}
+
 .map-container {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  background: #d9e7ec;
 }
 
 .bubble-layer {
