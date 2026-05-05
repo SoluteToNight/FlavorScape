@@ -1,6 +1,10 @@
 <template>
-  <div class="map-page" :class="{ 'map-transitioning': isMapTransitioning }">
-    <div class="map-scene flat-scene" :class="{ active: activeScene === 'flat' }">
+  <div class="map-page">
+    <div
+      class="map-scene flat-scene"
+      :class="{ active: activeScene === 'flat' }"
+      :style="{ opacity: flatSceneOpacity }"
+    >
       <div ref="flatMapContainer" class="map-container" />
       <div class="bubble-layer">
         <button
@@ -44,7 +48,11 @@
         </button>
       </div>
     </div>
-    <div class="map-scene globe-scene" :class="{ active: activeScene === 'globe' }">
+    <div
+      class="map-scene globe-scene"
+      :class="{ active: activeScene === 'globe' }"
+      :style="{ opacity: globeSceneOpacity }"
+    >
       <div ref="globeMapContainer" class="map-container" />
     </div>
     <div class="map-vignette map-vignette-top" aria-hidden="true" />
@@ -148,15 +156,16 @@ const devToolsOpen = ref(false)
 const projectedNodes = ref([])
 const hoveredBubbleId = ref(null)
 const activeScene = ref('flat')
-const isMapTransitioning = ref(false)
-const transitionFromScene = ref(null)
+const flatSceneOpacity = ref(1)
+const globeSceneOpacity = ref(0)
 
 const L1_OPACITY_WEAK = 0.35
 const L1_OPACITY_STRONG = 0.85
 const INITIAL_MAP_CENTER = [100, 35]
 const GLOBE_ENTER_ZOOM = 2.2
 const GLOBE_EXIT_ZOOM = 2.8
-const SCENE_FADE_MS = 680
+const GLOBE_BLEND_START_ZOOM = 2.95
+const GLOBE_BLEND_END_ZOOM = 2.05
 const POLAR_TILE_LIMIT = 85.051129
 const LOOP_LENGTH = 2200
 const ANIMATION_SPEED = 1.2
@@ -194,8 +203,6 @@ let pitchBeforeGlobe = 36
 let cameraSyncFrame = 0
 let syncingCamera = false
 let sceneModeFrame = 0
-let transitionTimer = 0
-let transitionToken = 0
 
 const POLAR_CAPS_GEOJSON = {
   type: 'FeatureCollection',
@@ -459,40 +466,37 @@ function scheduleInactiveCameraSync() {
   })
 }
 
-function setSceneInteractionEnabled(enabled) {
-  sceneList().forEach(scene => {
-    const controls = [
-      scene.map.dragPan,
-      scene.map.scrollZoom,
-      scene.map.boxZoom,
-      scene.map.dragRotate,
-      scene.map.keyboard,
-      scene.map.doubleClickZoom,
-      scene.map.touchZoomRotate,
-    ]
+function smoothStep(value) {
+  const t = Math.min(Math.max(value, 0), 1)
+  return t * t * (3 - 2 * t)
+}
 
-    controls.forEach(control => {
-      try {
-        enabled ? control.enable() : control.disable()
-      } catch (_) {
-        // Some controls are optional across MapLibre versions.
-      }
-    })
-  })
+function updateSceneBlend(zoom) {
+  if (!flatScene?.loaded || !globeScene?.loaded) {
+    flatSceneOpacity.value = activeScene.value === 'flat' ? 1 : 0
+    globeSceneOpacity.value = activeScene.value === 'globe' ? 1 : 0
+    return
+  }
+
+  const range = GLOBE_BLEND_START_ZOOM - GLOBE_BLEND_END_ZOOM
+  const globeWeight = smoothStep((GLOBE_BLEND_START_ZOOM - zoom) / range)
+  globeSceneOpacity.value = Number(globeWeight.toFixed(3))
+  flatSceneOpacity.value = Number((1 - globeWeight).toFixed(3))
 }
 
 function checkSceneMode() {
   sceneModeFrame = 0
-  if (isMapTransitioning.value) return
 
   const scene = getActiveScene()
   if (!scene?.map) return
 
   const zoom = scene.map.getZoom()
+  updateSceneBlend(zoom)
+
   if (scene.kind === 'flat' && zoom <= GLOBE_ENTER_ZOOM) {
-    transitionToScene('globe')
+    activateScene('globe')
   } else if (scene.kind === 'globe' && zoom >= GLOBE_EXIT_ZOOM) {
-    transitionToScene('flat')
+    activateScene('flat')
   }
 }
 
@@ -501,8 +505,8 @@ function scheduleSceneModeCheck() {
   sceneModeFrame = requestAnimationFrame(checkSceneMode)
 }
 
-function transitionToScene(targetKind) {
-  if (targetKind === activeScene.value || isMapTransitioning.value) return
+function activateScene(targetKind) {
+  if (targetKind === activeScene.value) return
 
   const fromScene = getActiveScene()
   const targetScene = getScene(targetKind)
@@ -513,31 +517,18 @@ function transitionToScene(targetKind) {
   }
 
   syncCameraToScene(fromScene, targetScene)
-  transitionToken += 1
-  const token = transitionToken
-  transitionFromScene.value = fromScene.kind
-  isMapTransitioning.value = true
   activeScene.value = targetKind
   tooltip.value = { ...tooltip.value, visible: false }
-  setSceneInteractionEnabled(false)
+  updateSceneBlend(targetScene.map.getZoom())
+  syncCameraToScene(targetScene, targetKind === 'globe' ? flatScene : globeScene)
   scheduleProjectedNodesUpdate()
-
-  window.clearTimeout(transitionTimer)
-  transitionTimer = window.setTimeout(() => {
-    if (token !== transitionToken) return
-
-    isMapTransitioning.value = false
-    transitionFromScene.value = null
-    setSceneInteractionEnabled(true)
-    syncCameraToScene(getActiveScene(), getActiveScene()?.kind === 'globe' ? flatScene : globeScene)
-    scheduleProjectedNodesUpdate()
-  }, SCENE_FADE_MS)
 }
 
 function handleSceneCameraChange(scene) {
   if (syncingCamera || scene.kind !== activeScene.value) return
 
   scheduleInactiveCameraSync()
+  updateSceneBlend(scene.map.getZoom())
   scheduleSceneModeCheck()
   if (scene.kind === 'flat') {
     scheduleProjectedNodesUpdate()
@@ -675,7 +666,7 @@ function createClusterBubble(members) {
 
 function updateProjectedNodes() {
   const flatMap = flatScene?.map
-  const flatSceneVisible = activeScene.value === 'flat' || transitionFromScene.value === 'flat'
+  const flatSceneVisible = flatSceneOpacity.value > 0.02
   if (!flatMap || !flatSceneVisible || !layerVisibility.value.L3) {
     projectedNodes.value = []
     return
@@ -842,7 +833,7 @@ async function addVectorLayers(scene) {
   }
 
   sceneMap.on('click', 'ecoregions', e => {
-    if (scene.kind !== activeScene.value || isMapTransitioning.value) return
+    if (scene.kind !== activeScene.value) return
     const props = e.features?.[0]?.properties
     if (props) {
       consumeMapClick()
@@ -850,7 +841,7 @@ async function addVectorLayers(scene) {
     }
   })
   sceneMap.on('mouseenter', 'ecoregions', () => {
-    if (scene.kind === activeScene.value && !isMapTransitioning.value) {
+    if (scene.kind === activeScene.value) {
       sceneMap.getCanvas().style.cursor = 'pointer'
     }
   })
@@ -933,6 +924,7 @@ function createMapScene(kind, container) {
       updateProjectedNodes()
     }
 
+    updateSceneBlend(scene.map.getZoom())
     scheduleSceneModeCheck()
   })
 
@@ -949,7 +941,7 @@ function createMapScene(kind, container) {
     if (kind === 'flat') updateProjectedNodes()
   })
   scene.map.on('click', () => {
-    if (kind !== activeScene.value || isMapTransitioning.value) return
+    if (kind !== activeScene.value) return
     handleMapBackgroundClick()
   })
 
@@ -982,7 +974,6 @@ onUnmounted(() => {
   cancelAnimationFrame(projectFrame)
   cancelAnimationFrame(cameraSyncFrame)
   cancelAnimationFrame(sceneModeFrame)
-  window.clearTimeout(transitionTimer)
   window.removeEventListener('keydown', handleWindowKeydown)
   flatScene?.map.remove()
   globeScene?.map.remove()
@@ -1180,18 +1171,13 @@ const layerToggles = computed(() => [
   z-index: 1;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 680ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 140ms linear;
   will-change: opacity;
 }
 
 .map-scene.active {
   z-index: 2;
-  opacity: 1;
   pointer-events: auto;
-}
-
-.map-transitioning .map-scene {
-  pointer-events: none;
 }
 
 .map-container {
