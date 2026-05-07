@@ -104,6 +104,13 @@
           </button>
         </div>
 
+        <div class="debug-readout" aria-label="地图调试状态">
+          <div v-for="row in mapDebugRows" :key="row.label" class="debug-readout-row">
+            <span class="debug-readout-label">{{ row.label }}</span>
+            <span class="debug-readout-value">{{ row.value }}</span>
+          </div>
+        </div>
+
         <div class="toggle-hint">L2 仍由上下文触发；这里仅决定该层是否允许进入画面。</div>
         <div v-if="!rasterReady" class="loading-hint">
           <span class="loading-dot" />底图加载中…
@@ -142,13 +149,25 @@ const devToolsOpen = ref(false)
 const projectedNodes = ref([])
 const hoveredBubbleId = ref(null)
 const isGlobeMode = ref(false)
+const mapZoom = ref(3.5)
+const mapProjectionLabel = ref('mercator')
 
 const L1_OPACITY_WEAK = 0.35
 const L1_OPACITY_STRONG = 0.85
 const INITIAL_MAP_CENTER = [100, 35]
-const GLOBE_ENTER_ZOOM = 2.2
-const GLOBE_EXIT_ZOOM = 2.8
+const MORPH_CENTER_ZOOM = 3.0
+const MORPH_BAND_WIDTH = 0.8
+const PLANE_TO_GLOBE_START_ZOOM = 3.2
+const PLANE_TO_GLOBE_END_ZOOM = PLANE_TO_GLOBE_START_ZOOM - MORPH_BAND_WIDTH
+const GLOBE_TO_PLANE_START_ZOOM = MORPH_CENTER_ZOOM
+const GLOBE_TO_PLANE_END_ZOOM = MORPH_CENTER_ZOOM + MORPH_BAND_WIDTH
 const POLAR_TILE_LIMIT = 85.051129
+const RASTER_TILE_MAX_ZOOM = 8
+const RASTER_SOURCE_TILE_SIZE = 256
+const RASTER_PREFETCH_RING = 1
+const RASTER_PREFETCH_MAX_TILES = 120
+const RASTER_PREFETCH_MIN_INTERVAL = 160
+const RASTER_PREFETCH_CACHE_LIMIT = 2048
 const LOOP_LENGTH = 2200
 const ANIMATION_SPEED = 1.2
 const ARC_BLEND_PARAMETERS = {
@@ -172,6 +191,11 @@ const layerVisibility = computed(() => ({
 }))
 const selectedNodeId = computed(() => appStore.selectedNode?.id ?? null)
 const selectedRouteName = computed(() => appStore.selectedRoute?.name ?? null)
+const mapDebugRows = computed(() => [
+  { label: 'Zoom', value: mapZoom.value.toFixed(3) },
+  { label: 'Projection', value: mapProjectionLabel.value },
+  { label: 'Globe', value: isGlobeMode.value ? 'on' : 'off' },
+])
 
 let map = null
 let deckOverlay = null
@@ -186,6 +210,13 @@ let needsMercatorPitchRestore = false
 let renderWorldCopiesEnabled = true
 let projectionModeFrame = 0
 let pendingPitchTarget = null
+let morphProjectionEnabled = false
+let activeMorphDirection = null
+let appliedMorphDirection = null
+let rasterPrefetchFrame = 0
+let rasterPrefetchForce = false
+let lastRasterPrefetchAt = 0
+const rasterPrefetchCache = new Set()
 
 const POLAR_CAPS_GEOJSON = {
   type: 'FeatureCollection',
@@ -244,17 +275,7 @@ const lightingEffect = new LightingEffect({
 
 const MAP_STYLE = {
   version: 8,
-  projection: {
-    type: [
-      'interpolate',
-      ['linear'],
-      ['zoom'],
-      GLOBE_ENTER_ZOOM,
-      'vertical-perspective',
-      GLOBE_EXIT_ZOOM,
-      'mercator',
-    ],
-  },
+  projection: { type: 'mercator' },
   sky: {
     'sky-color': '#D9E7EC',
     'sky-horizon-blend': 0.12,
@@ -267,9 +288,9 @@ const MAP_STYLE = {
       ['zoom'],
       0,
       0.34,
-      GLOBE_ENTER_ZOOM,
+      PLANE_TO_GLOBE_END_ZOOM,
       0.24,
-      GLOBE_EXIT_ZOOM,
+      GLOBE_TO_PLANE_END_ZOOM,
       0,
     ],
   },
@@ -277,9 +298,9 @@ const MAP_STYLE = {
     'hyp-tiles': {
       type: 'raster',
       tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
-      tileSize: 256,
+      tileSize: RASTER_SOURCE_TILE_SIZE,
       minzoom: 0,
-      maxzoom: 8,
+      maxzoom: RASTER_TILE_MAX_ZOOM,
       attribution: '© Natural Earth',
     },
   },
@@ -297,6 +318,31 @@ const MAP_STYLE = {
       },
     },
   ],
+}
+
+const MORPH_PROJECTIONS = {
+  'plane-to-globe': {
+    type: [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      PLANE_TO_GLOBE_END_ZOOM,
+      'vertical-perspective',
+      PLANE_TO_GLOBE_START_ZOOM,
+      'mercator',
+    ],
+  },
+  'globe-to-plane': {
+    type: [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      GLOBE_TO_PLANE_START_ZOOM,
+      'vertical-perspective',
+      GLOBE_TO_PLANE_END_ZOOM,
+      'mercator',
+    ],
+  },
 }
 
 function hexToRgb(hex, a = 255) {
@@ -410,39 +456,131 @@ function getActiveMap() {
   return map
 }
 
+function updateMapDebugState() {
+  if (!map) return
+  mapZoom.value = map.getZoom()
+  const projection = map.getProjection?.()
+  mapProjectionLabel.value = Array.isArray(projection?.type) ? 'morph' : (projection?.type || 'mercator')
+}
+
+function enableMorphProjection(direction) {
+  if (!map) return
+  if (morphProjectionEnabled && appliedMorphDirection === direction) return
+
+  morphProjectionEnabled = true
+  appliedMorphDirection = direction
+  removeDeckOverlay()
+  map.setProjection(MORPH_PROJECTIONS[direction])
+  updateMapDebugState()
+}
+
+function enableGlobeProjection() {
+  if (!map) return
+  morphProjectionEnabled = false
+  appliedMorphDirection = null
+  map.setProjection({ type: 'globe' })
+  ensureDeckOverlay()
+  updateMapDebugState()
+}
+
+function enableMercatorProjection() {
+  if (!map) return
+  morphProjectionEnabled = false
+  appliedMorphDirection = null
+  map.setProjection({ type: 'mercator' })
+  ensureDeckOverlay()
+  updateMapDebugState()
+}
+
 function syncProjectionMode() {
   if (!map) return
+  updateMapDebugState()
 
   const zoom = map.getZoom()
-  const shouldBeFullGlobe = zoom <= GLOBE_ENTER_ZOOM
-  const shouldUseSingleWorld = zoom < GLOBE_EXIT_ZOOM
-  const nextWorldCopiesEnabled = !shouldUseSingleWorld
 
-  if (renderWorldCopiesEnabled !== nextWorldCopiesEnabled) {
-    renderWorldCopiesEnabled = nextWorldCopiesEnabled
-    map.setRenderWorldCopies(renderWorldCopiesEnabled)
+  if (activeMorphDirection === 'plane-to-globe') {
+    if (zoom <= PLANE_TO_GLOBE_END_ZOOM) {
+      enterGlobeMode(true)
+    } else if (zoom >= PLANE_TO_GLOBE_START_ZOOM) {
+      enterMercatorMode(false)
+    } else {
+      enterMorphMode('plane-to-globe')
+    }
+  } else if (activeMorphDirection === 'globe-to-plane') {
+    if (zoom >= GLOBE_TO_PLANE_END_ZOOM) {
+      enterMercatorMode(true)
+    } else if (zoom <= PLANE_TO_GLOBE_END_ZOOM) {
+      enterGlobeMode(false)
+    } else {
+      enterMorphMode('globe-to-plane')
+    }
+  } else if (isGlobeMode.value) {
+    if (zoom >= GLOBE_TO_PLANE_END_ZOOM) {
+      enterMercatorMode(true)
+    } else if (zoom > PLANE_TO_GLOBE_END_ZOOM) {
+      enterMorphMode('globe-to-plane')
+    } else {
+      enterGlobeMode(false)
+    }
+  } else if (zoom <= PLANE_TO_GLOBE_END_ZOOM) {
+    enterGlobeMode(true)
+  } else if (zoom < PLANE_TO_GLOBE_START_ZOOM) {
+    enterMorphMode('plane-to-globe')
+  } else {
+    enterMercatorMode(false)
   }
 
-  if (shouldBeFullGlobe && !isGlobeMode.value) {
+  syncWorldCopiesState()
+  syncPolarCapsState()
+  scheduleProjectedNodesUpdate()
+  scheduleRasterPrefetch()
+  applyQueuedProjectionPitch()
+  updateMapDebugState()
+}
+
+function enterMorphMode(direction) {
+  activeMorphDirection = direction
+  isGlobeMode.value = false
+  enableMorphProjection(direction)
+}
+
+function enterGlobeMode(capturePitch) {
+  activeMorphDirection = null
+
+  if (!isGlobeMode.value && capturePitch) {
     pitchBeforeGlobe = map.getPitch()
     needsMercatorPitchRestore = true
-    isGlobeMode.value = true
-    queueProjectionPitch(0)
-  } else if (!shouldBeFullGlobe && isGlobeMode.value) {
-    isGlobeMode.value = false
   }
 
-  if (zoom >= GLOBE_EXIT_ZOOM && needsMercatorPitchRestore) {
+  isGlobeMode.value = true
+  enableGlobeProjection()
+  queueProjectionPitch(0)
+}
+
+function enterMercatorMode(restorePitch) {
+  activeMorphDirection = null
+  isGlobeMode.value = false
+
+  if (restorePitch && needsMercatorPitchRestore) {
     needsMercatorPitchRestore = false
     queueProjectionPitch(pitchBeforeGlobe)
   }
 
-  syncPolarCapsState()
-  scheduleProjectedNodesUpdate()
-  applyQueuedProjectionPitch()
+  enableMercatorProjection()
+}
+
+function syncWorldCopiesState() {
+  if (!map) return
+
+  const nextWorldCopiesEnabled = !isGlobeMode.value
+
+  if (renderWorldCopiesEnabled === nextWorldCopiesEnabled) return
+  renderWorldCopiesEnabled = nextWorldCopiesEnabled
+  map.setRenderWorldCopies(renderWorldCopiesEnabled)
 }
 
 function scheduleProjectionModeSync() {
+  updateMapDebugState()
   if (projectionModeFrame) return
   projectionModeFrame = requestAnimationFrame(() => {
     projectionModeFrame = 0
@@ -461,6 +599,136 @@ function applyQueuedProjectionPitch() {
   pendingPitchTarget = null
   if (Math.abs(map.getPitch() - pitch) < 0.25) return
   map.easeTo({ pitch, duration: 420, essential: true })
+}
+
+function scheduleRasterPrefetch(force = false) {
+  if (!hasRasterTileSource() || !layerVisibility.value.L0) return
+  rasterPrefetchForce = rasterPrefetchForce || force
+  if (rasterPrefetchFrame) return
+
+  rasterPrefetchFrame = requestAnimationFrame(() => {
+    rasterPrefetchFrame = 0
+    const shouldForce = rasterPrefetchForce
+    rasterPrefetchForce = false
+
+    const now = performance.now()
+    if (!shouldForce && now - lastRasterPrefetchAt < RASTER_PREFETCH_MIN_INTERVAL) return
+
+    lastRasterPrefetchAt = now
+    prefetchRasterTileRing()
+  })
+}
+
+function hasRasterTileSource() {
+  try {
+    return Boolean(map?.getSource?.('hyp-tiles'))
+  } catch (_) {
+    return false
+  }
+}
+
+function prefetchRasterTileRing() {
+  const tiles = getPrefetchRasterTiles()
+
+  for (const { z, x, y, key } of tiles) {
+    if (rasterPrefetchCache.has(key)) continue
+
+    rasterPrefetchCache.add(key)
+    fetch(`/tiles/raster/${z}/${x}/${y}.png`, {
+      cache: 'force-cache',
+      credentials: 'same-origin',
+    }).catch(() => {})
+  }
+
+  trimRasterPrefetchCache()
+}
+
+function getPrefetchRasterTiles() {
+  if (!map) return []
+
+  const bounds = map.getBounds()
+  const z = getRasterPrefetchZoom()
+  const tilesPerAxis = 1 << z
+  const south = clamp(bounds.getSouth(), -POLAR_TILE_LIMIT, POLAR_TILE_LIMIT)
+  const north = clamp(bounds.getNorth(), -POLAR_TILE_LIMIT, POLAR_TILE_LIMIT)
+  const minY = clamp(latToTileY(north, z) - RASTER_PREFETCH_RING, 0, tilesPerAxis - 1)
+  const maxY = clamp(latToTileY(south, z) + RASTER_PREFETCH_RING, 0, tilesPerAxis - 1)
+  const xRange = getTileXRange(bounds.getWest(), bounds.getEast(), z, tilesPerAxis)
+  const tiles = []
+  const seen = new Set()
+
+  for (let rawX = xRange.min; rawX <= xRange.max; rawX++) {
+    const x = wrapTileX(rawX, tilesPerAxis)
+
+    for (let y = minY; y <= maxY; y++) {
+      const key = `${z}/${x}/${y}`
+      if (seen.has(key)) continue
+
+      seen.add(key)
+      tiles.push({ z, x, y, key })
+
+      if (tiles.length >= RASTER_PREFETCH_MAX_TILES) return tiles
+    }
+  }
+
+  return tiles
+}
+
+function getRasterPrefetchZoom() {
+  const sourceZoomOffset = Math.log2(512 / RASTER_SOURCE_TILE_SIZE)
+  return clamp(Math.round(map.getZoom() + sourceZoomOffset), 0, RASTER_TILE_MAX_ZOOM)
+}
+
+function getTileXRange(west, east, z, tilesPerAxis) {
+  let unwrappedEast = east
+
+  while (unwrappedEast < west) {
+    unwrappedEast += 360
+  }
+
+  if (unwrappedEast - west >= 360) {
+    return {
+      min: -RASTER_PREFETCH_RING,
+      max: tilesPerAxis - 1 + RASTER_PREFETCH_RING,
+    }
+  }
+
+  return {
+    min: lngToTileX(west, z) - RASTER_PREFETCH_RING,
+    max: lngToTileX(unwrappedEast, z) + RASTER_PREFETCH_RING,
+  }
+}
+
+function lngToTileX(lng, z) {
+  return Math.floor(((lng + 180) / 360) * (1 << z))
+}
+
+function latToTileY(lat, z) {
+  const latRad = clamp(lat, -POLAR_TILE_LIMIT, POLAR_TILE_LIMIT) * Math.PI / 180
+  return Math.floor(
+    (1 - Math.log(Math.tan(latRad) + (1 / Math.cos(latRad))) / Math.PI) / 2 * (1 << z),
+  )
+}
+
+function wrapTileX(x, tilesPerAxis) {
+  return ((x % tilesPerAxis) + tilesPerAxis) % tilesPerAxis
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value))
+}
+
+function trimRasterPrefetchCache() {
+  if (rasterPrefetchCache.size <= RASTER_PREFETCH_CACHE_LIMIT) return
+
+  const overflow = rasterPrefetchCache.size - RASTER_PREFETCH_CACHE_LIMIT
+  let removed = 0
+
+  for (const key of rasterPrefetchCache) {
+    rasterPrefetchCache.delete(key)
+    removed += 1
+    if (removed >= overflow) break
+  }
 }
 
 function getClusterDistance(zoom) {
@@ -709,13 +977,39 @@ function redrawDeck() {
   })
 }
 
+function ensureDeckOverlay() {
+  if (!map || deckOverlay || morphProjectionEnabled) return
+
+  deckOverlay = new MapboxOverlay({
+    interleaved: true,
+    effects: [lightingEffect],
+    layers: buildLayers(
+      currentTime,
+      flavors,
+      routes,
+      layerVisibility.value,
+      selectedNodeId.value,
+      selectedRouteName.value,
+    ),
+    getCursor: ({ isHovering }) => (isHovering ? 'pointer' : 'grab'),
+  })
+
+  map.addControl(deckOverlay)
+}
+
+function removeDeckOverlay() {
+  if (!map || !deckOverlay) return
+  map.removeControl(deckOverlay)
+  deckOverlay = null
+}
+
 function setPolarCapsVisibility(visible) {
   setMapLayerVisibility('polar-caps', visible)
 }
 
 function syncPolarCapsState() {
   if (!map) return
-  setPolarCapsVisibility(map.getZoom() < GLOBE_EXIT_ZOOM && layerVisibility.value.L0)
+  setPolarCapsVisibility((isGlobeMode.value || morphProjectionEnabled) && layerVisibility.value.L0)
 }
 
 function startAnimation() {
@@ -788,9 +1082,9 @@ function addPolarCapLayer() {
           'interpolate',
           ['linear'],
           ['zoom'],
-          GLOBE_ENTER_ZOOM,
+          PLANE_TO_GLOBE_END_ZOOM,
           1,
-          GLOBE_EXIT_ZOOM,
+          GLOBE_TO_PLANE_END_ZOOM,
           0,
         ],
       },
@@ -832,28 +1126,39 @@ onMounted(async () => {
   map.on('load', async () => {
     rasterReady.value = true
 
-    deckOverlay = new MapboxOverlay({
-      interleaved: true,
-      effects: [lightingEffect],
-      layers: buildLayers(0, flavors, routes, layerVisibility.value, selectedNodeId.value, selectedRouteName.value),
-      getCursor: ({ isHovering }) => (isHovering ? 'pointer' : 'grab'),
-    })
-
-    map.addControl(deckOverlay)
+    ensureDeckOverlay()
     startAnimation()
     addPolarCapLayer()
     await addVectorLayers()
     syncBaseLayerState()
     syncEcoregionState()
     syncProjectionMode()
+    updateMapDebugState()
     updateProjectedNodes()
+    scheduleRasterPrefetch(true)
   })
 
   map.on('render', updateProjectedNodes)
-  map.on('zoom', scheduleProjectionModeSync)
-  map.on('zoomend', syncProjectionMode)
-  map.on('moveend', syncProjectionMode)
-  map.on('resize', updateProjectedNodes)
+  map.on('zoom', () => {
+    scheduleProjectionModeSync()
+    scheduleRasterPrefetch()
+  })
+  map.on('move', () => {
+    updateMapDebugState()
+    scheduleRasterPrefetch()
+  })
+  map.on('zoomend', () => {
+    syncProjectionMode()
+    scheduleRasterPrefetch(true)
+  })
+  map.on('moveend', () => {
+    applyQueuedProjectionPitch()
+    scheduleRasterPrefetch(true)
+  })
+  map.on('resize', () => {
+    updateProjectedNodes()
+    scheduleRasterPrefetch(true)
+  })
   map.on('click', handleMapBackgroundClick)
   window.addEventListener('keydown', handleWindowKeydown)
 })
@@ -862,6 +1167,7 @@ onUnmounted(() => {
   cancelAnimationFrame(animId)
   cancelAnimationFrame(projectFrame)
   cancelAnimationFrame(projectionModeFrame)
+  cancelAnimationFrame(rasterPrefetchFrame)
   window.removeEventListener('keydown', handleWindowKeydown)
   map?.remove()
 })
@@ -1306,14 +1612,19 @@ const layerToggles = computed(() => [
   font-size: 10px !important;
 }
 
+:deep(.maplibregl-ctrl-bottom-right) {
+  left: 28px !important;
+  right: auto !important;
+  bottom: 84px !important;
+}
+
 :deep(.maplibregl-ctrl-group) {
   background: rgba(255, 252, 248, 0.78) !important;
   border: 1px solid rgba(180, 165, 140, 0.22) !important;
   border-radius: 10px !important;
   box-shadow: 0 10px 32px rgba(35, 25, 12, 0.08) !important;
   backdrop-filter: var(--blur-sm) !important;
-  margin-bottom: 28px !important;
-  margin-right: 308px !important;
+  margin: 0 !important;
 }
 
 .legend-panel {
@@ -1531,6 +1842,37 @@ const layerToggles = computed(() => [
   box-shadow: 0 0 12px rgba(232, 169, 23, 0.5);
 }
 
+.debug-readout {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.debug-readout-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.debug-readout-label {
+  color: rgba(255, 255, 255, 0.42);
+  text-transform: uppercase;
+}
+
+.debug-readout-value {
+  color: rgba(255, 255, 255, 0.9);
+  font-variant-numeric: tabular-nums;
+  font-family: 'Inter', sans-serif;
+}
+
 .toggle-hint {
   margin-top: 10px;
   font-size: 10px;
@@ -1597,8 +1939,8 @@ const layerToggles = computed(() => [
 }
 
 @media (max-width: 1080px) {
-  :deep(.maplibregl-ctrl-group) {
-    margin-right: 28px !important;
+  :deep(.maplibregl-ctrl-bottom-right) {
+    left: 18px !important;
   }
 
   .legend-panel {

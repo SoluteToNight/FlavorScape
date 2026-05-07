@@ -36,6 +36,14 @@ def _render_tile_sync(z: int, x: int, y: int) -> bytes:
     Runs inside a thread pool so it never blocks the event loop.
     """
     global _EMPTY_TILE
+    tiles_per_axis = 1 << z
+
+    if y < 0 or y >= tiles_per_axis:
+        if _EMPTY_TILE is None:
+            _EMPTY_TILE = _make_empty_tile()
+        return _EMPTY_TILE
+
+    x = x % tiles_per_axis
 
     cached = tile_cache.get(z, x, y)
     if cached is not None:
