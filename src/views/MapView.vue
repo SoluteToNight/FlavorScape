@@ -162,12 +162,6 @@ const PLANE_TO_GLOBE_END_ZOOM = PLANE_TO_GLOBE_START_ZOOM - MORPH_BAND_WIDTH
 const GLOBE_TO_PLANE_START_ZOOM = MORPH_CENTER_ZOOM
 const GLOBE_TO_PLANE_END_ZOOM = MORPH_CENTER_ZOOM + MORPH_BAND_WIDTH
 const POLAR_TILE_LIMIT = 85.051129
-const RASTER_TILE_MAX_ZOOM = 8
-const RASTER_SOURCE_TILE_SIZE = 256
-const RASTER_PREFETCH_RING = 1
-const RASTER_PREFETCH_MAX_TILES = 120
-const RASTER_PREFETCH_MIN_INTERVAL = 160
-const RASTER_PREFETCH_CACHE_LIMIT = 2048
 const LOOP_LENGTH = 2200
 const ANIMATION_SPEED = 1.2
 const ARC_BLEND_PARAMETERS = {
@@ -213,10 +207,6 @@ let pendingPitchTarget = null
 let morphProjectionEnabled = false
 let activeMorphDirection = null
 let appliedMorphDirection = null
-let rasterPrefetchFrame = 0
-let rasterPrefetchForce = false
-let lastRasterPrefetchAt = 0
-const rasterPrefetchCache = new Set()
 
 const POLAR_CAPS_GEOJSON = {
   type: 'FeatureCollection',
@@ -298,9 +288,10 @@ const MAP_STYLE = {
     'hyp-tiles': {
       type: 'raster',
       tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
-      tileSize: RASTER_SOURCE_TILE_SIZE,
+      tileSize: 512,
       minzoom: 0,
-      maxzoom: RASTER_TILE_MAX_ZOOM,
+      maxzoom: 8,
+      bounds: [-180, -POLAR_TILE_LIMIT, 180, POLAR_TILE_LIMIT],
       attribution: '© Natural Earth',
     },
   },
@@ -533,7 +524,6 @@ function syncProjectionMode() {
   syncWorldCopiesState()
   syncPolarCapsState()
   scheduleProjectedNodesUpdate()
-  scheduleRasterPrefetch()
   applyQueuedProjectionPitch()
   updateMapDebugState()
 }
@@ -599,136 +589,6 @@ function applyQueuedProjectionPitch() {
   pendingPitchTarget = null
   if (Math.abs(map.getPitch() - pitch) < 0.25) return
   map.easeTo({ pitch, duration: 420, essential: true })
-}
-
-function scheduleRasterPrefetch(force = false) {
-  if (!hasRasterTileSource() || !layerVisibility.value.L0) return
-  rasterPrefetchForce = rasterPrefetchForce || force
-  if (rasterPrefetchFrame) return
-
-  rasterPrefetchFrame = requestAnimationFrame(() => {
-    rasterPrefetchFrame = 0
-    const shouldForce = rasterPrefetchForce
-    rasterPrefetchForce = false
-
-    const now = performance.now()
-    if (!shouldForce && now - lastRasterPrefetchAt < RASTER_PREFETCH_MIN_INTERVAL) return
-
-    lastRasterPrefetchAt = now
-    prefetchRasterTileRing()
-  })
-}
-
-function hasRasterTileSource() {
-  try {
-    return Boolean(map?.getSource?.('hyp-tiles'))
-  } catch (_) {
-    return false
-  }
-}
-
-function prefetchRasterTileRing() {
-  const tiles = getPrefetchRasterTiles()
-
-  for (const { z, x, y, key } of tiles) {
-    if (rasterPrefetchCache.has(key)) continue
-
-    rasterPrefetchCache.add(key)
-    fetch(`/tiles/raster/${z}/${x}/${y}.png`, {
-      cache: 'force-cache',
-      credentials: 'same-origin',
-    }).catch(() => {})
-  }
-
-  trimRasterPrefetchCache()
-}
-
-function getPrefetchRasterTiles() {
-  if (!map) return []
-
-  const bounds = map.getBounds()
-  const z = getRasterPrefetchZoom()
-  const tilesPerAxis = 1 << z
-  const south = clamp(bounds.getSouth(), -POLAR_TILE_LIMIT, POLAR_TILE_LIMIT)
-  const north = clamp(bounds.getNorth(), -POLAR_TILE_LIMIT, POLAR_TILE_LIMIT)
-  const minY = clamp(latToTileY(north, z) - RASTER_PREFETCH_RING, 0, tilesPerAxis - 1)
-  const maxY = clamp(latToTileY(south, z) + RASTER_PREFETCH_RING, 0, tilesPerAxis - 1)
-  const xRange = getTileXRange(bounds.getWest(), bounds.getEast(), z, tilesPerAxis)
-  const tiles = []
-  const seen = new Set()
-
-  for (let rawX = xRange.min; rawX <= xRange.max; rawX++) {
-    const x = wrapTileX(rawX, tilesPerAxis)
-
-    for (let y = minY; y <= maxY; y++) {
-      const key = `${z}/${x}/${y}`
-      if (seen.has(key)) continue
-
-      seen.add(key)
-      tiles.push({ z, x, y, key })
-
-      if (tiles.length >= RASTER_PREFETCH_MAX_TILES) return tiles
-    }
-  }
-
-  return tiles
-}
-
-function getRasterPrefetchZoom() {
-  const sourceZoomOffset = Math.log2(512 / RASTER_SOURCE_TILE_SIZE)
-  return clamp(Math.round(map.getZoom() + sourceZoomOffset), 0, RASTER_TILE_MAX_ZOOM)
-}
-
-function getTileXRange(west, east, z, tilesPerAxis) {
-  let unwrappedEast = east
-
-  while (unwrappedEast < west) {
-    unwrappedEast += 360
-  }
-
-  if (unwrappedEast - west >= 360) {
-    return {
-      min: -RASTER_PREFETCH_RING,
-      max: tilesPerAxis - 1 + RASTER_PREFETCH_RING,
-    }
-  }
-
-  return {
-    min: lngToTileX(west, z) - RASTER_PREFETCH_RING,
-    max: lngToTileX(unwrappedEast, z) + RASTER_PREFETCH_RING,
-  }
-}
-
-function lngToTileX(lng, z) {
-  return Math.floor(((lng + 180) / 360) * (1 << z))
-}
-
-function latToTileY(lat, z) {
-  const latRad = clamp(lat, -POLAR_TILE_LIMIT, POLAR_TILE_LIMIT) * Math.PI / 180
-  return Math.floor(
-    (1 - Math.log(Math.tan(latRad) + (1 / Math.cos(latRad))) / Math.PI) / 2 * (1 << z),
-  )
-}
-
-function wrapTileX(x, tilesPerAxis) {
-  return ((x % tilesPerAxis) + tilesPerAxis) % tilesPerAxis
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value))
-}
-
-function trimRasterPrefetchCache() {
-  if (rasterPrefetchCache.size <= RASTER_PREFETCH_CACHE_LIMIT) return
-
-  const overflow = rasterPrefetchCache.size - RASTER_PREFETCH_CACHE_LIMIT
-  let removed = 0
-
-  for (const key of rasterPrefetchCache) {
-    rasterPrefetchCache.delete(key)
-    removed += 1
-    if (removed >= overflow) break
-  }
 }
 
 function getClusterDistance(zoom) {
@@ -1135,29 +995,23 @@ onMounted(async () => {
     syncProjectionMode()
     updateMapDebugState()
     updateProjectedNodes()
-    scheduleRasterPrefetch(true)
   })
 
   map.on('render', updateProjectedNodes)
   map.on('zoom', () => {
     scheduleProjectionModeSync()
-    scheduleRasterPrefetch()
   })
   map.on('move', () => {
     updateMapDebugState()
-    scheduleRasterPrefetch()
   })
   map.on('zoomend', () => {
     syncProjectionMode()
-    scheduleRasterPrefetch(true)
   })
   map.on('moveend', () => {
     applyQueuedProjectionPitch()
-    scheduleRasterPrefetch(true)
   })
   map.on('resize', () => {
     updateProjectedNodes()
-    scheduleRasterPrefetch(true)
   })
   map.on('click', handleMapBackgroundClick)
   window.addEventListener('keydown', handleWindowKeydown)
@@ -1167,7 +1021,6 @@ onUnmounted(() => {
   cancelAnimationFrame(animId)
   cancelAnimationFrame(projectFrame)
   cancelAnimationFrame(projectionModeFrame)
-  cancelAnimationFrame(rasterPrefetchFrame)
   window.removeEventListener('keydown', handleWindowKeydown)
   map?.remove()
 })

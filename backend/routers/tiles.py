@@ -17,6 +17,9 @@ router = APIRouter(prefix="/tiles", tags=["tiles"])
 # Thread pool for blocking rasterio / rio-tiler calls
 _pool = ThreadPoolExecutor(max_workers=6, thread_name_prefix="tile-worker")
 
+# Match MapLibre's native tile grid to reduce the number of raster requests.
+RASTER_TILE_SIZE = 512
+
 # Transparent 1×1 PNG fallback (for out-of-bounds tiles)
 _EMPTY_TILE: bytes | None = None
 
@@ -24,7 +27,7 @@ _EMPTY_TILE: bytes | None = None
 def _make_empty_tile() -> bytes:
     from PIL import Image
 
-    img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
+    img = Image.new("RGBA", (RASTER_TILE_SIZE, RASTER_TILE_SIZE), (0, 0, 0, 0))
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
@@ -54,7 +57,7 @@ def _render_tile_sync(z: int, x: int, y: int) -> bytes:
         from rio_tiler.io import Reader  # rio-tiler ≥ 5.0 (COGReader alias)
 
         with Reader(str(RASTER_TIF)) as cog:
-            img = cog.tile(x, y, z, tilesize=256)
+            img = cog.tile(x, y, z, tilesize=RASTER_TILE_SIZE)
             # HYP is RGB (3-band), render as PNG
             content = img.render(img_format="PNG")
 
@@ -92,6 +95,7 @@ async def raster_tile(z: int, x: int, y: int):
         media_type="image/png",
         headers={
             "Cache-Control": "public, max-age=86400",
+            "X-Tile-Size": str(RASTER_TILE_SIZE),
             "X-Cache-Size": str(tile_cache.size),
             "X-Cache-HitRate": f"{tile_cache.hit_rate:.2%}",
         },

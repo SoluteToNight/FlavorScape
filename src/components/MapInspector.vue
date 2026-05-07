@@ -1,8 +1,19 @@
 <template>
-  <div class="inspector glass-panel">
-    <Transition name="panel" mode="out-in">
-      <!-- Node panel -->
-      <div v-if="selectedNode" key="node" class="panel-content">
+  <div class="inspector glass-panel" :class="{ collapsed: inspectorCollapsed }">
+    <button
+      type="button"
+      class="inspector-toggle"
+      :aria-label="inspectorCollapsed ? '展开详情面板' : '折叠详情面板'"
+      :aria-expanded="!inspectorCollapsed"
+      @click="inspectorCollapsed = !inspectorCollapsed"
+    >
+      <span>{{ inspectorCollapsed ? '‹' : '›' }}</span>
+    </button>
+
+    <div v-show="!inspectorCollapsed" class="inspector-body">
+      <Transition name="panel" mode="out-in">
+        <!-- Node panel -->
+        <div v-if="selectedNode" key="node" class="panel-content">
         <div class="panel-tab">风味节点</div>
         <div class="panel-title">{{ selectedNode.dish || selectedNode.city }}</div>
         <div class="panel-subtitle">{{ selectedNode.city }} · {{ selectedNode.region }} · {{ selectedNode.eco }}</div>
@@ -54,10 +65,10 @@
             </div>
           </div>
         </template>
-      </div>
+        </div>
 
-      <!-- L1 Ecozone panel -->
-      <div v-else-if="selectedEcozone" key="ecozone" class="panel-content">
+        <!-- L1 Ecozone panel -->
+        <div v-else-if="selectedEcozone" key="ecozone" class="panel-content">
         <div class="panel-tab">L1 自然生态档案</div>
         <div class="panel-title" style="font-size:16px;line-height:1.5">{{ selectedEcozone.eco_name_cn || selectedEcozone.eco_name || '未知生态区' }}</div>
         <div class="panel-subtitle">{{ selectedEcozone.biome_cn || selectedEcozone.biome }} · {{ selectedEcozone.realm }}</div>
@@ -76,10 +87,10 @@
         <div v-if="selectedEcozone.realm" class="panel-source" style="margin-top:16px">
           生物地理界：{{ selectedEcozone.realm }}
         </div>
-      </div>
+        </div>
 
-      <!-- Route panel -->
-      <div v-else-if="selectedRoute" key="route" class="panel-content">
+        <!-- Route panel -->
+        <div v-else-if="selectedRoute" key="route" class="panel-content">
         <div class="panel-tab">传播路径</div>
         <div class="panel-title">{{ selectedRoute.name }}</div>
         <div class="panel-subtitle">{{ selectedRoute.type === 'sea' ? '海路传播' : '陆路传播' }} · {{ selectedRoute.path.length }} 个节点</div>
@@ -96,10 +107,10 @@
             </div>
           </div>
         </div>
-      </div>
+        </div>
 
-      <!-- Empty state -->
-      <div v-else key="empty" class="empty-state">
+        <!-- Empty state -->
+        <div v-else key="empty" class="empty-state">
         <div class="empty-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
             <circle cx="12" cy="12" r="3"/>
@@ -107,8 +118,9 @@
           </svg>
         </div>
         <p>点击地图节点<br>或搜索食材查看详情</p>
-      </div>
-    </Transition>
+        </div>
+      </Transition>
+    </div>
   </div>
 </template>
 
@@ -123,6 +135,7 @@ const selectedNode   = computed(() => appStore.selectedNode)
 const selectedRoute  = computed(() => appStore.selectedRoute)
 const selectedEcozone = computed(() => appStore.selectedEcozone)
 const hoveredIngredient = ref(null)
+const inspectorCollapsed = ref(false)
 
 const siblings = computed(() => {
   const node = appStore.selectedNode
@@ -236,8 +249,77 @@ const biomePaletteFallback = '#C4B49A'
   bottom: 28px;
   width: 290px;
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: visible;
   z-index: 10;
+  transition:
+    width 220ms ease,
+    height 220ms ease,
+    bottom 220ms ease,
+    border-radius 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.inspector.collapsed {
+  bottom: auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+}
+
+.inspector-body {
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.inspector-toggle {
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  z-index: 2;
+  width: 32px;
+  height: 44px;
+  border: 1px solid rgba(180, 165, 140, 0.2);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 252, 248, 0.92);
+  color: rgba(87, 83, 78, 0.68);
+  box-shadow: 0 12px 28px rgba(42, 31, 18, 0.1);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition:
+    left 220ms ease,
+    width 220ms ease,
+    height 220ms ease,
+    color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.inspector-toggle:hover {
+  color: var(--amber);
+  background: rgba(255, 252, 248, 0.98);
+  box-shadow: 0 14px 32px rgba(42, 31, 18, 0.14);
+}
+
+.inspector-toggle:focus-visible {
+  outline: 2px solid rgba(232, 169, 23, 0.34);
+  outline-offset: 2px;
+}
+
+.inspector-toggle span {
+  font-size: 22px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.inspector.collapsed .inspector-toggle {
+  inset: 0;
+  width: 48px;
+  height: 48px;
+  transform: none;
 }
 
 .empty-state {
