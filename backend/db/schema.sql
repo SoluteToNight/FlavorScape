@@ -4,10 +4,10 @@
 
 DROP TABLE IF EXISTS data_source CASCADE;
 DROP TABLE IF EXISTS chapter CASCADE;
-DROP TABLE IF EXISTS genotype_lineage CASCADE;
+DROP TABLE IF EXISTS dish_lineage CASCADE;
 DROP TABLE IF EXISTS recipe_link CASCADE;
 DROP TABLE IF EXISTS dispersal_event CASCADE;
-DROP TABLE IF EXISTS flavor_genotype CASCADE;
+DROP TABLE IF EXISTS dish CASCADE;
 DROP TABLE IF EXISTS ingredient_origin CASCADE;
 DROP TABLE IF EXISTS ingredient CASCADE;
 DROP TABLE IF EXISTS eco_geo_unit CASCADE;
@@ -55,10 +55,10 @@ CREATE TABLE ingredient_origin (
 );
 
 -- ============================================================================
--- 成品风味基因型
+-- 菜肴成品
 -- ============================================================================
-CREATE TABLE flavor_genotype (
-    genotype_id     CHAR(12) PRIMARY KEY,
+CREATE TABLE dish (
+    dish_id         CHAR(12) PRIMARY KEY,
     node_key        VARCHAR(80) UNIQUE NOT NULL,          -- 原 app_data id / 前端稳定标识
     city_name       VARCHAR(50) NOT NULL,                 -- 城市展示名
     dish_name       VARCHAR(50) NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE flavor_genotype (
     eco_label       VARCHAR(80),                          -- 原 app_data eco（展示标签）
     category        VARCHAR(30),
     eco_name        VARCHAR(150) REFERENCES eco_geo_unit(eco_name),
-    genome_vector   JSONB,
+    flavor_genotype JSONB,                                -- 六维风味向量（麻、辣、咸、酸、甜、鲜）
     primary_labels  TEXT[],                               -- 原 app_data primary
     primary_values  NUMERIC(4,2)[],                       -- 原 app_data vals
     color_hex       VARCHAR(7),                           -- 原 app_data color
@@ -94,23 +94,23 @@ CREATE TABLE dispersal_event (
 -- 配方连结（M:N）
 -- ============================================================================
 CREATE TABLE recipe_link (
-    genotype_id     CHAR(12) REFERENCES flavor_genotype(genotype_id),
+    dish_id         CHAR(12) REFERENCES dish(dish_id),
     ingredient_id   CHAR(8)  REFERENCES ingredient(ingredient_id),
     role            VARCHAR(20),
     importance      NUMERIC(3,2) CHECK (importance BETWEEN 0 AND 1),
     is_native       BOOLEAN,
-    PRIMARY KEY (genotype_id, ingredient_id)
+    PRIMARY KEY (dish_id, ingredient_id)
 );
 
 -- ============================================================================
--- 基因溯源链（M:N 自引用）— 当前无数据
+-- 菜肴溯源链（M:N 自引用）— 当前无数据
 -- ============================================================================
-CREATE TABLE genotype_lineage (
-    ancestor_id     CHAR(12) REFERENCES flavor_genotype(genotype_id),
-    descendant_id   CHAR(12) REFERENCES flavor_genotype(genotype_id),
+CREATE TABLE dish_lineage (
+    ancestor_dish_id    CHAR(12) REFERENCES dish(dish_id),
+    descendant_dish_id  CHAR(12) REFERENCES dish(dish_id),
     mutation_desc   TEXT,
-    PRIMARY KEY (ancestor_id, descendant_id),
-    CHECK (ancestor_id <> descendant_id)
+    PRIMARY KEY (ancestor_dish_id, descendant_dish_id),
+    CHECK (ancestor_dish_id <> descendant_dish_id)
 );
 
 -- ============================================================================
@@ -143,19 +143,19 @@ CREATE TABLE data_source (
 
 -- GiST 空间索引
 CREATE INDEX idx_eco_boundary       ON eco_geo_unit    USING GIST (boundary);
-CREATE INDEX idx_genotype_coord     ON flavor_genotype USING GIST (coordinates);
+CREATE INDEX idx_dish_coord         ON dish            USING GIST (coordinates);
 CREATE INDEX idx_dispersal_route    ON dispersal_event USING GIST (route_geom);
 
 -- GIN（JSONB / 数组）索引
 CREATE INDEX idx_eco_climate        ON eco_geo_unit    USING GIN (climate);
-CREATE INDEX idx_genotype_genome    ON flavor_genotype USING GIN (genome_vector);
+CREATE INDEX idx_dish_flavor        ON dish            USING GIN (flavor_genotype);
 CREATE INDEX idx_ingredient_tag     ON ingredient      USING GIN (flavor_tags);
 
 -- B-Tree 索引
 CREATE INDEX idx_eco_code           ON eco_geo_unit    (eco_code);
-CREATE INDEX idx_genotype_eco       ON flavor_genotype (eco_name);
-CREATE INDEX idx_genotype_city      ON flavor_genotype (city_name);
-CREATE INDEX idx_genotype_dish      ON flavor_genotype (dish_name);
+CREATE INDEX idx_dish_eco           ON dish            (eco_name);
+CREATE INDEX idx_dish_city          ON dish            (city_name);
+CREATE INDEX idx_dish_name          ON dish            (dish_name);
 CREATE INDEX idx_dispersal_ing      ON dispersal_event (ingredient_id);
 CREATE INDEX idx_dispersal_name     ON dispersal_event (route_name);
 CREATE INDEX idx_dispersal_order    ON dispersal_event (display_order);

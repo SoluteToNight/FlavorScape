@@ -5,6 +5,7 @@
   "description": "寻味地理 · 风味博物志",
   "scripts": {
     "dev": "concurrently \"node server.js\" \"vite\"",
+    "dev:lan": "concurrently \"node server.js\" \"vite --host 0.0.0.0\"",
     "build": "vite build",
     "start": "NODE_ENV=production node server.js",
     "preview": "vite preview"

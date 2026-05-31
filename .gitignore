@@ -17,9 +17,7 @@ __pycache__/
 *.egg-info/
 
 # GIS data (large binaries, download separately)
-data/*.zip
-data/extracted/
-!data/extracted/.gitkeep
+data/
 
 # Logs
 *.log
