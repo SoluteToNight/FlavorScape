@@ -56,15 +56,22 @@ if (-not (Test-Path (Join-Path $Root "node_modules"))) {
 Write-Ok "前端依赖已就绪"
 
 # ── 5. 释放 8001 端口（如有旧进程占用则终止）────────────────────────────────
-$portInUse = netstat -ano 2>$null | Select-String '\s+0\.0\.0\.0:8001\s+|\s+127\.0\.0\.1:8001\s+' | Select-String 'LISTENING'
-if ($portInUse) {
-    $oldPid = ($portInUse.Line.Trim() -split '\s+')[-1]
+# uvicorn --reload 在 Windows 上通过 multiprocessing.spawn 创建父子双进程，
+# 父进程被杀后子进程可能成为孤儿继续占用端口，需用 /T 递归终止
+Write-Step "检查 8001 端口..."
+$tries = 0
+do {
+    $portInUse = netstat -ano 2>$null | Select-String '\s+0\.0\.0\.0:8001\s+|\s+127\.0\.0\.1:8001\s+' | Select-String 'LISTENING'
+    if (-not $portInUse) { break }
+    $oldPid = ($portInUse[0].Line.Trim() -split '\s+')[-1]
     if ($oldPid -match '^\d+$') {
-        Stop-Process -Id ([int]$oldPid) -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 1
-        Write-Warn "已终止占用 8001 端口的旧进程 (PID $oldPid)"
+        # taskkill /T 会同时终止该进程及其所有子进程（包括 uvicorn worker）
+        taskkill /F /T /PID $oldPid 2>$null | Out-Null
+        Start-Sleep -Seconds 2
+        Write-Warn "已终止占用 8001 端口的旧进程 (PID $oldPid，含子进程)"
     }
-}
+    $tries++
+} while ($tries -lt 3)
 
 # ── 6. 启动后端（新窗口）─────────────────────────────────────────────────────
 Write-Step "启动 FastAPI 后端 → http://localhost:8001"
@@ -86,7 +93,7 @@ while ($waited -lt $maxWait) {
     Start-Sleep -Seconds 3
     $waited += 3
     try {
-        $resp = Invoke-WebRequest -Uri "http://localhost:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
         $json = $resp.Content | ConvertFrom-Json
         if ($json.status -eq "ok") {
             $ready = $true

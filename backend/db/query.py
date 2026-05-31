@@ -80,28 +80,28 @@ def _build_flavor_image(db_obj: dict) -> str:
 def fetch_flavors() -> list[dict]:
     """返回风味节点，shape 与原 FLAVORS 兼容。"""
     sql = """
-        SELECT g.node_key,
-               g.city_name,
-               g.dish_name,
-               g.dish_family,
-               g.region_label,
-               g.eco_label,
-               g.eco_name AS eco_name_ref,
-               g.category,
-               g.primary_labels,
-               g.primary_values,
-               g.color_hex,
-               ST_X(g.coordinates) AS lon,
-               ST_Y(g.coordinates) AS lat,
-               g.genome_vector,
+        SELECT d.node_key,
+               d.city_name,
+               d.dish_name,
+               d.dish_family,
+               d.region_label,
+               d.eco_label,
+               d.eco_name AS eco_name_ref,
+               d.category,
+               d.primary_labels,
+               d.primary_values,
+               d.color_hex,
+               ST_X(d.coordinates) AS lon,
+               ST_Y(d.coordinates) AS lat,
+               d.flavor_genotype AS genome_vector,
                (
                    SELECT array_agg(i.name ORDER BY i.name)
                    FROM recipe_link rl
                    JOIN ingredient i ON i.ingredient_id = rl.ingredient_id
-                   WHERE rl.genotype_id = g.genotype_id
+                   WHERE rl.dish_id = d.dish_id
                ) AS ingredients
-        FROM flavor_genotype g
-        ORDER BY g.genotype_id
+         FROM dish d
+        ORDER BY d.dish_id
     """
     results = []
     with get_conn() as conn:
@@ -224,16 +224,16 @@ def search(q: str) -> list[dict]:
             with conn.cursor() as cur:
                 try:
                     cur.execute(
-                        """SELECT DISTINCT g.node_key
-                           FROM flavor_genotype g
+                        """SELECT DISTINCT d.node_key
+                           FROM dish d
                            WHERE to_tsvector(
                                    'simple',
-                                   COALESCE(g.dish_name,'') || ' ' ||
-                                   COALESCE(g.category,'') || ' ' ||
-                                   COALESCE(g.city_name,'') || ' ' ||
-                                   COALESCE(g.region_label,'') || ' ' ||
-                                   COALESCE(g.eco_label,'') || ' ' ||
-                                   COALESCE(g.dish_family,'')
+                                   COALESCE(d.dish_name,'') || ' ' ||
+                                   COALESCE(d.category,'') || ' ' ||
+                                   COALESCE(d.city_name,'') || ' ' ||
+                                   COALESCE(d.region_label,'') || ' ' ||
+                                   COALESCE(d.eco_label,'') || ' ' ||
+                                   COALESCE(d.dish_family,'')
                                  )
                               @@ plainto_tsquery('simple', %s)
                            LIMIT 8""",
