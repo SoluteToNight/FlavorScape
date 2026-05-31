@@ -38,24 +38,29 @@ function Get-LanIPv4Addresses {
 }
 
 function Stop-PortListener($port) {
-    $listeners = netstat -ano 2>$null |
-        Select-String "LISTENING" |
-        Where-Object { $_.Line -match "[:.]$port\s+" }
+    # uvicorn --reload 在 Windows 上通过 multiprocessing.spawn 创建父子双进程，
+    # 父进程被杀后子进程可能成为孤儿继续占用端口，需用 /T 递归终止
+    $tries = 0
+    do {
+        $listeners = netstat -ano 2>$null |
+            Select-String "LISTENING" |
+            Where-Object { $_.Line -match "[:.]$port\s+" }
 
-    $pids = @($listeners | ForEach-Object {
-        ($_.Line.Trim() -split '\s+')[-1]
-    } | Where-Object {
-        $_ -match '^\d+$' -and $_ -ne '0'
-    } | Select-Object -Unique)
+        if (-not $listeners) { break }
 
-    foreach ($pidText in $pids) {
-        Stop-Process -Id ([int]$pidText) -Force -ErrorAction SilentlyContinue
-        Write-Warn "已终止占用 $port 端口的旧进程 (PID $pidText)"
-    }
+        $pids = @($listeners | ForEach-Object {
+            ($_.Line.Trim() -split '\s+')[-1]
+        } | Where-Object {
+            $_ -match '^\d+$' -and $_ -ne '0'
+        } | Select-Object -Unique)
 
-    if ($pids.Count -gt 0) {
-        Start-Sleep -Seconds 1
-    }
+        foreach ($pidText in $pids) {
+            taskkill /F /T /PID $pidText 2>$null | Out-Null
+            Write-Warn "已终止占用 $port 端口的旧进程 (PID $pidText，含子进程)"
+        }
+        Start-Sleep -Seconds 2
+        $tries++
+    } while ($tries -lt 3)
 }
 
 Write-Host ""
@@ -130,7 +135,7 @@ while ($waited -lt $maxWait) {
     Start-Sleep -Seconds 3
     $waited += 3
     try {
-        $resp = Invoke-WebRequest -Uri "http://localhost:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
         $json = $resp.Content | ConvertFrom-Json
         if ($json.status -eq "ok") {
             $ready = $true
