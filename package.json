@@ -5,6 +5,7 @@
   "description": "寻味地理 · 风味博物志",
   "scripts": {
     "dev": "concurrently \"node server.js\" \"vite\"",
+    "dev:lan": "concurrently \"node server.js\" \"vite --host 0.0.0.0\"",
     "build": "vite build",
     "start": "NODE_ENV=production node server.js",
     "preview": "vite preview"
@@ -23,7 +24,7 @@
     "@vitejs/plugin-vue": "^5.1.2",
     "concurrently": "^8.2.2",
     "echarts": "^5.5.1",
-    "maplibre-gl": "^4.5.0",
+    "maplibre-gl": "^5.24.0",
     "pinia": "^2.1.7",
     "vite": "^5.3.4",
     "vue": "^3.4.31",

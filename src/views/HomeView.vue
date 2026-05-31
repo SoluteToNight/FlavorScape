@@ -62,6 +62,7 @@ const sampleCards = [
   },
 ]
 let rafId = null
+let cleanupHomeCanvas = () => {}
 
 const pathDefs = [
   { pts: [[0.1,0.5],[0.3,0.3],[0.5,0.4],[0.7,0.35],[0.9,0.5]], col: '#C8960F' },
