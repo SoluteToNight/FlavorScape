@@ -2,7 +2,7 @@
   "name": "xunwei-dili",
   "version": "1.0.0",
   "type": "module",
-  "description": "寻味地理 · 风味博物志",
+  "description": "FlavorScape traceability visualization studio",
   "scripts": {
     "dev": "concurrently \"node server.js\" \"vite\"",
     "build": "vite build",
@@ -12,6 +12,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "html2canvas": "^1.4.1",
     "http-proxy-middleware": "^3.0.5"
   },
   "devDependencies": {

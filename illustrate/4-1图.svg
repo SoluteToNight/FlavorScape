@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 800" width="100%" height="100%">
+  <defs>
+    <!-- 极简像素网格 -->
+    <pattern id="dot-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#CBD5E1" opacity="0.6"/>
+    </pattern>
+    <!-- 高级悬浮阴影 -->
+    <filter id="table-shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    
+    <style>
+      .sys-font { font-family: 'Helvetica Neue', 'Arial', sans-serif; }
+      .main-title { font-size: 24px; font-weight: 900; fill: #0F172A; letter-spacing: 0.5px; }
+      .domain-title { font-size: 16px; font-weight: bold; fill: #475569; letter-spacing: 2px; }
+      .tb-header { font-size: 14px; font-weight: bold; fill: #FFFFFF; }
+      .tb-sub { font-size: 10px; fill: #E2E8F0; font-style: italic; }
+      .field-name { font-size: 12px; font-weight: 600; fill: #1E293B; }
+      .field-type { font-size: 11px; font-family: 'Courier New', monospace; fill: #64748B; }
+      .tag-text { font-size: 9px; font-weight: bold; fill: #FFFFFF; }
+      .rel-label { font-size: 11px; font-weight: bold; fill: #475569; }
+      
+      .edge-1 { fill: none; stroke: #94A3B8; stroke-width: 2; stroke-linejoin: round; }
+      .edge-fk { fill: none; stroke: #3B82F6; stroke-width: 1.5; stroke-dasharray: 4,2; }
+      .edge-spatial { fill: none; stroke: #10B981; stroke-width: 2; }
+    </style>
+    
+    <!-- 连线箭头 -->
+    <marker id="arrow-gray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#94A3B8"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#10B981"/>
+    </marker>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1120" height="800" fill="#F8FAFC"/>
+  <rect width="1120" height="800" fill="url(#dot-grid)"/>
+
+  <text x="560" y="45" text-anchor="middle" class="sys-font main-title">图 4-1 寻味地理空间与业务数据库全景 E-R 拓扑与领域映射图</text>
+
+  <!-- ================= DOMAIN BACKGROUNDS (DDD Style) ================= -->
+  <!-- Domain 1: Spatial -->
+  <rect x="40" y="80" width="310" height="260" fill="#CCFBF1" opacity="0.4" stroke="#5EEAD4" stroke-width="2" stroke-dasharray="6,4" rx="12"/>
+  <text x="60" y="105" class="sys-font domain-title" fill="#0D9488">生态空间域 (Spatial Domain)</text>
+
+  <!-- Domain 2: Ingredient -->
+  <rect x="380" y="80" width="690" height="150" fill="#FEF3C7" opacity="0.4" stroke="#FCD34D" stroke-width="2" stroke-dasharray="6,4" rx="12"/>
+  <text x="400" y="105" class="sys-font domain-title" fill="#D97706">物产材料域 (Material Domain)</text>
+
+  <!-- Domain 3: Flavor Business -->
+  <rect x="40" y="360" width="690" height="400" fill="#E0E7FF" opacity="0.4" stroke="#A5B4FC" stroke-width="2" stroke-dasharray="6,4" rx="12"/>
+  <text x="60" y="385" class="sys-font domain-title" fill="#4338CA">风味核心业务域 (Flavor Core Domain)</text>
+
+  <!-- Domain 4: Narrative -->
+  <rect x="760" y="250" width="310" height="510" fill="#FFE4E6" opacity="0.4" stroke="#FDA4AF" stroke-width="2" stroke-dasharray="6,4" rx="12"/>
+  <text x="780" y="275" class="sys-font domain-title" fill="#E11D48">时空叙事域 (Narrative Domain)</text>
+
+  <!-- ================= EDGE ROUTING (Drawn behind tables) ================= -->
+  <!-- eco_name (eco) -> eco_name (ingredient_origin) -->
+  <path d="M 330 182 L 375 182 C 390 182, 390 167, 405 167 L 420 167" class="edge-fk" marker-end="url(#arrow-blue)"/>
+  
+  <!-- ingredient_id (ingredient) -> ingredient_id (ingredient_origin) -->
+  <path d="M 760 167 L 690 167" class="edge-fk" marker-end="url(#arrow-blue)"/>
+
+  <!-- ingredient_id (ingredient) -> ingredient_id (recipe_link) -->
+  <path d="M 895 215 L 895 442 L 700 442" class="edge-fk" marker-end="url(#arrow-blue)"/>
+
+  <!-- genotype_id (flavor) -> genotype_id (recipe_link) -->
+  <path d="M 330 462 L 420 462" class="edge-fk" marker-end="url(#arrow-blue)"/>
+
+  <!-- eco_name (flavor) -> eco_name (eco) -->
+  <path d="M 60 562 C 20 562, 20 182, 60 182" class="edge-spatial" marker-end="url(#arrow-green)"/>
+  <rect x="15" y="360" width="10" height="20" fill="#F8FAFC"/>
+  <text x="20" y="375" text-anchor="middle" class="sys-font rel-label" fill="#10B981" transform="rotate(-90 20 375)">空间挂载</text>
+
+  <!-- ancestor_id (lineage) -> genotype_id (flavor) -->
+  <path d="M 360 695 L 330 512" class="edge-fk" marker-end="url(#arrow-blue)"/>
+  <!-- descendant_id (lineage) -> genotype_id (flavor) -->
+  <path d="M 490 695 L 330 512" class="edge-fk" marker-end="url(#arrow-blue)"/>
+
+  <!-- ingredient_id (ingredient) -> ingredient_id (dispersal) -->
+  <path d="M 1030 167 C 1100 167, 1100 362, 1040 362" class="edge-fk" marker-end="url(#arrow-blue)"/>
+
+  <!-- from_eco_name (dispersal) -> eco_name (eco) -->
+  <path d="M 780 437 C 360 437, 360 182, 330 182" class="edge-spatial" marker-end="url(#arrow-green)"/>
+
+  <!-- route_name (chapter) -> route_name (dispersal) -->
+  <path d="M 915 540 L 915 485" class="edge-1" marker-end="url(#arrow-gray)"/>
+
+  <!-- ================= TABLE CARDS ================= -->
+  
+  <!-- 1. eco_geo_unit (X=60, Y=130) -->
+  <g transform="translate(60, 130)" filter="url(#table-shadow)">
+    <rect x="0" y="40" width="270" height="150" fill="#FFFFFF" stroke="#E2E8F0" rx="6" stroke-width="1.5"/>
+    <rect x="0" y="65" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="115" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="165" width="270" height="25" fill="#F8FAFC"/>
+    <rect x="0" y="0" width="270" height="40" fill="#0D9488" rx="6"/><rect x="0" y="20" width="270" height="20" fill="#0D9488"/>
+    <text x="135" y="18" text-anchor="middle" class="sys-font tb-header">eco_geo_unit</text><text x="135" y="32" text-anchor="middle" class="sys-font tb-sub">生态地理单元表</text>
+    <rect x="10" y="46" width="24" height="13" fill="#EAB308" rx="3"/><text x="22" y="55" text-anchor="middle" class="sys-font tag-text">PK</text><text x="45" y="56" class="sys-font field-name">eco_name</text><text x="260" y="56" text-anchor="end" class="sys-font field-type">VARCHAR(150)</text>
+    <text x="45" y="81" class="sys-font field-name">eco_code</text><text x="260" y="81" text-anchor="end" class="sys-font field-type">VARCHAR(20)</text>
+    <text x="45" y="106" class="sys-font field-name">biome_cn</text><text x="260" y="106" text-anchor="end" class="sys-font field-type">VARCHAR(30)</text>
+    <rect x="10" y="121" width="28" height="13" fill="#8B5CF6" rx="3"/><text x="24" y="130" text-anchor="middle" class="sys-font tag-text">GIN</text><text x="45" y="131" class="sys-font field-name">climate</text><text x="260" y="131" text-anchor="end" class="sys-font field-type">JSONB</text>
+    <rect x="10" y="146" width="30" height="13" fill="#EC4899" rx="3"/><text x="25" y="155" text-anchor="middle" class="sys-font tag-text">GiST</text><text x="45" y="156" class="sys-font field-name">boundary</text><text x="260" y="156" text-anchor="end" class="sys-font field-type">MULTIPOLYGON</text>
+  </g>
+
+  <!-- 2. ingredient_origin (X=420, Y=115) -->
+  <g transform="translate(420, 115)" filter="url(#table-shadow)">
+    <rect x="0" y="40" width="270" height="75" fill="#FFFFFF" stroke="#E2E8F0" rx="6" stroke-width="1.5"/><rect x="0" y="65" width="270" height="25" fill="#F8FAFC"/>
+    <rect x="0" y="0" width="270" height="40" fill="#D97706" rx="6"/><rect x="0" y="20" width="270" height="20" fill="#D97706"/>
+    <text x="135" y="18" text-anchor="middle" class="sys-font tb-header">ingredient_origin</text><text x="135" y="32" text-anchor="middle" class="sys-font tb-sub">食材原产地关联表</text>
+    <rect x="10" y="46" width="32" height="13" fill="#3B82F6" rx="3"/><text x="26" y="55" text-anchor="middle" class="sys-font tag-text">PFK</text><text x="48" y="56" class="sys-font field-name">eco_name</text><text x="260" y="56" text-anchor="end" class="sys-font field-type">VARCHAR</text>
+    <rect x="10" y="71" width="32" height="13" fill="#3B82F6" rx="3"/><text x="26" y="80" text-anchor="middle" class="sys-font tag-text">PFK</text><text x="48" y="81" class="sys-font field-name">ingredient_id</text><text x="260" y="81" text-anchor="end" class="sys-font field-type">CHAR(8)</text>
+  </g>
+
+  <!-- 3. ingredient (X=760, Y=115) -->
+  <g transform="translate(760, 115)" filter="url(#table-shadow)">
+    <rect x="0" y="40" width="270" height="100" fill="#FFFFFF" stroke="#E2E8F0" rx="6" stroke-width="1.5"/><rect x="0" y="65" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="115" width="270" height="25" fill="#F8FAFC"/>
+    <rect x="0" y="0" width="270" height="40" fill="#D97706" rx="6"/><rect x="0" y="20" width="270" height="20" fill="#D97706"/>
+    <text x="135" y="18" text-anchor="middle" class="sys-font tb-header">ingredient</text><text x="135" y="32" text-anchor="middle" class="sys-font tb-sub">核心食材字典表</text>
+    <rect x="10" y="46" width="24" height="13" fill="#EAB308" rx="3"/><text x="22" y="55" text-anchor="middle" class="sys-font tag-text">PK</text><text x="45" y="56" class="sys-font field-name">ingredient_id</text><text x="260" y="56" text-anchor="end" class="sys-font field-type">CHAR(8)</text>
+    <text x="45" y="81" class="sys-font field-name">name</text><text x="260" y="81" text-anchor="end" class="sys-font field-type">VARCHAR(50)</text>
+    <rect x="10" y="96" width="28" height="13" fill="#8B5CF6" rx="3"/><text x="24" y="105" text-anchor="middle" class="sys-font tag-text">GIN</text><text x="45" y="106" class="sys-font field-name">flavor_tags</text><text x="260" y="106" text-anchor="end" class="sys-font field-type">TEXT[]</text>
+  </g>
+
+  <!-- 4. flavor_genotype (X=60, Y=410) -->
+  <g transform="translate(60, 410)" filter="url(#table-shadow)">
+    <rect x="0" y="40" width="270" height="200" fill="#FFFFFF" stroke="#E2E8F0" rx="6" stroke-width="1.5"/><rect x="0" y="65" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="115" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="165" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="215" width="270" height="25" fill="#F8FAFC"/>
+    <rect x="0" y="0" width="270" height="40" fill="#4338CA" rx="6"/><rect x="0" y="20" width="270" height="20" fill="#4338CA"/>
+    <text x="135" y="18" text-anchor="middle" class="sys-font tb-header">flavor_genotype</text><text x="135" y="32" text-anchor="middle" class="sys-font tb-sub">风味基因型(成品)记录表</text>
+    <rect x="10" y="46" width="24" height="13" fill="#EAB308" rx="3"/><text x="22" y="55" text-anchor="middle" class="sys-font tag-text">PK</text><text x="45" y="56" class="sys-font field-name">genotype_id</text><text x="260" y="56" text-anchor="end" class="sys-font field-type">CHAR(12)</text>
+    <text x="45" y="81" class="sys-font field-name">dish_name</text><text x="260" y="81" text-anchor="end" class="sys-font field-type">VARCHAR(50)</text>
+    <rect x="10" y="96" width="24" height="13" fill="#3B82F6" rx="3"/><text x="22" y="105" text-anchor="middle" class="sys-font tag-text">FK</text><text x="45" y="106" class="sys-font field-name">eco_name</text><text x="260" y="106" text-anchor="end" class="sys-font field-type">VARCHAR(150)</text>
+    <rect x="10" y="121" width="28" height="13" fill="#8B5CF6" rx="3"/><text x="24" y="130" text-anchor="middle" class="sys-font tag-text">GIN</text><text x="45" y="131" class="sys-font field-name">genome_vector</text><text x="260" y="131" text-anchor="end" class="sys-font field-type">JSONB</text>
+    <text x="45" y="156" class="sys-font field-name">primary_values</text><text x="260" y="156" text-anchor="end" class="sys-font field-type">NUMERIC(4,2)[]</text>
+    <rect x="10" y="171" width="30" height="13" fill="#EC4899" rx="3"/><text x="25" y="180" text-anchor="middle" class="sys-font tag-text">GiST</text><text x="45" y="181" class="sys-font field-name">coordinates</text><text x="260" y="181" text-anchor="end" class="sys-font field-type">POINT</text>
+  </g>
+
+  <!-- 5. recipe_link (X=420, Y=410) -->
+  <g transform="translate(420, 410)" filter="url(#table-shadow)">
+    <rect x="0" y="40" width="280" height="125" fill="#FFFFFF" stroke="#E2E8F0" rx="6" stroke-width="1.5"/><rect x="0" y="65" width="280" height="25" fill="#F8FAFC"/><rect x="0" y="115" width="280" height="25" fill="#F8FAFC"/>
+    <rect x="0" y="0" width="280" height="40" fill="#4338CA" rx="6"/><rect x="0" y="20" width="280" height="20" fill="#4338CA"/>
+    <text x="140" y="18" text-anchor="middle" class="sys-font tb-header">recipe_link</text><text x="140" y="32" text-anchor="middle" class="sys-font tb-sub">成品与食材配方关联表</text>
+    <rect x="10" y="46" width="32" height="13" fill="#3B82F6" rx="3"/><text x="26" y="55" text-anchor="middle" class="sys-font tag-text">PFK</text><text x="48" y="56" class="sys-font field-name">genotype_id</text><text x="270" y="56" text-anchor="end" class="sys-font field-type">CHAR(12)</text>
+    <rect x="10" y="71" width="32" height="13" fill="#3B82F6" rx="3"/><text x="26" y="80" text-anchor="middle" class="sys-font tag-text">PFK</text><text x="48" y="81" class="sys-font field-name">ingredient_id</text><text x="270" y="81" text-anchor="end" class="sys-font field-type">CHAR(8)</text>
+    <text x="48" y="106" class="sys-font field-name">role</text><text x="270" y="106" text-anchor="end" class="sys-font field-type">VARCHAR(20)</text>
+    <text x="48" y="131" class="sys-font field-name">importance</text><text x="270" y="131" text-anchor="end" class="sys-font field-type">NUMERIC(3,2)</text>
+  </g>
+
+  <!-- 6. genotype_lineage (X=355, Y=640) -->
+  <g transform="translate(355, 640)" filter="url(#table-shadow)">
+    <rect x="0" y="40" width="280" height="100" fill="#FFFFFF" stroke="#E2E8F0" rx="6" stroke-width="1.5"/><rect x="0" y="65" width="280" height="25" fill="#F8FAFC"/>
+    <rect x="0" y="0" width="280" height="40" fill="#4338CA" rx="6"/><rect x="0" y="20" width="280" height="20" fill="#4338CA"/>
+    <text x="140" y="18" text-anchor="middle" class="sys-font tb-header">genotype_lineage</text><text x="140" y="32" text-anchor="middle" class="sys-font tb-sub">风味谱系溯源链 (自引用)</text>
+    <rect x="10" y="46" width="32" height="13" fill="#3B82F6" rx="3"/><text x="26" y="55" text-anchor="middle" class="sys-font tag-text">PFK</text><text x="48" y="56" class="sys-font field-name">ancestor_id</text><text x="270" y="56" text-anchor="end" class="sys-font field-type">CHAR(12)</text>
+    <rect x="10" y="71" width="32" height="13" fill="#3B82F6" rx="3"/><text x="26" y="80" text-anchor="middle" class="sys-font tag-text">PFK</text><text x="48" y="81" class="sys-font field-name">descendant_id</text><text x="270" y="81" text-anchor="end" class="sys-font field-type">CHAR(12)</text>
+    <text x="48" y="106" class="sys-font field-name">mutation_desc</text><text x="270" y="106" text-anchor="end" class="sys-font field-type">TEXT</text>
+  </g>
+
+  <!-- 7. dispersal_event (X=780, Y=310) -->
+  <g transform="translate(780, 310)" filter="url(#table-shadow)">
+    <rect x="0" y="40" width="270" height="175" fill="#FFFFFF" stroke="#E2E8F0" rx="6" stroke-width="1.5"/><rect x="0" y="65" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="115" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="165" width="270" height="25" fill="#F8FAFC"/>
+    <rect x="0" y="0" width="270" height="40" fill="#E11D48" rx="6"/><rect x="0" y="20" width="270" height="20" fill="#E11D48"/>
+    <text x="135" y="18" text-anchor="middle" class="sys-font tb-header">dispersal_event</text><text x="135" y="32" text-anchor="middle" class="sys-font tb-sub">传播事件表</text>
+    <rect x="10" y="46" width="24" height="13" fill="#EAB308" rx="3"/><text x="22" y="55" text-anchor="middle" class="sys-font tag-text">PK</text><text x="45" y="56" class="sys-font field-name">event_id</text><text x="260" y="56" text-anchor="end" class="sys-font field-type">CHAR(12)</text>
+    <text x="45" y="81" class="sys-font field-name">route_name</text><text x="260" y="81" text-anchor="end" class="sys-font field-type">VARCHAR(40)</text>
+    <rect x="10" y="96" width="24" height="13" fill="#3B82F6" rx="3"/><text x="22" y="105" text-anchor="middle" class="sys-font tag-text">FK</text><text x="45" y="106" class="sys-font field-name">ingredient_id</text><text x="260" y="106" text-anchor="end" class="sys-font field-type">CHAR(8)</text>
+    <rect x="10" y="121" width="24" height="13" fill="#3B82F6" rx="3"/><text x="22" y="130" text-anchor="middle" class="sys-font tag-text">FK</text><text x="45" y="131" class="sys-font field-name">from_eco_name</text><text x="260" y="131" text-anchor="end" class="sys-font field-type">VARCHAR</text>
+    <rect x="10" y="146" width="30" height="13" fill="#EC4899" rx="3"/><text x="25" y="155" text-anchor="middle" class="sys-font tag-text">GiST</text><text x="45" y="156" class="sys-font field-name">route_geom</text><text x="260" y="156" text-anchor="end" class="sys-font field-type">LINESTRING</text>
+  </g>
+
+  <!-- 8. chapter (X=780, Y=540) -->
+  <g transform="translate(780, 540)" filter="url(#table-shadow)">
+    <rect x="0" y="40" width="270" height="125" fill="#FFFFFF" stroke="#E2E8F0" rx="6" stroke-width="1.5"/><rect x="0" y="65" width="270" height="25" fill="#F8FAFC"/><rect x="0" y="115" width="270" height="25" fill="#F8FAFC"/>
+    <rect x="0" y="0" width="270" height="40" fill="#E11D48" rx="6"/><rect x="0" y="20" width="270" height="20" fill="#E11D48"/>
+    <text x="135" y="18" text-anchor="middle" class="sys-font tb-header">chapter</text><text x="135" y="32" text-anchor="middle" class="sys-font tb-sub">叙事章节表</text>
+    <rect x="10" y="46" width="24" height="13" fill="#EAB308" rx="3"/><text x="22" y="55" text-anchor="middle" class="sys-font tag-text">PK</text><text x="45" y="56" class="sys-font field-name">chapter_id</text><text x="260" y="56" text-anchor="end" class="sys-font field-type">INT</text>
+    <text x="45" y="81" class="sys-font field-name">title</text><text x="260" y="81" text-anchor="end" class="sys-font field-type">VARCHAR(50)</text>
+    <rect x="10" y="96" width="24" height="13" fill="#94A3B8" rx="3"/><text x="22" y="105" text-anchor="middle" class="sys-font tag-text">Rel</text><text x="45" y="106" class="sys-font field-name">route_name</text><text x="260" y="106" text-anchor="end" class="sys-font field-type">VARCHAR(40)</text>
+    <text x="45" y="131" class="sys-font field-name">body</text><text x="260" y="131" text-anchor="end" class="sys-font field-type">TEXT</text>
+  </g>
+</svg>

@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<defs>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#23352D" flood-opacity="0.12"/></filter>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6C7A72"/></marker>
+</defs>
+<rect width="1600" height="1000" fill="#F7F9F5"/>
+<text x="70.0" y="62.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="34" font-weight="700">
+<tspan x="70.0" dy="0">数据库核心实体 E-R 图</tspan>
+</text>
+<line x1="70.0" y1="112.0" x2="1530.0" y2="112.0" stroke="#D9E2DA" stroke-width="2" stroke-linecap="round"/>
+<rect x="90.0" y="175.0" width="330.0" height="185.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="90.0" y="175.0" width="10" height="185.0" rx="5" fill="#7FA961"/>
+<text x="118.0" y="201.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="21" font-weight="700">
+<tspan x="118.0" dy="0">eco_geo_unit</tspan>
+</text>
+<text x="118.0" y="243.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="118.0" dy="0">eco_name PK</tspan>
+<tspan x="118.0" dy="22">boundary</tspan>
+<tspan x="118.0" dy="22">biome / realm</tspan>
+<tspan x="118.0" dy="22">area_km2</tspan>
+</text>
+<rect x="635.0" y="160.0" width="340.0" height="210.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="635.0" y="160.0" width="10" height="210.0" rx="5" fill="#315F4D"/>
+<text x="663.0" y="186.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="21" font-weight="700">
+<tspan x="663.0" dy="0">flavor_genotype</tspan>
+</text>
+<text x="663.0" y="228.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="663.0" dy="0">genotype_id PK</tspan>
+<tspan x="663.0" dy="22">node_key</tspan>
+<tspan x="663.0" dy="22">dish_name</tspan>
+<tspan x="663.0" dy="22">genome_vector</tspan>
+<tspan x="663.0" dy="22">coordinates</tspan>
+</text>
+<rect x="1180.0" y="175.0" width="330.0" height="185.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1180.0" y="175.0" width="10" height="185.0" rx="5" fill="#D6A23F"/>
+<text x="1208.0" y="201.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="21" font-weight="700">
+<tspan x="1208.0" dy="0">ingredient</tspan>
+</text>
+<text x="1208.0" y="243.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="1208.0" dy="0">ingredient_id PK</tspan>
+<tspan x="1208.0" dy="22">name / type</tspan>
+<tspan x="1208.0" dy="22">flavor_tags</tspan>
+</text>
+<rect x="90.0" y="615.0" width="330.0" height="185.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="90.0" y="615.0" width="10" height="185.0" rx="5" fill="#C95A49"/>
+<text x="118.0" y="641.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="21" font-weight="700">
+<tspan x="118.0" dy="0">dispersal_event</tspan>
+</text>
+<text x="118.0" y="683.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="118.0" dy="0">event_id PK</tspan>
+<tspan x="118.0" dy="22">route_name</tspan>
+<tspan x="118.0" dy="22">route_geom</tspan>
+<tspan x="118.0" dy="22">from_eco /</tspan>
+<tspan x="118.0" dy="22">to_eco</tspan>
+</text>
+<rect x="635.0" y="615.0" width="340.0" height="185.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="635.0" y="615.0" width="10" height="185.0" rx="5" fill="#4FA69A"/>
+<text x="663.0" y="641.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="21" font-weight="700">
+<tspan x="663.0" dy="0">recipe_link</tspan>
+</text>
+<text x="663.0" y="683.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="663.0" dy="0">genotype_id FK</tspan>
+<tspan x="663.0" dy="22">ingredient_id FK</tspan>
+<tspan x="663.0" dy="22">role</tspan>
+<tspan x="663.0" dy="22">importance</tspan>
+</text>
+<rect x="1180.0" y="615.0" width="330.0" height="185.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1180.0" y="615.0" width="10" height="185.0" rx="5" fill="#7B6BB1"/>
+<text x="1208.0" y="641.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="21" font-weight="700">
+<tspan x="1208.0" dy="0">chapter</tspan>
+</text>
+<text x="1208.0" y="683.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="1208.0" dy="0">chapter_id PK</tspan>
+<tspan x="1208.0" dy="22">title / body</tspan>
+<tspan x="1208.0" dy="22">route_name FK</tspan>
+</text>
+<line x1="438.0" y1="267.5" x2="617.0" y2="267.5" stroke="#7FA961" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="499.5" y="237.5" fill="#7FA961" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="499.5" dy="0">1 : N</tspan>
+</text>
+<line x1="993.0" y1="265.0" x2="1162.0" y2="265.0" stroke="#D6A23F" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1049.5" y="235.0" fill="#D6A23F" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="1049.5" dy="0">M : N</tspan>
+</text>
+<line x1="255.0" y1="378.0" x2="255.0" y2="597.0" stroke="#C95A49" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="273.0" y="479.5" fill="#C95A49" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="273.0" dy="0">from / to eco</tspan>
+</text>
+<line x1="805.0" y1="388.0" x2="805.0" y2="597.0" stroke="#4FA69A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="823.0" y="484.5" fill="#4FA69A" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="823.0" dy="0">FK</tspan>
+</text>
+<polyline points="1345.0,378.0 1345.0,535.0 995.0,535.0 995.0,708.0" fill="none" stroke="#D6A23F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1045.0" y="510.0" fill="#D6A23F" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="1045.0" dy="0">FK</tspan>
+</text>
+<polyline points="420.0,708.0 520.0,708.0 520.0,865.0 1345.0,865.0 1345.0,820.0" fill="none" stroke="#7B6BB1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="930.0" y="835.0" fill="#7B6BB1" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="930.0" dy="0">route_name</tspan>
+</text>
+<rect x="510.0" y="430.0" width="580.0" height="92.0" rx="24" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<text x="560.0" y="462.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="21" font-weight="400">
+<tspan x="560.0" dy="0">关联表把多对多关系变成可查询、可审核、可扩展的数据结构。</tspan>
+</text>
+</svg>

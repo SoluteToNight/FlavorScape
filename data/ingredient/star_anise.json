@@ -1,0 +1,97 @@
+{
+  "ingredient_id": "star_anise",
+  "name": "八角",
+  "name_en": "Star Anise",
+  "species": "Illicium verum",
+  "origin": "桂西南与越北山地",
+  "origin_coordinates": [106.90, 22.35],
+  "summary": "八角是典型的南方木本香辛料，香气浓烈、耐储运，适合进入卤煮、炖烧和火锅底料系统。它的扩散体现了山地物产、岭南港口、香料贸易与北方城市餐饮之间的联动。",
+  "color": "#9B6A2F",
+  "image_url": "/ingredients/star-anise-realistic.png",
+  "timeline": [
+    {
+      "year": 700,
+      "dynasty": "唐代",
+      "location": "桂西南",
+      "region_key": "广西",
+      "coordinates": [106.62, 23.91],
+      "historical_name": ["八角茴香", "大茴香"],
+      "source_literature": "岭南本草与地方物产资料",
+      "event_type": "山地物产",
+      "route": "桂西南山地采集与地方使用",
+      "notes": "八角原生环境多在湿热山地，早期更接近地方药食两用物产，而非全国性调味品。"
+    },
+    {
+      "year": 960,
+      "dynasty": "宋代",
+      "location": "广州",
+      "region_key": "广东",
+      "coordinates": [113.27, 23.13],
+      "historical_name": ["舶来香料", "茴香类香辛料"],
+      "source_literature": "宋代广州港与香料贸易研究",
+      "event_type": "港口集散",
+      "route": "岭南山地物产进入广州贸易网络",
+      "notes": "广州港连接岭南腹地和海上贸易，八角这类耐储运香料具备进入更大市场的条件。"
+    },
+    {
+      "year": 1279,
+      "dynasty": "元代",
+      "location": "泉州",
+      "region_key": "福建",
+      "coordinates": [118.59, 24.91],
+      "historical_name": ["茴香", "香料"],
+      "source_literature": "泉州港海上贸易史资料",
+      "event_type": "海贸扩散",
+      "route": "岭南香料经东南沿海港口转运",
+      "notes": "东南沿海港口把南方香辛料纳入更广的海上商品网络，使其从地方物产转为可流通的餐饮原料。"
+    },
+    {
+      "year": 1420,
+      "dynasty": "明代",
+      "location": "南京",
+      "region_key": "江苏",
+      "coordinates": [118.78, 32.05],
+      "historical_name": ["八角茴香", "大茴香"],
+      "source_literature": "明代本草与食疗文献",
+      "event_type": "药食转化",
+      "route": "岭南香料经江南市场北上",
+      "notes": "本草和食疗文献推动八角从药材语境进入厨房语境，为后续卤煮、酱烧和肉食去腥提供香气基础。"
+    },
+    {
+      "year": 1680,
+      "dynasty": "清代",
+      "location": "北京",
+      "region_key": "北京",
+      "coordinates": [116.40, 39.90],
+      "historical_name": ["大料", "八角"],
+      "source_literature": "清代京师饮食与市肆资料",
+      "event_type": "北方定名",
+      "route": "江南与运河商业网络输入京师",
+      "notes": "八角在北方常被称为大料，进入炖肉、卤煮、烧鸭等城市餐饮场景，与主页中的北京烤鸭样本形成直接关联。"
+    },
+    {
+      "year": 1750,
+      "dynasty": "清代",
+      "location": "四川盆地",
+      "region_key": "四川",
+      "coordinates": [104.07, 30.66],
+      "historical_name": ["八角", "五香料"],
+      "source_literature": "川菜香辛料使用史资料",
+      "event_type": "复合调味",
+      "route": "南方香料与长江上游市场结合",
+      "notes": "八角与花椒、辣椒、桂皮等香料共同进入复合调味体系，成为卤味、红烧和火锅底料的重要香气层。"
+    },
+    {
+      "year": 1850,
+      "dynasty": "清代晚期",
+      "location": "潮汕",
+      "region_key": "潮汕",
+      "coordinates": [116.68, 23.35],
+      "historical_name": ["卤料", "八角"],
+      "source_literature": "潮汕卤味与香料贸易研究",
+      "event_type": "地方风味定型",
+      "route": "岭南香料在潮汕卤味系统中稳定使用",
+      "notes": "潮汕卤味、牛肉火锅和沙茶风味都依赖香辛料复合结构，八角是其中具有辨识度的底层香气。"
+    }
+  ]
+}

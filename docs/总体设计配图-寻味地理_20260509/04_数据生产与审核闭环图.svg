@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<defs>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#23352D" flood-opacity="0.12"/></filter>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6C7A72"/></marker>
+</defs>
+<rect width="1600" height="1000" fill="#F7F9F5"/>
+<text x="70.0" y="62.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="34" font-weight="700">
+<tspan x="70.0" dy="0">数据生产与审核闭环图</tspan>
+</text>
+<line x1="70.0" y1="112.0" x2="1530.0" y2="112.0" stroke="#D9E2DA" stroke-width="2" stroke-linecap="round"/>
+<rect x="70.0" y="310.0" width="210.0" height="150.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="70.0" y="310.0" width="10" height="150.0" rx="5" fill="#4E79A7"/>
+<text x="98.0" y="336.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="98.0" dy="0">语料来源</tspan>
+</text>
+<text x="98.0" y="378.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="98.0" dy="0">菜谱、地方志</tspan>
+<tspan x="98.0" dy="22">古籍、论文、图片</tspan>
+</text>
+<rect x="315.0" y="310.0" width="210.0" height="150.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="315.0" y="310.0" width="10" height="150.0" rx="5" fill="#7B6BB1"/>
+<text x="343.0" y="336.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="343.0" dy="0">结构化抽取</tspan>
+</text>
+<text x="343.0" y="378.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="343.0" dy="0">LLM 辅助</tspan>
+<tspan x="343.0" dy="22">字段初填</tspan>
+</text>
+<rect x="560.0" y="310.0" width="210.0" height="150.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="560.0" y="310.0" width="10" height="150.0" rx="5" fill="#4FA69A"/>
+<text x="588.0" y="336.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="588.0" dy="0">格式校验</tspan>
+</text>
+<text x="588.0" y="378.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="588.0" dy="0">Schema</tspan>
+<tspan x="588.0" dy="22">坐标、枚举、范围</tspan>
+</text>
+<rect x="805.0" y="310.0" width="210.0" height="150.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="805.0" y="310.0" width="10" height="150.0" rx="5" fill="#D6A23F"/>
+<text x="833.0" y="336.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="833.0" dy="0">人工审核</tspan>
+</text>
+<text x="833.0" y="378.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="833.0" dy="0">来源核对</tspan>
+<tspan x="833.0" dy="22">争议与置信度</tspan>
+</text>
+<rect x="1050.0" y="310.0" width="210.0" height="150.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1050.0" y="310.0" width="10" height="150.0" rx="5" fill="#315F4D"/>
+<text x="1078.0" y="336.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="1078.0" dy="0">入库发布</tspan>
+</text>
+<text x="1078.0" y="378.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="1078.0" dy="0">PostGIS /</tspan>
+<tspan x="1078.0" dy="22">JSON</tspan>
+<tspan x="1078.0" dy="22">版本冻结</tspan>
+</text>
+<rect x="1295.0" y="310.0" width="210.0" height="150.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1295.0" y="310.0" width="10" height="150.0" rx="5" fill="#C95A49"/>
+<text x="1323.0" y="336.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="1323.0" dy="0">前端呈现</tspan>
+</text>
+<text x="1323.0" y="378.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="1323.0" dy="0">地图、专题</tspan>
+<tspan x="1323.0" dy="22">叙事与接口</tspan>
+</text>
+<line x1="294.0" y1="385.0" x2="303.0" y2="385.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="539.0" y1="385.0" x2="548.0" y2="385.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="784.0" y1="385.0" x2="793.0" y2="385.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="1029.0" y1="385.0" x2="1038.0" y2="385.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="1274.0" y1="385.0" x2="1283.0" y2="385.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="1400.0,485.0 1400.0,665.0 180.0,665.0 180.0,485.0" fill="none" stroke="#9AA8A0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 8" marker-end="url(#arrow)"/>
+<text x="505.0" y="690.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="24" font-weight="700">
+<tspan x="505.0" dy="0">用户反馈 / 内容复核 / 新资料补证</tspan>
+</text>
+<rect x="230.0" y="160.0" width="1140.0" height="75.0" rx="24" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<text x="280.0" y="183.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="24" font-weight="400">
+<tspan x="280.0" dy="0">核心原则：LLM 提高生产效率，但公开展示数据必须经过来源、坐标、字段和文字审核。</tspan>
+</text>
+</svg>

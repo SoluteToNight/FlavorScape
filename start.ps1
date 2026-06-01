@@ -1,90 +1,136 @@
-# 寻味地理 — 一键启动脚本 (PowerShell)
-# 用法：在 Food 目录右键 → 在终端中打开 → .\start.ps1
+# FlavorScape one-shot startup script for Windows PowerShell.
+# Run from the repository root:
+#   .\start.ps1
 
-# uv/npm 等外部命令会把状态信息写到 stderr，不能用 Stop 策略
 $ErrorActionPreference = "Continue"
 $Root = $PSScriptRoot
 
-# ── 颜色输出 ──────────────────────────────────────────────────────────────────
 function Write-Step($msg) { Write-Host "  $msg" -ForegroundColor Cyan }
-function Write-Ok($msg)   { Write-Host "  ✓ $msg" -ForegroundColor Green }
-function Write-Warn($msg) { Write-Host "  ⚠ $msg" -ForegroundColor Yellow }
-function Write-Err($msg)  { Write-Host "  ✗ $msg" -ForegroundColor Red }
+function Write-Ok($msg)   { Write-Host "  OK  $msg" -ForegroundColor Green }
+function Write-Warn($msg) { Write-Host "  WARN $msg" -ForegroundColor Yellow }
+function Write-Err($msg)  { Write-Host "  ERR $msg" -ForegroundColor Red }
+
+function Quote-ForPowerShell($value) {
+    return "'" + ($value -replace "'", "''") + "'"
+}
 
 Write-Host ""
-Write-Host "  寻味地理 · 启动中" -ForegroundColor White
-Write-Host "  ─────────────────────────────────────────" -ForegroundColor DarkGray
+Write-Host "  FlavorScape startup" -ForegroundColor White
+Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
 Write-Host ""
 
-# ── 1. 检查 uv ────────────────────────────────────────────────────────────────
-Write-Step "检查 uv..."
+# 1. Check uv.
+Write-Step "Checking uv..."
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-    Write-Err "未找到 uv，请先安装：https://docs.astral.sh/uv/getting-started/installation/"
+    Write-Err "uv was not found. Install it first: https://docs.astral.sh/uv/getting-started/installation/"
     exit 1
 }
-Write-Ok "uv $(uv --version)"
+Write-Ok "$(uv --version)"
 
-# ── 2. 创建/更新 Python 虚拟环境 ─────────────────────────────────────────────
+# 2. Create or reuse the Python virtual environment.
 $venv = Join-Path $Root ".venv"
-if (-not (Test-Path $venv)) {
-    Write-Step "创建 Python 虚拟环境（.venv）..."
-    uv venv $venv --python 3.12 2>$null | Out-Null
-    Write-Ok "虚拟环境已创建"
-} else {
-    Write-Ok "虚拟环境已存在"
-}
-
-# ── 3. 安装/同步 Python 依赖 ──────────────────────────────────────────────────
 $pyExe = Join-Path $venv "Scripts\python.exe"
-Write-Step "同步 Python 依赖..."
-# --quiet 抑制 "Audited N packages" 等 uv 状态输出；2>$null 丢弃 stderr
-uv pip install --python $pyExe --quiet -r "$Root\backend\requirements.txt" 2>$null
-if ($LASTEXITCODE -eq 0) {
-    Write-Ok "Python 依赖已就绪"
+if (-not (Test-Path $pyExe)) {
+    Write-Step "Creating Python virtual environment in .venv..."
+    uv venv $venv --python 3.12
+    if ($LASTEXITCODE -ne 0) {
+        Write-Err "Failed to create .venv with Python 3.12."
+        exit $LASTEXITCODE
+    }
+    Write-Ok "Virtual environment created"
 } else {
-    Write-Warn "依赖安装返回非零退出码 ($LASTEXITCODE)，尝试继续..."
+    Write-Ok "Virtual environment already exists"
 }
 
-# ── 4. 检查 Node.js 依赖 ──────────────────────────────────────────────────────
-Write-Step "检查前端依赖..."
+# 3. Install or sync Python dependencies.
+Write-Step "Syncing Python dependencies..."
+uv pip install --python $pyExe --quiet -r "$Root\backend\requirements.txt"
+if ($LASTEXITCODE -eq 0) {
+    Write-Ok "Python dependencies are ready"
+} else {
+    Write-Warn "Dependency install returned exit code $LASTEXITCODE; continuing startup."
+}
+
+# 4. Check Node.js dependencies.
+Write-Step "Checking frontend dependencies..."
+$npmCmdInfo = Get-Command npm.cmd -ErrorAction SilentlyContinue
+if (-not $npmCmdInfo) {
+    Write-Err "npm was not found. Install Node.js first."
+    exit 1
+}
+$npmCmd = $npmCmdInfo.Source
 if (-not (Test-Path (Join-Path $Root "node_modules"))) {
-    Write-Step "安装 npm 依赖..."
+    Write-Step "Installing npm dependencies..."
     Push-Location $Root
-    npm install --silent 2>&1 | Out-Null
+    & $npmCmd install --silent
+    $npmInstallExitCode = $LASTEXITCODE
     Pop-Location
-}
-Write-Ok "前端依赖已就绪"
-
-# ── 5. 释放 8001 端口（如有旧进程占用则终止）────────────────────────────────
-$portInUse = netstat -ano 2>$null | Select-String '\s+0\.0\.0\.0:8001\s+|\s+127\.0\.0\.1:8001\s+' | Select-String 'LISTENING'
-if ($portInUse) {
-    $oldPid = ($portInUse.Line.Trim() -split '\s+')[-1]
-    if ($oldPid -match '^\d+$') {
-        Stop-Process -Id ([int]$oldPid) -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 1
-        Write-Warn "已终止占用 8001 端口的旧进程 (PID $oldPid)"
+    if ($npmInstallExitCode -ne 0) {
+        Write-Err "npm install failed with exit code $npmInstallExitCode."
+        exit $npmInstallExitCode
     }
 }
+Write-Ok "Frontend dependencies are ready"
 
-# ── 6. 启动后端（新窗口）─────────────────────────────────────────────────────
-Write-Step "启动 FastAPI 后端 → http://localhost:8001"
+# 5. Free port 8001 if an old backend is still listening.
+Write-Step "Checking port 8001..."
+$portLines = netstat -ano 2>$null | Select-String -Pattern 'LISTENING' | Select-String -Pattern '(:8001\s+)'
+$oldPids = @()
+if ($portLines) {
+    $oldPids = $portLines | ForEach-Object {
+        ($_.Line.Trim() -split '\s+')[-1]
+    } | Where-Object {
+        $_ -match '^\d+$'
+    } | Sort-Object -Unique
+}
+
+foreach ($oldPid in $oldPids) {
+    try {
+        Stop-Process -Id ([int]$oldPid) -Force -ErrorAction Stop
+        Write-Warn "Stopped old process on port 8001 (PID $oldPid)"
+    } catch {
+        Write-Warn "Could not stop process on port 8001 (PID $oldPid): $($_.Exception.Message)"
+    }
+}
+if ($oldPids.Count -gt 0) {
+    Start-Sleep -Seconds 1
+}
+
+# 6. Start the backend in a new PowerShell window.
+Write-Step "Starting FastAPI backend at http://localhost:8001"
+$quotedRoot = Quote-ForPowerShell $Root
+$quotedPyExe = Quote-ForPowerShell $pyExe
+$quotedNpmCmd = Quote-ForPowerShell $npmCmd
+$serverScript = Join-Path $Root "run_server.py"
+if (Test-Path $serverScript) {
+    $quotedServerScript = Quote-ForPowerShell $serverScript
+    $backendRunCommand = "& $quotedPyExe $quotedServerScript"
+} else {
+    $backendRunCommand = "& $quotedPyExe -m uvicorn backend.main:app --host 127.0.0.1 --port 8001 --reload"
+}
+$backendCommand = "Set-Location -LiteralPath $quotedRoot; " +
+    "Write-Host '  [backend] FlavorScape API' -ForegroundColor Cyan; " +
+    "Write-Host '  [backend] First start can take several minutes while map data loads.' -ForegroundColor Yellow; " +
+    $backendRunCommand
 $backendArgs = @(
-    "-NoExit", "-Command",
-    "cd '$Root'; " +
-    "Write-Host '  [后端] 寻味地理 API' -ForegroundColor Cyan; " +
-    "Write-Host '  [后端] 首次启动需解压底图，请稍候...' -ForegroundColor Yellow; " +
-    "& '$pyExe' -m uvicorn backend.main:app --host 127.0.0.1 --port 8001 --reload"
+    "-NoExit",
+    "-NoProfile",
+    "-ExecutionPolicy", "Bypass",
+    "-Command", $backendCommand
 )
-Start-Process powershell -ArgumentList $backendArgs
+Start-Process powershell.exe -ArgumentList $backendArgs
 
-# ── 7. 等待后端就绪 ───────────────────────────────────────────────────────────
-Write-Step "等待后端就绪..."
-$maxWait = 300   # 最多等 5 分钟（首次需解压 ~700MB TIF）
-$waited  = 0
-$ready   = $false
+# 7. Wait for backend readiness.
+Write-Step "Waiting for backend /health..."
+$maxWait = 300
+$waited = 0
+$ready = $false
+$json = $null
+
 while ($waited -lt $maxWait) {
     Start-Sleep -Seconds 3
     $waited += 3
+
     try {
         $resp = Invoke-WebRequest -Uri "http://localhost:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
         $json = $resp.Content | ConvertFrom-Json
@@ -92,37 +138,46 @@ while ($waited -lt $maxWait) {
             $ready = $true
             break
         }
-    } catch {}
+    } catch {
+        # Backend startup can block while raster/vector data loads.
+    }
+
     if ($waited % 15 -eq 0) {
-        Write-Step "  … 已等待 ${waited}s，底图数据加载中"
+        Write-Step "Still waiting after ${waited}s..."
     }
 }
 
 if ($ready) {
-    $layers = $json.vector_layers -join ", "
-    Write-Ok "后端已就绪  (图层: $layers)"
+    $layers = ""
+    if ($json.vector_layers) {
+        $layers = $json.vector_layers -join ", "
+    }
+    Write-Ok "Backend is ready (layers: $layers)"
 } else {
-    Write-Warn "后端在 ${maxWait}s 内未响应，前端将继续启动（后端可能还在加载）"
+    Write-Warn "Backend did not answer within ${maxWait}s; starting frontend anyway."
 }
 
-# ── 7. 启动前端（新窗口）─────────────────────────────────────────────────────
-Write-Step "启动 Vite 前端 → http://localhost:5173"
+# 8. Start the frontend in a new PowerShell window.
+Write-Step "Starting Vite frontend at http://localhost:5173"
+$frontendCommand = "Set-Location -LiteralPath $quotedRoot; " +
+    "Write-Host '  [frontend] FlavorScape Vite Dev' -ForegroundColor Cyan; " +
+    "& $quotedNpmCmd run dev"
 $frontendArgs = @(
-    "-NoExit", "-Command",
-    "cd '$Root'; " +
-    "Write-Host '  [前端] 寻味地理 Vite Dev' -ForegroundColor Cyan; " +
-    "npm run dev"
+    "-NoExit",
+    "-NoProfile",
+    "-ExecutionPolicy", "Bypass",
+    "-Command", $frontendCommand
 )
-Start-Process powershell -ArgumentList $frontendArgs
+Start-Process powershell.exe -ArgumentList $frontendArgs
 
-# ── 8. 完成 ──────────────────────────────────────────────────────────────────
+# 9. Done.
 Write-Host ""
-Write-Host "  ─────────────────────────────────────────" -ForegroundColor DarkGray
-Write-Ok "服务已全部启动"
+Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
+Write-Ok "Startup sequence completed"
 Write-Host ""
-Write-Host "    前端  →  http://localhost:5173" -ForegroundColor White
-Write-Host "    后端  →  http://localhost:8001" -ForegroundColor White
-Write-Host "    API   →  http://localhost:8001/docs" -ForegroundColor White
+Write-Host "    Frontend: http://localhost:5173" -ForegroundColor White
+Write-Host "    Backend:  http://localhost:8001" -ForegroundColor White
+Write-Host "    API docs: http://localhost:8001/docs" -ForegroundColor White
 Write-Host ""
-Write-Host "  关闭两个子窗口即可停止所有服务" -ForegroundColor DarkGray
+Write-Host "  Close the backend and frontend PowerShell windows to stop the services." -ForegroundColor DarkGray
 Write-Host ""

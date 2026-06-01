@@ -17,7 +17,9 @@ __pycache__/
 *.egg-info/
 
 # GIS data (large binaries, download separately)
+data.zip
 data/*.zip
+data/110m_physical/
 data/extracted/
 !data/extracted/.gitkeep
 
@@ -39,6 +41,7 @@ Thumbs.db
 .sisyphus/
 .claude/
 .playwright-mcp/
+dev/backups/
 
 # Development captures
-dev/screenshots/*.png
+dev/screenshots/

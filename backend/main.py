@@ -5,6 +5,17 @@ Usage:
   uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 """
 
+import os
+import sys
+from pathlib import Path
+
+# Fix PROJ library conflict: PostgreSQL 16 ships an old proj.db that breaks rasterio.
+# Force rasterio to use its own bundled PROJ data directory.
+_venv_site = Path(__file__).resolve().parents[1] / ".venv" / "Lib" / "site-packages"
+_proj_data = _venv_site / "rasterio" / "proj_data"
+if _proj_data.exists():
+    os.environ["PROJ_LIB"] = str(_proj_data)
+
 import logging
 import asyncio
 from contextlib import asynccontextmanager
@@ -16,6 +27,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from .config import CORS_ORIGINS
 from .db.connection import init_pool, close_pool
 from .routers import api, tiles
+from .routers.ingredient_spread import router as ingredient_router
 from .startup import run_startup, load_ecoregions_from_db
 
 logging.basicConfig(
@@ -64,6 +76,7 @@ app.add_middleware(
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(api.router)
 app.include_router(tiles.router)
+app.include_router(ingredient_router)
 
 
 @app.get("/health")

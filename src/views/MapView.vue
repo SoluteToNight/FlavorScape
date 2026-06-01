@@ -148,6 +148,7 @@ const L1_OPACITY_STRONG = 0.85
 const INITIAL_MAP_CENTER = [100, 35]
 const GLOBE_ENTER_ZOOM = 2.2
 const GLOBE_EXIT_ZOOM = 2.8
+const RASTER_MAX_ZOOM = 8
 const POLAR_TILE_LIMIT = 85.051129
 const LOOP_LENGTH = 2200
 const ANIMATION_SPEED = 1.2
@@ -242,19 +243,21 @@ const lightingEffect = new LightingEffect({
   rimLight,
 })
 
+const ADAPTIVE_GLOBE_PROJECTION = {
+  type: [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    GLOBE_ENTER_ZOOM,
+    'vertical-perspective',
+    GLOBE_EXIT_ZOOM,
+    'mercator',
+  ],
+}
+
 const MAP_STYLE = {
   version: 8,
-  projection: {
-    type: [
-      'interpolate',
-      ['linear'],
-      ['zoom'],
-      GLOBE_ENTER_ZOOM,
-      'vertical-perspective',
-      GLOBE_EXIT_ZOOM,
-      'mercator',
-    ],
-  },
+  projection: ADAPTIVE_GLOBE_PROJECTION,
   sky: {
     'sky-color': '#D9E7EC',
     'sky-horizon-blend': 0.12,
@@ -279,7 +282,7 @@ const MAP_STYLE = {
       tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
       tileSize: 256,
       minzoom: 0,
-      maxzoom: 8,
+      maxzoom: RASTER_MAX_ZOOM,
       attribution: '© Natural Earth',
     },
   },
@@ -819,7 +822,7 @@ onMounted(async () => {
     container: mapContainer.value,
     style: MAP_STYLE,
     center: INITIAL_MAP_CENTER,
-    zoom: 3.5,
+    zoom: 2.5,
     pitch: 36,
     bearing: -8,
     antialias: true,

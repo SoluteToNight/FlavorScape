@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" width="100%" height="100%">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#94A3B8" flood-opacity="0.25"/>
+    </filter>
+    <style>
+      .sys-font { font-family: 'Arial', 'Microsoft YaHei', sans-serif; }
+      .title { font-size: 22px; font-weight: bold; fill: #1E293B; }
+      .zone-title { font-size: 16px; font-weight: bold; fill: #475569; letter-spacing: 2px; writing-mode: tb; }
+      .box-text { font-size: 14px; font-weight: bold; fill: #FFFFFF; }
+      .line { fill: none; stroke: #CBD5E1; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <rect width="1000" height="650" fill="#FFFFFF"/>
+  <text x="500" y="40" text-anchor="middle" class="sys-font title">图 2-3 系统功能层级与需求能力映射</text>
+
+  <!-- Background Zones -->
+  <!-- Zone 1: Actors -->
+  <rect x="50" y="80" width="150" height="520" fill="#F8FAFC" rx="8"/>
+  <text x="80" y="340" text-anchor="middle" class="sys-font zone-title">用户角色边界</text>
+  
+  <!-- Zone 2: Interface -->
+  <rect x="300" y="80" width="250" height="520" fill="#F0FDF4" rx="8"/>
+  <text x="330" y="340" text-anchor="middle" class="sys-font zone-title">前端交互视图层</text>
+
+  <!-- Zone 3: Core Capabilities -->
+  <rect x="650" y="80" width="300" height="520" fill="#EFF6FF" rx="8"/>
+  <text x="680" y="340" text-anchor="middle" class="sys-font zone-title">后端服务与数据能力底座</text>
+
+  <!-- Lines linking zones (drawn behind boxes) -->
+  <!-- Public User flows -->
+  <path d="M 220 180 C 260 180, 260 140, 380 140" class="line"/>
+  <path d="M 220 180 C 260 180, 260 220, 380 220" class="line"/>
+  <path d="M 220 180 C 260 180, 260 300, 380 300" class="line"/>
+  <!-- Editor flows -->
+  <path d="M 220 400 C 260 400, 260 400, 380 400" class="line"/>
+  <!-- Admin flows -->
+  <path d="M 220 520 C 260 520, 260 520, 380 520" class="line"/>
+
+  <!-- From Interface to Core -->
+  <path d="M 520 140 C 600 140, 600 140, 720 140" class="line"/>
+  <path d="M 520 220 C 600 220, 600 220, 720 220" class="line"/>
+  <path d="M 520 300 C 600 300, 600 300, 720 300" class="line"/>
+  <path d="M 520 400 C 600 400, 600 420, 720 420" class="line"/>
+  <path d="M 520 520 C 600 520, 600 520, 720 520" class="line"/>
+
+
+  <!-- Boxes Zone 1 (Actors) -->
+  <g transform="translate(110, 160)">
+    <rect x="0" y="0" width="110" height="40" fill="#64748B" rx="20" filter="url(#shadow)"/>
+    <text x="55" y="25" text-anchor="middle" class="sys-font box-text">公众浏览者</text>
+  </g>
+  <g transform="translate(110, 380)">
+    <rect x="0" y="0" width="110" height="40" fill="#64748B" rx="20" filter="url(#shadow)"/>
+    <text x="55" y="25" text-anchor="middle" class="sys-font box-text">数据编辑者</text>
+  </g>
+  <g transform="translate(110, 500)">
+    <rect x="0" y="0" width="110" height="40" fill="#64748B" rx="20" filter="url(#shadow)"/>
+    <text x="55" y="25" text-anchor="middle" class="sys-font box-text">系统管理员</text>
+  </g>
+
+  <!-- Boxes Zone 2 (Interface) -->
+  <g transform="translate(380, 120)">
+    <rect x="0" y="0" width="140" height="40" fill="#10B981" rx="6" filter="url(#shadow)"/>
+    <text x="70" y="25" text-anchor="middle" class="sys-font box-text">交互式地图探索</text>
+  </g>
+  <g transform="translate(380, 200)">
+    <rect x="0" y="0" width="140" height="40" fill="#10B981" rx="6" filter="url(#shadow)"/>
+    <text x="70" y="25" text-anchor="middle" class="sys-font box-text">时空叙事阅读</text>
+  </g>
+  <g transform="translate(380, 280)">
+    <rect x="0" y="0" width="140" height="40" fill="#10B981" rx="6" filter="url(#shadow)"/>
+    <text x="70" y="25" text-anchor="middle" class="sys-font box-text">基因库筛选比较</text>
+  </g>
+  <g transform="translate(380, 380)">
+    <rect x="0" y="0" width="140" height="40" fill="#F59E0B" rx="6" filter="url(#shadow)"/>
+    <text x="70" y="25" text-anchor="middle" class="sys-font box-text">离线资料汇编整理</text>
+  </g>
+  <g transform="translate(380, 500)">
+    <rect x="0" y="0" width="140" height="40" fill="#EF4444" rx="6" filter="url(#shadow)"/>
+    <text x="70" y="25" text-anchor="middle" class="sys-font box-text">后台脚本监控</text>
+  </g>
+
+  <!-- Boxes Zone 3 (Core) -->
+  <g transform="translate(720, 120)">
+    <rect x="0" y="0" width="200" height="40" fill="#3B82F6" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="25" text-anchor="middle" class="sys-font box-text">空间图层与瓦片动态输出</text>
+  </g>
+  <g transform="translate(720, 200)">
+    <rect x="0" y="0" width="200" height="40" fill="#3B82F6" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="25" text-anchor="middle" class="sys-font box-text">复杂关系与半结构化查询</text>
+  </g>
+  <g transform="translate(720, 280)">
+    <rect x="0" y="0" width="200" height="40" fill="#3B82F6" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="25" text-anchor="middle" class="sys-font box-text">数据与方法可信溯源</text>
+  </g>
+  <g transform="translate(720, 400)">
+    <rect x="0" y="0" width="200" height="40" fill="#8B5CF6" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="25" text-anchor="middle" class="sys-font box-text">LLM 辅助验证与入库管理</text>
+  </g>
+  <g transform="translate(720, 500)">
+    <rect x="0" y="0" width="200" height="40" fill="#6366F1" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="25" text-anchor="middle" class="sys-font box-text">数据库备份与健康检查 API</text>
+  </g>
+</svg>

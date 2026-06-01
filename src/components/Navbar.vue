@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar" :class="{ 'is-home': isHome, 'is-map': isMap }">
+  <nav class="navbar" :class="{ 'is-home': isHome, 'is-map': isMap, 'is-product': isProduct }">
     <div class="navbar-inner">
 
       <!-- Logo -->
@@ -73,13 +73,13 @@ const appStore = useAppStore()
 
 const isHome = computed(() => route.name === 'home')
 const isMap  = computed(() => route.name === 'map')
+const isProduct = computed(() => ['brand', 'spread'].includes(route.name))
 
 const navItems = [
-  { name: 'home',      path: '/',          label: '首　页'   },
-  { name: 'map',       path: '/map',        label: '探索地图' },
-  { name: 'library',   path: '/library',    label: '风味基因库'},
-  { name: 'narrative', path: '/narrative',  label: '时空叙事馆'},
-  { name: 'about',     path: '/about',      label: '关于方法论'},
+  { name: 'home',   path: '/',       label: '产品入口' },
+  { name: 'brand',  path: '/brand',  label: '生成器' },
+  { name: 'spread', path: '/spread', label: '传播图谱' },
+  { name: 'map',    path: '/map',    label: '风味底图' },
 ]
 
 const searchOpen    = ref(false)
@@ -141,17 +141,17 @@ function select(item) {
   top: 0; left: 0; right: 0;
   height: var(--navbar-h);
   z-index: 100;
-  background: rgba(248, 244, 239, 0.9);
-  border-bottom: 1px solid var(--glass-border);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(250, 247, 241, 0.78);
+  border-bottom: 1px solid rgba(110, 92, 68, 0.12);
+  backdrop-filter: blur(22px) saturate(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
   transition: background 400ms ease, border-color 400ms ease;
 }
 
 /* On the home page: fully transparent so the particle canvas shows through */
 .navbar.is-home {
-  background: transparent;
-  border-bottom-color: transparent;
+  background: rgba(250, 247, 241, 0.24);
+  border-bottom-color: rgba(110, 92, 68, 0.08);
 }
 
 /* On the map page: slightly more translucent so map shows */
@@ -159,14 +159,19 @@ function select(item) {
   background: rgba(248, 244, 239, 0.82);
 }
 
+.navbar.is-product {
+  background: rgba(250, 247, 241, 0.86);
+  border-bottom-color: rgba(116, 92, 62, 0.14);
+}
+
 .navbar-inner {
-  max-width: 1440px;
+  max-width: 1500px;
   margin: 0 auto;
   height: 100%;
   display: flex;
   align-items: center;
   padding: 0 32px;
-  gap: 40px;
+  gap: 28px;
 }
 
 /* Logo */
@@ -176,12 +181,17 @@ function select(item) {
   align-items: baseline;
   gap: 0;
   flex-shrink: 0;
-  letter-spacing: 0.06em;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 252, 247, 0.56);
+  box-shadow: inset 0 0 0 1px rgba(110, 92, 68, 0.1);
+  letter-spacing: 0.04em;
 }
 .logo-serif {
   font-family: var(--font-serif);
   font-size: 17px; font-weight: 500;
-  color: var(--amber);
+  color: var(--earth);
 }
 .logo-sans {
   font-family: var(--font-sans);
@@ -194,37 +204,44 @@ function select(item) {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
   justify-content: center;
+  height: 38px;
+  padding: 4px;
+  border: 1px solid rgba(110, 92, 68, 0.11);
+  border-radius: 999px;
+  background: rgba(255, 252, 247, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.62);
 }
 
 .nav-link {
   text-decoration: none;
   font-size: 13px;
-  font-weight: 300;
+  font-weight: 500;
   color: var(--text-mid);
-  letter-spacing: 0.06em;
-  padding: 6px 14px;
-  border-radius: 20px;
+  letter-spacing: 0.02em;
+  padding: 6px 15px;
+  border-radius: 999px;
   transition: all var(--transition);
   position: relative;
   white-space: nowrap;
 }
 .nav-link:hover {
   color: var(--text);
-  background: rgba(200, 150, 15, 0.08);
+  background: rgba(94, 123, 80, 0.08);
 }
 .nav-link.active {
-  color: var(--amber);
-  background: var(--amber-soft);
-  font-weight: 400;
+  color: #fffaf2;
+  background: linear-gradient(135deg, var(--earth), var(--leaf));
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(67, 92, 60, 0.16);
 }
 
 /* On home page: white text for contrast against dark particle canvas */
 .navbar.is-home .nav-link { color: rgba(90,83,78,0.75); }
 .navbar.is-home .nav-link:hover { color: var(--text-mid); background: rgba(255,255,255,0.15); }
-.navbar.is-home .nav-link.active { color: var(--amber); background: rgba(200,150,15,0.12); }
+.navbar.is-home .nav-link.active { color: #fffaf2; background: linear-gradient(135deg, var(--earth), var(--leaf)); }
 .navbar.is-home .logo-sans { color: rgba(90,83,78,0.75); }
 
 /* Search */
@@ -253,7 +270,7 @@ function select(item) {
 .search-input:focus {
   background: rgba(255,252,248,0.98);
   box-shadow: 0 0 0 2px var(--amber-soft);
-  border-color: rgba(200,150,15,0.3);
+  border-color: rgba(232,169,23,0.3);
   width: 260px;
 }
 .search-input::placeholder { color: var(--text-muted); }
@@ -275,7 +292,7 @@ function select(item) {
 }
 .search-btn:hover, .search-btn.open {
   background: var(--amber-soft);
-  border-color: rgba(200,150,15,0.3);
+  border-color: rgba(232,169,23,0.3);
   color: var(--amber);
 }
 

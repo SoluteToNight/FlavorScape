@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 850" width="100%" height="100%">
+  <defs>
+    <style>
+      .font-main { font-family: 'Arial', 'Helvetica', sans-serif; }
+      .layer-label { font-size: 16px; font-weight: bold; fill: #1E293B; }
+      .layer-desc { font-size: 12px; fill: #475569; font-style: italic; }
+      .tech-label { font-size: 11px; font-weight: bold; fill: #FFFFFF; }
+      /* Isometric Base styling */
+      .plane-base { fill: #E2E8F0; stroke: #94A3B8; stroke-width: 1.5; opacity: 0.85; }
+      .plane-eco { fill: #DCFCE7; stroke: #22C55E; stroke-width: 1.5; opacity: 0.75; }
+      .plane-route { fill: #F1F5F9; stroke: #94A3B8; stroke-width: 1; opacity: 0.4; }
+      .plane-node { fill: #F1F5F9; stroke: #94A3B8; stroke-width: 1; opacity: 0.4; }
+      .vert-line { stroke: #94A3B8; stroke-width: 1.2; stroke-dasharray: 4,4; fill: none; }
+    </style>
+    <!-- 发光特效用于顶层节点 -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="900" height="850" fill="#FAFAFA"/>
+  <text x="450" y="40" text-anchor="middle" class="font-main" font-size="20" font-weight="bold" fill="#0F172A">图 3-2 核心 WebGIS 多源数据图层分离与 2.5D 轴测渲染结构图</text>
+
+  <!-- ================= ISOMETRIC MATHEMATICS ================= -->
+  <!-- 
+    Center X = 350
+    To draw a 2.5D plane: Left (-250, +120), Bottom (0, +240), Right (+250, +120), Top (0, 0)
+    Points: 350,Y -> 600,Y+120 -> 350,Y+240 -> 100,Y+120
+  -->
+
+  <!-- VERTICAL ANCHOR LINES (Background) -->
+  <path d="M 350 150 L 350 630" class="vert-line" />
+  <path d="M 225 210 L 225 690" class="vert-line" />
+  <path d="M 475 210 L 475 690" class="vert-line" />
+
+  <!-- ================= LAYER 1: BASE MAP (Y = 630) ================= -->
+  <g>
+    <!-- Plane -->
+    <polygon points="350,630 650,750 350,870 50,750" class="plane-base" />
+    <!-- Grid pattern simulating raster -->
+    <path d="M 150 710 L 450 830 M 250 670 L 550 790" stroke="#CBD5E1" stroke-width="1" />
+    <path d="M 250 790 L 550 670 M 150 750 L 450 630" stroke="#CBD5E1" stroke-width="1" />
+    
+    <!-- Decorative geographic contour simulation -->
+    <path d="M 120 750 C 200 700, 300 800, 400 750 C 450 720, 500 750, 600 700" fill="none" stroke="#94A3B8" stroke-width="2"/>
+    
+    <!-- Labels -->
+    <rect x="680" y="730" width="180" height="60" fill="#FFFFFF" stroke="#94A3B8" rx="4" />
+    <rect x="680" y="730" width="8" height="60" fill="#64748B" rx="4" />
+    <text x="700" y="755" class="font-main layer-label">L1: 基础物理栅格</text>
+    <text x="700" y="775" class="font-main layer-desc">Natural Earth HYP COG</text>
+    
+    <!-- Engine Tag -->
+    <rect x="680" y="800" width="80" height="20" fill="#E11D48" rx="2"/>
+    <text x="720" y="814" text-anchor="middle" class="font-main tech-label">MapLibre GL</text>
+  </g>
+
+  <!-- ================= LAYER 2: ECOLOGY BOUNDARIES (Y = 470) ================= -->
+  <g>
+    <polygon points="350,470 650,590 350,710 50,590" class="plane-eco" />
+    
+    <!-- Eco Polygons -->
+    <path d="M 350 490 L 450 530 L 400 620 L 250 560 Z" fill="#BBF7D0" stroke="#16A34A" stroke-width="2" opacity="0.8"/>
+    <path d="M 460 540 L 580 590 L 480 660 L 410 630 Z" fill="#86EFAC" stroke="#16A34A" stroke-width="2" opacity="0.8"/>
+    <path d="M 230 570 L 380 640 L 320 690 L 150 630 Z" fill="#A7F3D0" stroke="#16A34A" stroke-width="2" opacity="0.8"/>
+
+    <!-- Labels -->
+    <rect x="680" y="570" width="180" height="60" fill="#FFFFFF" stroke="#22C55E" rx="4" />
+    <rect x="680" y="570" width="8" height="60" fill="#22C55E" rx="4" />
+    <text x="700" y="595" class="font-main layer-label">L2: 生态空间容器</text>
+    <text x="700" y="615" class="font-main layer-desc">TEOW 面状矢量 MultiPolygon</text>
+    
+    <!-- Engine Tag -->
+    <rect x="680" y="640" width="80" height="20" fill="#E11D48" rx="2"/>
+    <text x="720" y="654" text-anchor="middle" class="font-main tech-label">MapLibre GL</text>
+  </g>
+
+  <!-- ================= LAYER 3: DISPERSAL ROUTES (Y = 310) ================= -->
+  <g>
+    <polygon points="350,310 650,430 350,550 50,430" class="plane-route" />
+    
+    <!-- Route 1 -->
+    <path d="M 180 470 C 250 420, 350 400, 450 480" fill="none" stroke="#F59E0B" stroke-width="4"/>
+    <circle cx="180" cy="470" r="4" fill="#B45309"/>
+    <circle cx="450" cy="480" r="4" fill="#B45309"/>
+    <!-- Glowing flow particle -->
+    <circle cx="300" cy="425" r="5" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2" filter="url(#glow)"/>
+
+    <!-- Route 2 -->
+    <path d="M 450 480 C 500 520, 550 470, 580 450" fill="none" stroke="#8B5CF6" stroke-width="4"/>
+    <circle cx="580" cy="450" r="4" fill="#6D28D9"/>
+    <circle cx="515" cy="495" r="5" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="2" filter="url(#glow)"/>
+
+    <!-- Labels -->
+    <rect x="680" y="410" width="180" height="60" fill="#FFFFFF" stroke="#F59E0B" rx="4" />
+    <rect x="680" y="410" width="8" height="60" fill="#F59E0B" rx="4" />
+    <text x="700" y="435" class="font-main layer-label">L3: 历史传播轨迹</text>
+    <text x="700" y="455" class="font-main layer-desc">线状几何与动画 Path/Trips</text>
+
+    <!-- Engine Tag -->
+    <rect x="680" y="480" width="80" height="20" fill="#2563EB" rx="2"/>
+    <text x="720" y="494" text-anchor="middle" class="font-main tech-label">Deck.gl WebGL</text>
+  </g>
+
+  <!-- ================= LAYER 4: FLAVOR NODES (Y = 150) ================= -->
+  <g>
+    <polygon points="350,150 650,270 350,390 50,270" class="plane-node" />
+    
+    <!-- Nodes (scattered) -->
+    <!-- Node A -->
+    <circle cx="180" cy="310" r="8" fill="#EF4444" filter="url(#glow)"/>
+    <circle cx="180" cy="310" r="4" fill="#FFFFFF"/>
+    <path d="M 180 318 L 180 470" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="2,2"/> <!-- Drop down to route -->
+
+    <!-- Node B -->
+    <circle cx="450" cy="320" r="10" fill="#3B82F6" filter="url(#glow)"/>
+    <circle cx="450" cy="320" r="5" fill="#FFFFFF"/>
+    <path d="M 450 330 L 450 480" stroke="#3B82F6" stroke-width="1.5" stroke-dasharray="2,2"/>
+
+    <!-- Node C -->
+    <circle cx="580" cy="290" r="7" fill="#10B981" filter="url(#glow)"/>
+    <circle cx="580" cy="290" r="3" fill="#FFFFFF"/>
+    <path d="M 580 297 L 580 450" stroke="#10B981" stroke-width="1.5" stroke-dasharray="2,2"/>
+
+    <!-- Tooltip simulation on Node B -->
+    <rect x="420" y="250" width="100" height="40" fill="#1E293B" rx="4" opacity="0.9"/>
+    <text x="470" y="265" text-anchor="middle" class="font-main" fill="#FFFFFF" font-size="11" font-weight="bold">风味节点 B</text>
+    <text x="470" y="280" text-anchor="middle" class="font-main" fill="#94A3B8" font-size="10">六维向量数据</text>
+    <polygon points="465,290 475,290 470,298" fill="#1E293B" opacity="0.9"/>
+
+    <!-- Labels -->
+    <rect x="680" y="250" width="180" height="60" fill="#FFFFFF" stroke="#3B82F6" rx="4" />
+    <rect x="680" y="250" width="8" height="60" fill="#3B82F6" rx="4" />
+    <text x="700" y="275" class="font-main layer-label">L4: 业务风味节点</text>
+    <text x="700" y="295" class="font-main layer-desc">点状要素 ScatterplotLayer</text>
+
+    <!-- Engine Tag -->
+    <rect x="680" y="320" width="80" height="20" fill="#2563EB" rx="2"/>
+    <text x="720" y="334" text-anchor="middle" class="font-main tech-label">Deck.gl WebGL</text>
+  </g>
+
+  <!-- ================= Legend / Overall Info ================= -->
+  <rect x="50" y="60" width="300" height="80" fill="#F8FAFC" stroke="#CBD5E1" rx="4"/>
+  <text x="65" y="85" class="font-main" font-size="14" font-weight="bold" fill="#0F172A">技术实现亮点：</text>
+  <circle cx="70" cy="105" r="3" fill="#64748B"/>
+  <text x="80" y="109" class="font-main" font-size="12" fill="#475569">双引擎(MapLibre+Deck.gl)统一空间坐标系</text>
+  <circle cx="70" cy="125" r="3" fill="#64748B"/>
+  <text x="80" y="129" class="font-main" font-size="12" fill="#475569">垂直降维映射：从业务层到物理底座的穿透</text>
+
+</svg>

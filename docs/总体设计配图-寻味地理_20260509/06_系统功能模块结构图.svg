@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<defs>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#23352D" flood-opacity="0.12"/></filter>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6C7A72"/></marker>
+</defs>
+<rect width="1600" height="1000" fill="#F7F9F5"/>
+<text x="70.0" y="62.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="34" font-weight="700">
+<tspan x="70.0" dy="0">系统功能模块结构图</tspan>
+</text>
+<line x1="70.0" y1="112.0" x2="1530.0" y2="112.0" stroke="#D9E2DA" stroke-width="2" stroke-linecap="round"/>
+<rect x="570.0" y="155.0" width="460.0" height="145.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="570.0" y="155.0" width="10" height="145.0" rx="5" fill="#315F4D"/>
+<text x="598.0" y="181.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="598.0" dy="0">寻味地理 WebGIS</tspan>
+</text>
+<text x="598.0" y="223.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="598.0" dy="0">以地图组织风味知识</tspan>
+<tspan x="598.0" dy="22">以路线讲述传播过程</tspan>
+<tspan x="598.0" dy="22">以专题沉淀内容资产</tspan>
+</text>
+<rect x="505.0" y="370.0" width="590.0" height="115.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="505.0" y="370.0" width="10" height="115.0" rx="5" fill="#4FA69A"/>
+<text x="533.0" y="396.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="533.0" dy="0">通用支撑能力</tspan>
+</text>
+<text x="533.0" y="438.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="533.0" dy="0">导航 / 搜索 / 选中状态</tspan>
+<tspan x="533.0" dy="22">图层控制 / 图表组件</tspan>
+</text>
+<rect x="100.0" y="600.0" width="300.0" height="135.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="100.0" y="600.0" width="10" height="135.0" rx="5" fill="#4E79A7"/>
+<text x="128.0" y="626.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="128.0" dy="0">首页模块</tspan>
+</text>
+<text x="128.0" y="668.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="128.0" dy="0">主题识别</tspan>
+<tspan x="128.0" dy="22">进入地图</tspan>
+</text>
+<rect x="450.0" y="600.0" width="300.0" height="135.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="450.0" y="600.0" width="10" height="135.0" rx="5" fill="#4FA69A"/>
+<text x="478.0" y="626.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="478.0" dy="0">地图探索模块</tspan>
+</text>
+<text x="478.0" y="668.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="478.0" dy="0">节点、路线、生态区</tspan>
+<tspan x="478.0" dy="22">详情面板</tspan>
+</text>
+<rect x="800.0" y="600.0" width="300.0" height="135.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="800.0" y="600.0" width="10" height="135.0" rx="5" fill="#D6A23F"/>
+<text x="828.0" y="626.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="828.0" dy="0">风味基因库</tspan>
+</text>
+<text x="828.0" y="668.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="828.0" dy="0">卡片浏览</tspan>
+<tspan x="828.0" dy="22">分类比较</tspan>
+</text>
+<rect x="1150.0" y="600.0" width="300.0" height="135.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1150.0" y="600.0" width="10" height="135.0" rx="5" fill="#7B6BB1"/>
+<text x="1178.0" y="626.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="1178.0" dy="0">时空叙事馆</tspan>
+</text>
+<text x="1178.0" y="668.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="1178.0" dy="0">章节阅读</tspan>
+<tspan x="1178.0" dy="22">路线关联</tspan>
+</text>
+<rect x="275.0" y="790.0" width="300.0" height="135.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="275.0" y="790.0" width="10" height="135.0" rx="5" fill="#C95A49"/>
+<text x="303.0" y="816.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="303.0" dy="0">食材传播模块</tspan>
+</text>
+<text x="303.0" y="858.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="303.0" dy="0">时间线播放</tspan>
+<tspan x="303.0" dy="22">路径可视化</tspan>
+</text>
+<rect x="1025.0" y="790.0" width="300.0" height="135.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1025.0" y="790.0" width="10" height="135.0" rx="5" fill="#7FA961"/>
+<text x="1053.0" y="816.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="1053.0" dy="0">关于与方法</tspan>
+</text>
+<text x="1053.0" y="858.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="1053.0" dy="0">来源说明</tspan>
+<tspan x="1053.0" dy="22">数据边界</tspan>
+</text>
+<line x1="800.0" y1="318.0" x2="800.0" y2="352.0" stroke="#315F4D" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="800.0,501.0 800.0,550.0 250.0,550.0 250.0,582.0" fill="none" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="800.0,501.0 800.0,550.0 600.0,550.0 600.0,582.0" fill="none" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="800.0,501.0 800.0,550.0 950.0,550.0 950.0,582.0" fill="none" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="800.0,501.0 800.0,550.0 1300.0,550.0 1300.0,582.0" fill="none" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="800.0,501.0 800.0,760.0 425.0,760.0 425.0,772.0" fill="none" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="800.0,501.0 800.0,760.0 1175.0,760.0 1175.0,772.0" fill="none" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="455.0" y="510.0" width="160.0" height="38.0" rx="19" fill="#FFFFFF" stroke="#315F4D" stroke-width="2"/>
+<text x="475.0" y="519.0" fill="#315F4D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="18" font-weight="700">
+<tspan x="475.0" dy="0">公共组件复用</tspan>
+</text>
+<rect x="635.0" y="510.0" width="140.0" height="38.0" rx="19" fill="#FFFFFF" stroke="#4FA69A" stroke-width="2"/>
+<text x="655.0" y="519.0" fill="#4FA69A" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="18" font-weight="700">
+<tspan x="655.0" dy="0">状态联动</tspan>
+</text>
+<rect x="795.0" y="510.0" width="160.0" height="38.0" rx="19" fill="#FFFFFF" stroke="#C95A49" stroke-width="2"/>
+<text x="815.0" y="519.0" fill="#C95A49" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="18" font-weight="700">
+<tspan x="815.0" dy="0">专题可扩展</tspan>
+</text>
+</svg>

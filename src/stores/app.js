@@ -20,7 +20,9 @@ export const useAppStore = defineStore('app', {
       L2: true,
       L3: true,
     },
-    l1Emphasis: false, // strengthen L1 visual prominence
+    l1Emphasis: false,
+    activeIngredientId: null,
+    spreadTimelineYear: null,
   }),
   actions: {
     setFlavors(list) {
@@ -83,6 +85,12 @@ export const useAppStore = defineStore('app', {
     },
     resetL1Emphasis() {
       this.l1Emphasis = false
+    },
+    setActiveIngredient(id) {
+      this.activeIngredientId = id
+    },
+    setSpreadTimelineYear(year) {
+      this.spreadTimelineYear = year
     },
   },
 })

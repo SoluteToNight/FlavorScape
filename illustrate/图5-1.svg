@@ -1,0 +1,259 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 780" width="100%" height="100%">
+  <defs>
+    <!-- 背景网格 -->
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#94A3B8" opacity="0.25"/>
+    </pattern>
+    <!-- 高级悬浮阴影 -->
+    <filter id="shadow-md" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.1"/>
+    </filter>
+    <filter id="shadow-sm" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    
+    <style>
+      .sys-font { font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif; }
+      .main-title { font-size: 24px; font-weight: 900; fill: #0F172A; letter-spacing: 0.5px; }
+      .layer-title-en { font-size: 14px; font-weight: bold; fill: #1E293B; letter-spacing: 1px; }
+      .layer-title-cn { font-size: 16px; font-weight: bold; fill: #475569; }
+      .card-title { font-size: 15px; font-weight: bold; fill: #1E293B; }
+      .card-desc { font-size: 12px; fill: #475569; }
+      .tech-tag { font-size: 11px; font-weight: bold; fill: #FFFFFF; }
+      .flow-label { font-size: 12px; font-style: italic; font-weight: bold; fill: #334155; }
+      
+      .div-line { stroke: #94A3B8; stroke-width: 1.5; stroke-dasharray: 8,6; fill: none; }
+      .arrow-line { fill: none; stroke: #64748B; stroke-width: 2; stroke-linejoin: round; }
+      /* 交互线优化 */
+      .interact-blue { fill: none; stroke: #3B82F6; stroke-width: 2.5; stroke-dasharray: 5,4; }
+      .interact-green { fill: none; stroke: #10B981; stroke-width: 2.5; stroke-dasharray: 5,4; }
+    </style>
+    
+    <!-- 重新调优的锐利箭头 -->
+    <marker id="arr-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 Z" fill="#64748B"/>
+    </marker>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 Z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 Z" fill="#10B981"/>
+    </marker>
+    <marker id="arr-gray-rev" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 10 1 L 0 5 L 10 9 Z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1150" height="780" fill="#F8FAFC"/>
+  <rect width="1150" height="780" fill="url(#grid)"/>
+
+  <text x="575" y="45" text-anchor="middle" class="sys-font main-title">系统核心功能矩阵与多维交互状态流转图</text>
+
+  <!-- ================= 水平分割线 ================= -->
+  <!-- 严格定死 Y 轴：80, 260, 540, 740 -->
+  <path d="M 30 80 L 1120 80" class="div-line"/>
+  <path d="M 30 260 L 1120 260" class="div-line"/>
+  <path d="M 30 540 L 1120 540" class="div-line"/>
+  <path d="M 30 740 L 1120 740" class="div-line"/>
+
+  <!-- ================= 标题层 (固定在 X=90 中心) ================= -->
+  <g transform="translate(90, 150)">
+    <text x="0" y="0" text-anchor="middle" class="sys-font layer-title-en">Application</text>
+    <text x="0" y="20" text-anchor="middle" class="sys-font layer-title-en">Scenarios</text>
+    <text x="0" y="45" text-anchor="middle" class="sys-font layer-title-cn">业务场景</text>
+    <text x="0" y="65" text-anchor="middle" class="sys-font layer-title-cn">视图层</text>
+  </g>
+  <path d="M 90 240 L 90 280" class="arrow-line" marker-end="url(#arr-gray)" marker-start="url(#arr-gray-rev)"/>
+
+  <g transform="translate(90, 380)">
+    <text x="0" y="0" text-anchor="middle" class="sys-font layer-title-en">Interactive</text>
+    <text x="0" y="20" text-anchor="middle" class="sys-font layer-title-en">Subsystems</text>
+    <text x="0" y="45" text-anchor="middle" class="sys-font layer-title-cn">核心交互</text>
+    <text x="0" y="65" text-anchor="middle" class="sys-font layer-title-cn">子系统层</text>
+  </g>
+  <path d="M 90 510 L 90 550" class="arrow-line" marker-end="url(#arr-gray)" marker-start="url(#arr-gray-rev)"/>
+
+  <g transform="translate(90, 610)">
+    <text x="0" y="0" text-anchor="middle" class="sys-font layer-title-en">State &amp; Base</text>
+    <text x="0" y="20" text-anchor="middle" class="sys-font layer-title-en">Capabilities</text>
+    <text x="0" y="45" text-anchor="middle" class="sys-font layer-title-cn">全局状态与</text>
+    <text x="0" y="65" text-anchor="middle" class="sys-font layer-title-cn">通用底座</text>
+  </g>
+
+
+  <!-- ================= LAYER 1: Application (Start X=200) ================= -->
+  <!-- 4 个模块：220 + 20(间距) + 200 + 20 + 220 + 20 + 220 = 920px 宽 -->
+  <g transform="translate(200, 100)">
+    
+    <!-- 1. Map Explore (X=0) -->
+    <rect x="0" y="0" width="220" height="140" fill="#ECFDF5" stroke="#10B981" stroke-width="1.5" rx="6" filter="url(#shadow-md)"/>
+    <rect x="0" y="0" width="220" height="30" fill="#10B981" rx="6"/>
+    <rect x="0" y="15" width="220" height="15" fill="#10B981"/>
+    <text x="110" y="21" text-anchor="middle" class="sys-font tech-tag">核心 | 地图探索模块</text>
+    
+    <circle cx="40" cy="75" r="25" fill="#D1FAE5" stroke="#10B981"/>
+    <circle cx="40" cy="75" r="4" fill="#059669"/>
+    <path d="M 40 75 L 55 60 L 70 80" fill="none" stroke="#059669" stroke-width="2"/>
+    <text x="90" y="55" class="sys-font card-desc" font-weight="bold" fill="#065F46">功能定位：</text>
+    <text x="90" y="75" class="sys-font card-desc">自然底图与风味节点的</text>
+    <text x="90" y="95" class="sys-font card-desc">综合空间坐标系展板</text>
+    <rect x="90" y="105" width="50" height="20" fill="#A7F3D0" rx="4"/><text x="115" y="119" text-anchor="middle" class="sys-font" font-size="10" fill="#065F46">对象选择</text>
+    <rect x="150" y="105" width="50" height="20" fill="#A7F3D0" rx="4"/><text x="175" y="119" text-anchor="middle" class="sys-font" font-size="10" fill="#065F46">图层控制</text>
+
+    <!-- 2. Flavor Gene Bank (X=240) -->
+    <rect x="240" y="0" width="200" height="140" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5" rx="6" filter="url(#shadow-md)"/>
+    <rect x="240" y="0" width="200" height="30" fill="#3B82F6" rx="6"/>
+    <rect x="240" y="15" width="200" height="15" fill="#3B82F6"/>
+    <text x="340" y="21" text-anchor="middle" class="sys-font tech-tag">风味基因库模块</text>
+    
+    <rect x="255" y="45" width="25" height="35" fill="#BFDBFE" rx="2"/>
+    <rect x="285" y="45" width="25" height="35" fill="#BFDBFE" rx="2"/>
+    <rect x="255" y="85" width="25" height="35" fill="#BFDBFE" rx="2"/>
+    <rect x="285" y="85" width="25" height="35" fill="#BFDBFE" rx="2"/>
+    <text x="325" y="65" class="sys-font card-desc">结构化风味卡片</text>
+    <text x="325" y="85" class="sys-font card-desc">分类筛选与比较</text>
+    <rect x="325" y="105" width="60" height="20" fill="#93C5FD" rx="4"/><text x="355" y="119" text-anchor="middle" class="sys-font" font-size="10" fill="#1E3A8A">点击入图定位</text>
+
+    <!-- 3. Spatiotemporal Narrative (X=460) -->
+    <rect x="460" y="0" width="220" height="140" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="1.5" rx="6" filter="url(#shadow-md)"/>
+    <rect x="460" y="0" width="220" height="30" fill="#8B5CF6" rx="6"/>
+    <rect x="460" y="15" width="220" height="15" fill="#8B5CF6"/>
+    <text x="570" y="21" text-anchor="middle" class="sys-font tech-tag">时空叙事馆模块</text>
+
+    <rect x="475" y="45" width="40" height="50" fill="#DDD6FE" rx="2"/>
+    <path d="M 480 55 L 510 55 M 480 65 L 500 65 M 480 75 L 510 75 M 480 85 L 495 85" stroke="#7C3AED" stroke-width="2"/>
+    <text x="530" y="65" class="sys-font card-desc">线性章节叙事阅读</text>
+    <text x="530" y="85" class="sys-font card-desc">典型事件与历史材料</text>
+    <rect x="530" y="105" width="70" height="20" fill="#C4B5FD" rx="4"/><text x="565" y="119" text-anchor="middle" class="sys-font" font-size="10" fill="#4C1D95">关联路线高亮</text>
+
+    <!-- 4. Ingredient Spread (X=700) -->
+    <rect x="700" y="0" width="220" height="140" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.5" rx="6" filter="url(#shadow-md)"/>
+    <rect x="700" y="0" width="220" height="30" fill="#F59E0B" rx="6"/>
+    <rect x="700" y="15" width="220" height="15" fill="#F59E0B"/>
+    <text x="810" y="21" text-anchor="middle" class="sys-font tech-tag">食材传播模块</text>
+
+    <rect x="715" y="45" width="60" height="40" fill="#FDE68A" rx="2"/>
+    <path d="M 725 95 L 765 95" stroke="#D97706" stroke-width="2"/>
+    <circle cx="725" cy="95" r="3" fill="#B45309"/><circle cx="745" cy="95" r="3" fill="#B45309"/><circle cx="765" cy="95" r="3" fill="#B45309"/>
+    <text x="785" y="65" class="sys-font card-desc">单一食材时空迁移</text>
+    <text x="785" y="85" class="sys-font card-desc">时间线与镜头动画</text>
+    <rect x="785" y="105" width="70" height="20" fill="#FCD34D" rx="4"/><text x="820" y="119" text-anchor="middle" class="sys-font" font-size="10" fill="#92400E">动态播放控制</text>
+  </g>
+
+
+  <!-- ================= LAYER 2: Interactive Subsystems (Start X=200) ================= -->
+  <g transform="translate(200, 280)">
+    <rect x="0" y="0" width="920" height="240" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="6,4" rx="8"/>
+    
+    <!-- Render & Layers (X=20) -->
+    <rect x="20" y="20" width="300" height="200" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1" rx="6" filter="url(#shadow-sm)"/>
+    <rect x="20" y="20" width="300" height="30" fill="#475569" rx="6"/>
+    <rect x="20" y="35" width="300" height="15" fill="#475569"/>
+    <text x="170" y="40" text-anchor="middle" class="sys-font tech-tag">渲染与图层引擎 (Render &amp; Layers)</text>
+    
+    <rect x="35" y="65" width="270" height="40" fill="#F1F5F9" rx="4"/>
+    <text x="170" y="90" text-anchor="middle" class="sys-font card-desc"><tspan font-weight="bold" fill="#0F172A">地图渲染引擎</tspan>：处理 L0-L3 视角切换与平移缩放</text>
+    <rect x="35" y="115" width="270" height="40" fill="#F1F5F9" rx="4"/>
+    <text x="170" y="140" text-anchor="middle" class="sys-font card-desc"><tspan font-weight="bold" fill="#0F172A">图层控制引擎</tspan>：多源图层叠加顺序与动态隐显</text>
+    <rect x="35" y="165" width="270" height="40" fill="#F1F5F9" rx="4"/>
+    <text x="170" y="190" text-anchor="middle" class="sys-font card-desc"><tspan font-weight="bold" fill="#0F172A">动态流光引擎</tspan>：历史路径几何插值与飞行粒子</text>
+
+    <!-- Query & Sync (X=340) -->
+    <rect x="340" y="20" width="560" height="200" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1" rx="6" filter="url(#shadow-sm)"/>
+    <rect x="340" y="20" width="560" height="30" fill="#475569" rx="6"/>
+    <rect x="340" y="35" width="560" height="15" fill="#475569"/>
+    <text x="620" y="40" text-anchor="middle" class="sys-font tech-tag">查询与信息协同面板 (Query &amp; Coordination)</text>
+
+    <rect x="360" y="65" width="250" height="60" fill="#F0FDF4" stroke="#86EFAC" rx="4"/>
+    <text x="485" y="85" text-anchor="middle" class="sys-font card-title">对象详情展示面板</text>
+    <text x="485" y="105" text-anchor="middle" class="sys-font card-desc">根据选中类型（点/线/面）动态切换</text>
+    <text x="485" y="118" text-anchor="middle" class="sys-font" font-size="10" fill="#16A34A">雷达图 | 生态指标 | 传播依据文本</text>
+
+    <rect x="630" y="65" width="250" height="60" fill="#EFF6FF" stroke="#93C5FD" rx="4"/>
+    <text x="755" y="85" text-anchor="middle" class="sys-font card-title">全局搜索定位子系统</text>
+    <text x="755" y="105" text-anchor="middle" class="sys-font card-desc">风味与路线关键字模糊检索</text>
+    <text x="755" y="118" text-anchor="middle" class="sys-font" font-size="10" fill="#2563EB">下拉防抖 | 点击触发 FlyTo 镜头转移</text>
+
+    <!-- Narrative Sync -->
+    <rect x="360" y="145" width="520" height="55" fill="#FFF7ED" stroke="#FDE68A" rx="4"/>
+    <text x="620" y="165" text-anchor="middle" class="sys-font card-title" fill="#B45309">叙事与镜头协同机制 (Narrative Sync)</text>
+    <text x="620" y="185" text-anchor="middle" class="sys-font card-desc">食材传播播放器与地图视图坐标同步，左侧镜头追随，右侧正文自动滚动至对应事件段落</text>
+  </g>
+
+
+  <!-- ================= LAYER 3: State & Capabilities (Start X=200) ================= -->
+  <g transform="translate(200, 560)">
+    <!-- Pinia State Machine (X=0) -->
+    <rect x="0" y="0" width="500" height="160" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" rx="8" filter="url(#shadow-md)"/>
+    <text x="250" y="30" text-anchor="middle" class="sys-font card-title" fill="#0F172A">Pinia 空间对象核心状态机 (互斥选择锁)</text>
+    
+    <circle cx="120" cy="90" r="30" fill="#DBEAFE" stroke="#3B82F6" stroke-width="2"/>
+    <text x="120" y="95" text-anchor="middle" class="sys-font" font-size="12" font-weight="bold" fill="#1E40AF">选定节点</text>
+    <circle cx="250" cy="90" r="30" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
+    <text x="250" y="95" text-anchor="middle" class="sys-font" font-size="12" font-weight="bold" fill="#92400E">选定路线</text>
+    <circle cx="380" cy="90" r="30" fill="#DCFCE7" stroke="#10B981" stroke-width="2"/>
+    <text x="380" y="95" text-anchor="middle" class="sys-font" font-size="12" font-weight="bold" fill="#065F46">选定生态区</text>
+
+    <!-- XOR Links -->
+    <path d="M 155 90 L 215 90" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4,2"/>
+    <rect x="175" y="80" width="20" height="20" fill="#FFFFFF" stroke="#EF4444" rx="10"/>
+    <text x="185" y="94" text-anchor="middle" class="sys-font" font-size="12" fill="#EF4444" font-weight="bold">×</text>
+
+    <path d="M 285 90 L 345 90" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4,2"/>
+    <rect x="305" y="80" width="20" height="20" fill="#FFFFFF" stroke="#EF4444" rx="10"/>
+    <text x="315" y="94" text-anchor="middle" class="sys-font" font-size="12" fill="#EF4444" font-weight="bold">×</text>
+
+    <text x="250" y="145" text-anchor="middle" class="sys-font card-desc">确保同一时刻仅激活一类对象的视觉高亮与面板数据请求，避免上下文冲突</text>
+
+
+    <!-- Common Utilities (X=520) -->
+    <rect x="520" y="0" width="400" height="160" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="2" rx="8" filter="url(#shadow-md)"/>
+    <text x="720" y="30" text-anchor="middle" class="sys-font card-title" fill="#0F172A">通用基础支持库</text>
+
+    <rect x="540" y="50" width="170" height="40" fill="#FFFFFF" rx="4"/>
+    <text x="625" y="75" text-anchor="middle" class="sys-font card-desc">ECharts 雷达与统计挂载</text>
+    <rect x="730" y="50" width="170" height="40" fill="#FFFFFF" rx="4"/>
+    <text x="815" y="75" text-anchor="middle" class="sys-font card-desc">Axios 接口防抖与拦截</text>
+    <rect x="540" y="100" width="170" height="40" fill="#FFFFFF" rx="4"/>
+    <text x="625" y="125" text-anchor="middle" class="sys-font card-desc">瓦片与JSON数据缓存</text>
+    <rect x="730" y="100" width="170" height="40" fill="#FFFFFF" rx="4"/>
+    <text x="815" y="125" text-anchor="middle" class="sys-font card-desc">异常降级与骨架屏反馈</text>
+  </g>
+
+
+  <!-- ================= 绝对精准的正交数据流 (Orthogonal Routing) ================= -->
+  
+  <!-- 1. 触发点击 (Layer 1 -> Layer 2) -->
+  <!-- 基因库中心 X = 200 + 240 + 100 = 540。避开边框，设在 X=530 -->
+  <path d="M 530 240 L 530 275" class="interact-blue" marker-end="url(#arr-blue)"/>
+  
+  <!-- 完美遮罩标签 -->
+  <rect x="470" y="248" width="120" height="20" fill="#F8FAFC" rx="4"/> <!-- 背景色遮罩 -->
+  <rect x="475" y="250" width="110" height="16" fill="#FFFFFF" stroke="#BFDBFE" rx="4"/>
+  <text x="530" y="262" text-anchor="middle" class="sys-font flow-label" fill="#1D4ED8">触发：点击/检索</text>
+
+
+  <!-- 2. 写入全局状态 (Layer 2 -> Layer 3) -->
+  <!-- 叙事协同框底部 Y=480 (绝对)。Pinia '路线' 节点中心 X = 200 + 250 = 450。 -->
+  <!-- 正交走线：从 X=800, Y=480 直下到 Y=520，左拐到 X=450，再直下到 Y=555 -->
+  <path d="M 800 480 L 800 510 Q 800 520 790 520 L 460 520 Q 450 520 450 530 L 450 555" class="interact-blue" marker-end="url(#arr-blue)"/>
+  
+  <!-- 完美遮罩标签，放在水平线段 Y=520 上，居中 X=625 -->
+  <rect x="560" y="508" width="130" height="24" fill="#F8FAFC"/> <!-- 背景色遮罩 -->
+  <rect x="565" y="510" width="120" height="20" fill="#FFFFFF" stroke="#BFDBFE" rx="4"/>
+  <text x="625" y="524" text-anchor="middle" class="sys-font flow-label" fill="#1D4ED8">写入全局状态 (Mutate)</text>
+
+
+  <!-- 3. 响应式渲染回流 (Layer 3 -> Layer 1) -->
+  <!-- 专用通道设在 X=170。Pinia 左侧边缘 X=200, Y=640。 -->
+  <!-- 正交走线：从 X=200, Y=640 左拐到 X=170，直上到 Y=170，右拐入 MapExplore X=195 -->
+  <path d="M 200 640 L 180 640 Q 170 640 170 630 L 170 180 Q 170 170 180 170 L 195 170" class="interact-green" marker-end="url(#arr-green)"/>
+  
+  <!-- 完美遮罩标签，放在垂直线段 X=170 上，居中 Y=380 -->
+  <rect x="135" y="358" width="70" height="44" fill="#F8FAFC"/> <!-- 背景色遮罩 -->
+  <rect x="140" y="360" width="60" height="40" fill="#FFFFFF" stroke="#A7F3D0" rx="4"/>
+  <text x="170" y="376" text-anchor="middle" class="sys-font flow-label" fill="#047857">响应式</text>
+  <text x="170" y="392" text-anchor="middle" class="sys-font flow-label" fill="#047857">状态渲染</text>
+
+</svg>

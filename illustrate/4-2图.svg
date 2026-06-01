@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650" width="100%" height="100%">
+  <defs>
+    <!-- 微小网格底纹 -->
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1" fill="#94A3B8" opacity="0.3"/>
+    </pattern>
+    <!-- 高级悬浮阴影 -->
+    <filter id="shadow-sm" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <filter id="shadow-md" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    
+    <style>
+      .sys-font { font-family: 'Helvetica Neue', 'Arial', sans-serif; }
+      .main-title { font-size: 22px; font-weight: 900; fill: #0F172A; letter-spacing: 0.5px; }
+      .zone-title { font-size: 16px; font-weight: bold; fill: #FFFFFF; letter-spacing: 1px; }
+      .card-title { font-size: 14px; font-weight: bold; fill: #1E293B; }
+      .card-desc { font-size: 12px; fill: #475569; }
+      .tech-tag { font-size: 11px; font-family: 'Courier New', monospace; font-weight: bold; fill: #FFFFFF; }
+      .badge-text { font-size: 10px; font-weight: bold; fill: #FFFFFF; }
+      
+      .flow-line { fill: none; stroke: #94A3B8; stroke-width: 2.5; stroke-linejoin: round; }
+      .flow-line-dashed { fill: none; stroke: #F59E0B; stroke-width: 2; stroke-dasharray: 6,4; }
+    </style>
+    
+    <!-- 箭头 -->
+    <marker id="arrow-gray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#94A3B8"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,1 L7,4 L0,7 Z" fill="#3B82F6"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="650" fill="#F8FAFC"/>
+  <rect width="1100" height="650" fill="url(#grid)"/>
+
+  <text x="550" y="40" text-anchor="middle" class="sys-font main-title">数据入库过滤管线与多维索引加速机制图</text>
+
+  <!-- ================= ZONE 1: INGESTION PIPELINE (Left) ================= -->
+  <rect x="40" y="80" width="280" height="520" fill="#FFFBEB" stroke="#FDE68A" stroke-width="2" rx="10"/>
+  <rect x="40" y="80" width="280" height="40" fill="#F59E0B" rx="10"/>
+  <rect x="40" y="100" width="280" height="20" fill="#F59E0B"/>
+  <text x="180" y="106" text-anchor="middle" class="sys-font zone-title">1. 入库前置处理与校验管线</text>
+
+  <!-- Source Data -->
+  <g transform="translate(60, 140)">
+    <rect width="240" height="50" fill="#FFFFFF" stroke="#FCD34D" stroke-width="1.5" rx="6" filter="url(#shadow-sm)"/>
+    <text x="120" y="22" text-anchor="middle" class="sys-font card-title">多源异构原始数据</text>
+    <text x="120" y="38" text-anchor="middle" class="sys-font card-desc">TEOW 面板 / LLM 语料 / JSON</text>
+  </g>
+
+  <path d="M 180 190 L 180 230" class="flow-line" marker-end="url(#arrow-gray)"/>
+
+  <!-- Funnel/Filters -->
+  <g transform="translate(60, 230)">
+    <polygon points="0,0 240,0 210,250 30,250" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2" opacity="0.5"/>
+    
+    <!-- Filter 1: Spatial -->
+    <rect x="20" y="20" width="200" height="45" fill="#FFFFFF" stroke="#10B981" stroke-width="1.5" rx="4" filter="url(#shadow-sm)"/>
+    <rect x="20" y="20" width="6" height="45" fill="#10B981" rx="2"/>
+    <text x="35" y="38" class="sys-font card-title" fill="#065F46">空间基准与几何校验</text>
+    <text x="35" y="55" class="sys-font" font-size="10" fill="#10B981">EPSG:4326 | 边界简化 | 拓扑修复</text>
+
+    <!-- Filter 2: Relational -->
+    <rect x="30" y="90" width="180" height="45" fill="#FFFFFF" stroke="#3B82F6" stroke-width="1.5" rx="4" filter="url(#shadow-sm)"/>
+    <rect x="30" y="90" width="6" height="45" fill="#3B82F6" rx="2"/>
+    <text x="45" y="108" class="sys-font card-title" fill="#1E40AF">外键与字段完整性</text>
+    <text x="45" y="125" class="sys-font" font-size="10" fill="#3B82F6">非空检查 | 枚举值核对 | 字典约束</text>
+
+    <!-- Filter 3: LLM Audit -->
+    <rect x="40" y="160" width="160" height="45" fill="#FFFFFF" stroke="#EC4899" stroke-width="1.5" rx="4" filter="url(#shadow-sm)"/>
+    <rect x="40" y="160" width="6" height="45" fill="#EC4899" rx="2"/>
+    <text x="55" y="178" class="sys-font card-title" fill="#9D174D">LLM 数据溯源审核</text>
+    <text x="55" y="195" class="sys-font" font-size="10" fill="#EC4899">置信度标记 | 待复核拦截隔离</text>
+  </g>
+
+  <path d="M 180 480 L 180 520" class="flow-line" marker-end="url(#arrow-gray)"/>
+  
+  <rect x="80" y="520" width="200" height="40" fill="#F1F5F9" stroke="#94A3B8" stroke-dasharray="4,2" rx="4"/>
+  <text x="180" y="545" text-anchor="middle" class="sys-font card-title" fill="#475569">生成标准化入库批次</text>
+
+
+  <!-- ================= ZONE 2: INDEXING ENGINE (Center) ================= -->
+  <rect x="350" y="80" width="460" height="520" fill="#F0FDF4" stroke="#34D399" stroke-width="2" rx="10"/>
+  <rect x="350" y="80" width="460" height="40" fill="#10B981" rx="10"/>
+  <rect x="350" y="100" width="460" height="20" fill="#10B981"/>
+  <text x="580" y="106" text-anchor="middle" class="sys-font zone-title">2. PostgreSQL/PostGIS 多维加速引擎</text>
+
+  <!-- GiST Index Block -->
+  <g transform="translate(380, 140)">
+    <rect width="400" height="150" fill="#FFFFFF" stroke="#059669" stroke-width="1.5" rx="8" filter="url(#shadow-md)"/>
+    <rect width="400" height="30" fill="#059669" rx="8"/>
+    <rect y="15" width="400" height="15" fill="#059669"/>
+    <text x="15" y="21" class="sys-font zone-title" font-size="14">GiST 空间索引引擎 </text>
+    
+    <!-- Mini R-Tree Concept Icon -->
+    <g transform="translate(320, 45)">
+      <rect x="0" y="0" width="60" height="60" fill="#ECFDF5" stroke="#10B981" stroke-dasharray="2,2"/>
+      <rect x="5" y="5" width="25" height="25" fill="#A7F3D0" stroke="#059669"/>
+      <circle cx="15" cy="15" r="4" fill="#059669"/>
+      <rect x="35" y="30" width="20" height="20" fill="#A7F3D0" stroke="#059669"/>
+      <circle cx="45" cy="40" r="4" fill="#059669"/>
+      <text x="30" y="80" text-anchor="middle" class="sys-font" font-size="9" fill="#059669">Bounding Box 树</text>
+    </g>
+
+    <!-- Indexed Fields -->
+    <rect x="15" y="45" width="45" height="20" fill="#059669" rx="4"/><text x="37" y="59" text-anchor="middle" class="sys-font tech-tag">面</text>
+    <text x="70" y="59" class="sys-font card-title">eco_geo_unit . </text><text x="180" y="59" class="sys-font card-desc">boundary</text>
+    <text x="250" y="59" class="sys-font badge-text" fill="#64748B">MultiPolygon</text>
+
+    <rect x="15" y="80" width="45" height="20" fill="#059669" rx="4"/><text x="37" y="94" text-anchor="middle" class="sys-font tech-tag">点</text>
+    <text x="70" y="94" class="sys-font card-title">flavor_genotype . </text><text x="195" y="94" class="sys-font card-desc">coordinates</text>
+    <text x="270" y="94" class="sys-font badge-text" fill="#64748B">Point</text>
+
+    <rect x="15" y="115" width="45" height="20" fill="#059669" rx="4"/><text x="37" y="129" text-anchor="middle" class="sys-font tech-tag">线</text>
+    <text x="70" y="129" class="sys-font card-title">dispersal_event . </text><text x="190" y="129" class="sys-font card-desc">route_geom</text>
+    <text x="260" y="129" class="sys-font badge-text" fill="#64748B">LineString</text>
+  </g>
+
+  <!-- GIN Index Block -->
+  <g transform="translate(380, 310)">
+    <rect width="400" height="150" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.5" rx="8" filter="url(#shadow-md)"/>
+    <rect width="400" height="30" fill="#7C3AED" rx="8"/>
+    <rect y="15" width="400" height="15" fill="#7C3AED"/>
+    <text x="15" y="21" class="sys-font zone-title" font-size="14">GIN 倒排索引引擎 </text>
+
+    <!-- Mini Inverted Index Concept Icon -->
+    <g transform="translate(315, 45)">
+      <rect x="0" y="0" width="70" height="60" fill="#F5F3FF" stroke="#8B5CF6" stroke-dasharray="2,2"/>
+      <path d="M 35 10 L 15 30 M 35 10 L 35 30 M 35 10 L 55 30" stroke="#7C3AED" stroke-width="1.5"/>
+      <circle cx="35" cy="10" r="4" fill="#6D28D9"/>
+      <rect x="5" y="30" width="20" height="15" fill="#C4B5FD" rx="2"/><text x="15" y="41" text-anchor="middle" font-size="8" fill="#4C1D95">Key</text>
+      <rect x="25" y="30" width="20" height="15" fill="#C4B5FD" rx="2"/><text x="35" y="41" text-anchor="middle" font-size="8" fill="#4C1D95">Tag</text>
+      <rect x="45" y="30" width="20" height="15" fill="#C4B5FD" rx="2"/><text x="55" y="41" text-anchor="middle" font-size="8" fill="#4C1D95">Val</text>
+      <text x="35" y="80" text-anchor="middle" class="sys-font" font-size="9" fill="#6D28D9">键值拆解映射</text>
+    </g>
+
+    <!-- Indexed Fields -->
+    <rect x="15" y="45" width="45" height="20" fill="#8B5CF6" rx="4"/><text x="37" y="59" text-anchor="middle" class="sys-font tech-tag">JSON</text>
+    <text x="70" y="59" class="sys-font card-title">flavor_genotype . </text><text x="195" y="59" class="sys-font card-desc">genome_vector</text>
+
+    <rect x="15" y="80" width="45" height="20" fill="#8B5CF6" rx="4"/><text x="37" y="94" text-anchor="middle" class="sys-font tech-tag">JSON</text>
+    <text x="70" y="94" class="sys-font card-title">eco_geo_unit . </text><text x="180" y="94" class="sys-font card-desc">climate</text>
+
+    <rect x="15" y="115" width="45" height="20" fill="#8B5CF6" rx="4"/><text x="37" y="129" text-anchor="middle" class="sys-font tech-tag">Array</text>
+    <text x="70" y="129" class="sys-font card-title">ingredient . </text><text x="155" y="129" class="sys-font card-desc">flavor_tags</text>
+  </g>
+
+  <!-- B-Tree Index Block -->
+  <g transform="translate(380, 480)">
+    <rect width="400" height="90" fill="#FFFFFF" stroke="#3B82F6" stroke-width="1.5" rx="8" filter="url(#shadow-md)"/>
+    <rect width="400" height="30" fill="#3B82F6" rx="8"/>
+    <rect y="15" width="400" height="15" fill="#3B82F6"/>
+    <text x="15" y="21" class="sys-font zone-title" font-size="14">B-Tree 标准关系索引</text>
+    
+    <text x="20" y="55" class="sys-font card-desc" font-weight="bold">用于加速主外键关联、精准匹配与等值检索：</text>
+    <text x="20" y="75" class="sys-font card-desc">eco_code / route_name / city_name / ingredient_id / 业务关联外键...</text>
+  </g>
+
+  <!-- Flow connecting Zone 1 and 2 -->
+  <path d="M 280 540 L 320 540 L 320 340 L 350 340" class="flow-line" marker-end="url(#arrow-blue)"/>
+  <rect x="270" y="420" width="80" height="20" fill="#FFFFFF" stroke="#94A3B8" rx="10"/>
+  <text x="310" y="434" text-anchor="middle" class="sys-font" font-size="11" fill="#475569" font-weight="bold">数据灌入映射</text>
+
+
+  <!-- ================= ZONE 3: OUTPUT / QUERY RESOLUTION (Right) ================= -->
+  <rect x="840" y="80" width="220" height="520" fill="#EFF6FF" stroke="#93C5FD" stroke-width="2" rx="10"/>
+  <rect x="840" y="80" width="220" height="40" fill="#3B82F6" rx="10"/>
+  <rect x="840" y="100" width="220" height="20" fill="#3B82F6"/>
+  <text x="950" y="106" text-anchor="middle" class="sys-font zone-title">3. 高效查询响应与输出</text>
+
+  <!-- Output 1: Vector Tiles -->
+  <g transform="translate(860, 160)">
+    <rect width="180" height="70" fill="#FFFFFF" stroke="#93C5FD" rx="6" filter="url(#shadow-sm)"/>
+    <circle cx="25" cy="35" r="12" fill="#DBEAFE"/>
+    <path d="M 19 35 L 25 29 L 31 35 M 25 29 L 25 41" stroke="#2563EB" stroke-width="2" fill="none"/>
+    <text x="45" y="30" class="sys-font card-title">空间动态矢量瓦片</text>
+    <text x="45" y="50" class="sys-font card-desc">MVT 生成 / 边界相交裁剪</text>
+  </g>
+
+  <!-- Output 2: BBOX Filtering -->
+  <g transform="translate(860, 270)">
+    <rect width="180" height="70" fill="#FFFFFF" stroke="#93C5FD" rx="6" filter="url(#shadow-sm)"/>
+    <circle cx="25" cy="35" r="12" fill="#DBEAFE"/>
+    <rect x="18" y="28" width="14" height="14" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="2,1"/>
+    <text x="45" y="30" class="sys-font card-title">视窗范围框过滤</text>
+    <text x="45" y="50" class="sys-font card-desc">BBOX 内的节点与路线召回</text>
+  </g>
+
+  <!-- Output 3: Semi-structured -->
+  <g transform="translate(860, 380)">
+    <rect width="180" height="70" fill="#FFFFFF" stroke="#93C5FD" rx="6" filter="url(#shadow-sm)"/>
+    <circle cx="25" cy="35" r="12" fill="#DBEAFE"/>
+    <path d="M 17 35 A 8 8 0 1 1 33 35 A 8 8 0 1 1 17 35 M 29 41 L 33 45" fill="none" stroke="#2563EB" stroke-width="1.5"/>
+    <text x="45" y="30" class="sys-font card-title">JSON/数组风味检索</text>
+    <text x="45" y="50" class="sys-font card-desc">按味型、标签的高速筛选</text>
+  </g>
+
+  <!-- Output 4: Relational -->
+  <g transform="translate(860, 490)">
+    <rect width="180" height="70" fill="#FFFFFF" stroke="#93C5FD" rx="6" filter="url(#shadow-sm)"/>
+    <circle cx="25" cy="35" r="12" fill="#DBEAFE"/>
+    <path d="M 17 30 L 33 30 M 17 35 L 33 35 M 17 40 L 33 40" fill="none" stroke="#2563EB" stroke-width="1.5"/>
+    <text x="45" y="30" class="sys-font card-title">基础业务清单输出</text>
+    <text x="45" y="50" class="sys-font card-desc">时空叙事与多表联查</text>
+  </g>
+
+  <!-- Flow connecting Zone 2 and 3 -->
+  <!-- GiST to Outputs 1 & 2 -->
+  <path d="M 780 215 L 810 215 L 810 195 L 850 195" class="flow-line" marker-end="url(#arrow-blue)"/>
+  <path d="M 810 215 L 810 305 L 850 305" class="flow-line" marker-end="url(#arrow-blue)"/>
+  
+  <!-- GIN to Output 3 -->
+  <path d="M 780 385 L 810 385 L 810 415 L 850 415" class="flow-line" marker-end="url(#arrow-blue)"/>
+
+  <!-- B-Tree to Output 4 -->
+  <path d="M 780 525 L 850 525" class="flow-line" marker-end="url(#arrow-blue)"/>
+
+  <rect x="790" y="335" width="40" height="20" fill="#FFFFFF" stroke="#94A3B8" rx="10"/>
+  <text x="810" y="349" text-anchor="middle" class="sys-font" font-size="11" fill="#475569" font-weight="bold">查询</text>
+
+</svg>

@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<defs>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#23352D" flood-opacity="0.12"/></filter>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6C7A72"/></marker>
+</defs>
+<rect width="1600" height="1000" fill="#F7F9F5"/>
+<text x="70.0" y="62.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="34" font-weight="700">
+<tspan x="70.0" dy="0">系统总体架构图</tspan>
+</text>
+<line x1="70.0" y1="112.0" x2="1530.0" y2="112.0" stroke="#D9E2DA" stroke-width="2" stroke-linecap="round"/>
+<rect x="70.0" y="150.0" width="1460.0" height="175.0" rx="26" fill="#EAF2EA" stroke="#D5DED6" stroke-width="2"/>
+<text x="95.0" y="177.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="25" font-weight="700">
+<tspan x="95.0" dy="0">展示层</tspan>
+</text>
+<rect x="70.0" y="385.0" width="1460.0" height="175.0" rx="26" fill="#EEF4F8" stroke="#D5DED6" stroke-width="2"/>
+<text x="95.0" y="412.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="25" font-weight="700">
+<tspan x="95.0" dy="0">服务层</tspan>
+</text>
+<rect x="70.0" y="620.0" width="1460.0" height="175.0" rx="26" fill="#F8F1E4" stroke="#D5DED6" stroke-width="2"/>
+<text x="95.0" y="647.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="25" font-weight="700">
+<tspan x="95.0" dy="0">数据层</tspan>
+</text>
+<rect x="205.0" y="185.0" width="250.0" height="105.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="205.0" y="185.0" width="10" height="105.0" rx="5" fill="#315F4D"/>
+<text x="233.0" y="211.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="233.0" dy="0">Vue SPA</tspan>
+</text>
+<text x="233.0" y="253.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="233.0" dy="0">Router</tspan>
+<tspan x="233.0" dy="20">Pinia 状态</tspan>
+</text>
+<rect x="520.0" y="185.0" width="250.0" height="105.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="520.0" y="185.0" width="10" height="105.0" rx="5" fill="#4FA69A"/>
+<text x="548.0" y="211.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="548.0" dy="0">MapLibre</tspan>
+</text>
+<text x="548.0" y="253.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="548.0" dy="0">底图</tspan>
+<tspan x="548.0" dy="20">矢量图层</tspan>
+</text>
+<rect x="835.0" y="185.0" width="250.0" height="105.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="835.0" y="185.0" width="10" height="105.0" rx="5" fill="#4E79A7"/>
+<text x="863.0" y="211.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="863.0" dy="0">Deck.gl /</tspan>
+<tspan x="863.0" dy="27">ECharts</tspan>
+</text>
+<text x="863.0" y="253.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="863.0" dy="0">路径、节点</tspan>
+<tspan x="863.0" dy="20">雷达图</tspan>
+</text>
+<rect x="1150.0" y="185.0" width="250.0" height="105.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1150.0" y="185.0" width="10" height="105.0" rx="5" fill="#D6A23F"/>
+<text x="1178.0" y="211.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="1178.0" dy="0">专题页面</tspan>
+</text>
+<text x="1178.0" y="253.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="1178.0" dy="0">食材传播</tspan>
+<tspan x="1178.0" dy="20">叙事馆</tspan>
+</text>
+<rect x="205.0" y="420.0" width="250.0" height="110.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="205.0" y="420.0" width="10" height="110.0" rx="5" fill="#7B6BB1"/>
+<text x="233.0" y="446.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="233.0" dy="0">Vite / Express</tspan>
+</text>
+<text x="233.0" y="488.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="233.0" dy="0">开发代理</tspan>
+<tspan x="233.0" dy="20">静态托管</tspan>
+</text>
+<rect x="520.0" y="420.0" width="250.0" height="110.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="520.0" y="420.0" width="10" height="110.0" rx="5" fill="#315F4D"/>
+<text x="548.0" y="446.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="548.0" dy="0">FastAPI</tspan>
+</text>
+<text x="548.0" y="488.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="548.0" dy="0">业务 API</tspan>
+<tspan x="548.0" dy="20">健康检查</tspan>
+</text>
+<rect x="835.0" y="420.0" width="250.0" height="110.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="835.0" y="420.0" width="10" height="110.0" rx="5" fill="#4FA69A"/>
+<text x="863.0" y="446.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="863.0" dy="0">瓦片与矢量服务</tspan>
+</text>
+<text x="863.0" y="488.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="863.0" dy="0">raster</tspan>
+<tspan x="863.0" dy="20">GeoJSON /</tspan>
+<tspan x="863.0" dy="20">MVT</tspan>
+</text>
+<rect x="1150.0" y="420.0" width="250.0" height="110.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1150.0" y="420.0" width="10" height="110.0" rx="5" fill="#D6A23F"/>
+<text x="1178.0" y="446.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="1178.0" dy="0">专题数据服务</tspan>
+</text>
+<text x="1178.0" y="488.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="1178.0" dy="0">ingredient</tspan>
+<tspan x="1178.0" dy="20">chapters</tspan>
+</text>
+<rect x="205.0" y="655.0" width="250.0" height="125.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="205.0" y="655.0" width="10" height="125.0" rx="5" fill="#315F4D"/>
+<text x="233.0" y="681.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="233.0" dy="0">PostgreSQL/PostGIS</tspan>
+</text>
+<text x="233.0" y="723.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="233.0" dy="0">空间几何</tspan>
+<tspan x="233.0" dy="20">业务关系</tspan>
+<tspan x="233.0" dy="20">索引查询</tspan>
+</text>
+<rect x="520.0" y="655.0" width="250.0" height="125.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="520.0" y="655.0" width="10" height="125.0" rx="5" fill="#4E79A7"/>
+<text x="548.0" y="681.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="548.0" dy="0">GIS 基础数据</tspan>
+</text>
+<text x="548.0" y="723.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="548.0" dy="0">HYP 底图</tspan>
+<tspan x="548.0" dy="20">海岸线 / 河流</tspan>
+<tspan x="548.0" dy="20">TEOW 生态区</tspan>
+</text>
+<rect x="835.0" y="655.0" width="250.0" height="125.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="835.0" y="655.0" width="10" height="125.0" rx="5" fill="#D6A23F"/>
+<text x="863.0" y="681.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="863.0" dy="0">食材专题 JSON</tspan>
+</text>
+<text x="863.0" y="723.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="863.0" dy="0">timeline</tspan>
+<tspan x="863.0" dy="20">segments</tspan>
+<tspan x="863.0" dy="20">references</tspan>
+</text>
+<rect x="1150.0" y="655.0" width="250.0" height="125.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1150.0" y="655.0" width="10" height="125.0" rx="5" fill="#C95A49"/>
+<text x="1178.0" y="681.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="700">
+<tspan x="1178.0" dy="0">数据生产管线</tspan>
+</text>
+<text x="1178.0" y="723.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="15" font-weight="400">
+<tspan x="1178.0" dy="0">抽取</tspan>
+<tspan x="1178.0" dy="20">校验</tspan>
+<tspan x="1178.0" dy="20">审核与导入</tspan>
+</text>
+<line x1="473.0" y1="475.0" x2="502.0" y2="475.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="788.0" y1="475.0" x2="817.0" y2="475.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="1103.0" y1="475.0" x2="1132.0" y2="475.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="330.0" y1="308.0" x2="330.0" y2="402.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="645.0" y1="308.0" x2="645.0" y2="402.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="960.0" y1="308.0" x2="960.0" y2="402.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="1275.0" y1="308.0" x2="1275.0" y2="402.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="645.0" y1="548.0" x2="645.0" y2="637.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="960.0" y1="548.0" x2="960.0" y2="637.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="1275.0" y1="548.0" x2="1275.0" y2="637.0" stroke="#6C7A72" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="1275.0,637.0 1275.0,590.0 1275.0,590.0 1275.0,548.0" fill="none" stroke="#C95A49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 8" marker-end="url(#arrow)"/>
+<text x="1292.0" y="585.0" fill="#C95A49" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="1292.0" dy="0">发布后消费</tspan>
+</text>
+<rect x="275.0" y="850.0" width="1050.0" height="65.0" rx="22" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<text x="320.0" y="873.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="400">
+<tspan x="320.0" dy="0">三层边界保持稳定：前端消费展示对象，服务层转换数据口径，数据层沉淀空间与业务资产。</tspan>
+</text>
+</svg>

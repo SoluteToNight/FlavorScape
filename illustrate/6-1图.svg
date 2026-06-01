@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 550" width="100%" height="100%">
+  <defs>
+    <!-- 背景网格 -->
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E2E8F0" stroke-width="0.5"/>
+    </pattern>
+    <!-- 极简阴影 -->
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+    
+    <style>
+      .sys-font { font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif; }
+      .main-title { font-size: 22px; font-weight: 900; fill: #0F172A; }
+      .zone-title { font-size: 14px; font-weight: bold; fill: #64748B; letter-spacing: 2px; }
+      .box-title { font-size: 14px; font-weight: bold; fill: #1E293B; }
+      .api-path { font-size: 12px; font-family: 'Courier New', 'Consolas', monospace; fill: #0F172A; font-weight: 600; }
+      .api-desc { font-size: 12px; fill: #475569; }
+      .badge-text { font-size: 10px; font-weight: bold; fill: #FFFFFF; }
+      .flow-label { font-size: 11px; fill: #1E293B; font-weight: bold; }
+      
+      .div-line { fill: none; stroke: #94A3B8; stroke-width: 1.5; stroke-dasharray: 6,4; }
+      .flow-biz { fill: none; stroke: #3B82F6; stroke-width: 2.5; stroke-linejoin: round; }
+      .flow-map { fill: none; stroke: #10B981; stroke-width: 2.5; stroke-linejoin: round; }
+    </style>
+    
+    <!-- 重新调优的锐利箭头 -->
+    <marker id="arr-biz" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 Z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arr-map" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 Z" fill="#10B981"/>
+    </marker>
+    <marker id="arr-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 10 5 L 0 9 Z" fill="#64748B"/>
+    </marker>
+  </defs>
+
+  <!-- Canvas -->
+  <rect width="1200" height="550" fill="#F8FAFC"/>
+  <rect width="1200" height="550" fill="url(#grid)"/>
+
+  <text x="600" y="40" text-anchor="middle" class="sys-font main-title">前后端 API 网络边界与服务调用链路架构图</text>
+
+  <!-- ================= 垂直分割线与区域标题 ================= -->
+  <!-- 区域划定: 0-250 (CLIENT), 250-450 (PROXY), 450-1000 (FASTAPI), 1000-1200 (DB) -->
+  <path d="M 250 80 L 250 520" class="div-line"/>
+  <path d="M 450 80 L 450 520" class="div-line"/>
+  <path d="M 1000 80 L 1000 520" class="div-line"/>
+
+  <text x="145" y="80" text-anchor="middle" class="sys-font zone-title">CLIENT</text>
+  <text x="350" y="80" text-anchor="middle" class="sys-font zone-title">PROXY</text>
+  <text x="725" y="80" text-anchor="middle" class="sys-font zone-title">FASTAPI SERVICES</text>
+  <text x="1100" y="80" text-anchor="middle" class="sys-font zone-title">PERSISTENCE</text>
+
+
+  <!-- ================= 1. CLIENT ZONE (Center X=145) ================= -->
+  <g transform="translate(45, 110)">
+    <rect width="200" height="380" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" rx="6" filter="url(#shadow)"/>
+    <rect width="200" height="24" fill="#E2E8F0" rx="6"/>
+    <rect y="12" width="200" height="12" fill="#E2E8F0"/>
+    <circle cx="16" cy="12" r="4" fill="#EF4444"/><circle cx="32" cy="12" r="4" fill="#F59E0B"/><circle cx="48" cy="12" r="4" fill="#10B981"/>
+    
+    <text x="100" y="55" text-anchor="middle" class="sys-font box-title" font-size="16">WebGIS Browser</text>
+
+    <!-- 业务数据层 (Center Y=205 绝对坐标 -> 相对 95) -->
+    <rect x="20" y="70" width="160" height="50" fill="#EFF6FF" stroke="#BFDBFE" rx="4"/>
+    <text x="100" y="92" text-anchor="middle" class="sys-font box-title" fill="#1D4ED8">业务数据层</text>
+    <text x="100" y="110" text-anchor="middle" class="sys-font api-desc">Vue3 状态响应与渲染</text>
+
+    <!-- 地图瓦片层 (Center Y=275 绝对坐标 -> 相对 165) -->
+    <rect x="20" y="140" width="160" height="50" fill="#ECFDF5" stroke="#A7F3D0" rx="4"/>
+    <text x="100" y="162" text-anchor="middle" class="sys-font box-title" fill="#047857">地图瓦片层</text>
+    <text x="100" y="180" text-anchor="middle" class="sys-font api-desc">MapLibre GL / Deck.gl</text>
+
+    <!-- 异常拦截 -->
+    <rect x="20" y="290" width="160" height="70" fill="#F1F5F9" stroke="#CBD5E1" stroke-dasharray="2,2" rx="4"/>
+    <text x="100" y="315" text-anchor="middle" class="sys-font box-title">异常反馈与拦截</text>
+    <rect x="30" y="330" width="30" height="18" fill="#EF4444" rx="3"/><text x="45" y="343" text-anchor="middle" class="sys-font badge-text">404</text>
+    <rect x="65" y="330" width="30" height="18" fill="#F59E0B" rx="3"/><text x="80" y="343" text-anchor="middle" class="sys-font badge-text">400</text>
+    <rect x="100" y="330" width="30" height="18" fill="#64748B" rx="3"/><text x="115" y="343" text-anchor="middle" class="sys-font badge-text">500</text>
+  </g>
+
+
+  <!-- ================= 2. PROXY ZONE (Center X=350) ================= -->
+  <g transform="translate(280, 150)">
+    <rect width="140" height="160" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5" rx="6" filter="url(#shadow)"/>
+    <text x="70" y="30" text-anchor="middle" class="sys-font box-title" fill="#D97706">代理/静态托管</text>
+    
+    <rect x="15" y="55" width="110" height="26" fill="#FEF3C7" rx="4"/>
+    <text x="70" y="73" text-anchor="middle" class="sys-font api-desc" font-weight="bold">Vite Server (Dev)</text>
+
+    <rect x="15" y="90" width="110" height="26" fill="#FEF3C7" rx="4"/>
+    <text x="70" y="108" text-anchor="middle" class="sys-font api-desc" font-weight="bold">Express (Prod)</text>
+
+    <rect x="15" y="125" width="110" height="20" fill="#FEF3C7" rx="2" stroke="#FCD34D" stroke-dasharray="2,2"/>
+    <text x="70" y="139" text-anchor="middle" class="sys-font" font-size="10" fill="#B45309">跨域 / 路由分发</text>
+  </g>
+
+
+  <!-- ================= 3. FASTAPI ZONE (Center X=725) ================= -->
+  <g transform="translate(480, 110)">
+    <rect width="490" height="380" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" rx="6" filter="url(#shadow)"/>
+    
+    <!-- Business Router (Y=120, H=170 -> Center Y=205 Absolute) -->
+    <rect x="20" y="20" width="450" height="150" fill="#F5F8FF" stroke="#BFDBFE" rx="6"/>
+    <text x="245" y="45" text-anchor="middle" class="sys-font box-title" fill="#1D4ED8">业务数据接口组 (Business Routers)</text>
+
+    <!-- 严格分离的对齐：Badge(X=40) Path(X=80) Desc(X=450) -->
+    <rect x="40" y="60" width="32" height="18" fill="#3B82F6" rx="3"/><text x="56" y="73" text-anchor="middle" class="sys-font badge-text">GET</text>
+    <text x="85" y="74" class="sys-font api-path">/api/flavors</text>
+    <text x="450" y="74" text-anchor="end" class="sys-font api-desc">风味节点数据展示</text>
+
+    <rect x="40" y="85" width="32" height="18" fill="#3B82F6" rx="3"/><text x="56" y="98" text-anchor="middle" class="sys-font badge-text">GET</text>
+    <text x="85" y="99" class="sys-font api-path">/api/routes</text>
+    <text x="450" y="99" text-anchor="end" class="sys-font api-desc">传播路径列表</text>
+
+    <rect x="40" y="110" width="32" height="18" fill="#3B82F6" rx="3"/><text x="56" y="123" text-anchor="middle" class="sys-font badge-text">GET</text>
+    <text x="85" y="124" class="sys-font api-path">/api/search?q=</text>
+    <text x="450" y="124" text-anchor="end" class="sys-font api-desc">风味与路线全文检索</text>
+
+    <rect x="40" y="135" width="32" height="18" fill="#3B82F6" rx="3"/><text x="56" y="148" text-anchor="middle" class="sys-font badge-text">GET</text>
+    <text x="85" y="149" class="sys-font api-path">/api/ingredients/spread/{id}</text>
+    <text x="450" y="149" text-anchor="end" class="sys-font api-desc">单一食材时空演化</text>
+
+
+    <!-- Spatial Tile Router (Y=310, H=120 -> Center Y=370 Absolute) -->
+    <rect x="20" y="195" width="450" height="110" fill="#F0FDF4" stroke="#86EFAC" rx="6"/>
+    <text x="245" y="220" text-anchor="middle" class="sys-font box-title" fill="#047857">空间瓦片服务组 (Tile Routers)</text>
+
+    <rect x="40" y="240" width="32" height="18" fill="#10B981" rx="3"/><text x="56" y="253" text-anchor="middle" class="sys-font badge-text">GET</text>
+    <text x="85" y="254" class="sys-font api-path">/tiles/raster/{z}/{x}/{y}.png</text>
+    <text x="450" y="254" text-anchor="end" class="sys-font api-desc">基础物理栅格</text>
+
+    <rect x="40" y="265" width="32" height="18" fill="#10B981" rx="3"/><text x="56" y="278" text-anchor="middle" class="sys-font badge-text">GET</text>
+    <text x="85" y="279" class="sys-font api-path">/tiles/mvt/{z}/{x}/{y}.pbf</text>
+    <text x="450" y="279" text-anchor="end" class="sys-font api-desc">生态区边界矢量</text>
+
+    <rect x="40" y="290" width="32" height="18" fill="#10B981" rx="3"/><text x="56" y="303" text-anchor="middle" class="sys-font badge-text">GET</text>
+    <text x="85" y="304" class="sys-font api-path">/tiles/vector/{layer}</text>
+    <text x="450" y="304" text-anchor="end" class="sys-font api-desc">要素GeoJSON</text>
+
+
+    <!-- Health & Cache (Bottom) -->
+    <rect x="20" y="325" width="215" height="35" fill="#F8FAFC" stroke="#CBD5E1" rx="4"/>
+    <text x="127" y="340" text-anchor="middle" class="sys-font api-path" font-size="11">/health &amp; /status</text>
+    <text x="127" y="353" text-anchor="middle" class="sys-font api-desc" font-size="10">服务状态监控</text>
+
+    <rect x="255" y="325" width="215" height="35" fill="#F8FAFC" stroke="#CBD5E1" rx="4"/>
+    <text x="362" y="340" text-anchor="middle" class="sys-font api-path" font-size="11">LRU Cache Module</text>
+    <text x="362" y="353" text-anchor="middle" class="sys-font api-desc" font-size="10">瓦片级内存缓存策略</text>
+  </g>
+
+
+  <!-- ================= 4. PERSISTENCE ZONE (Center X=1100) ================= -->
+  <!-- PostGIS (Center Y=205) -->
+  <g transform="translate(1040, 155)">
+    <path d="M 10 25 C 10 10, 110 10, 110 25 L 110 85 C 110 100, 10 100, 10 85 Z" fill="#64748B" filter="url(#shadow)"/>
+    <ellipse cx="60" cy="25" rx="50" ry="12" fill="#94A3B8"/>
+    <text x="60" y="65" text-anchor="middle" class="sys-font box-title" fill="#FFFFFF">PostGIS</text>
+  </g>
+
+  <!-- File System (Center Y=370) -->
+  <g transform="translate(1040, 330)">
+    <rect x="10" y="0" width="100" height="80" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5" rx="6" filter="url(#shadow)"/>
+    <path d="M 10 20 L 110 20" stroke="#94A3B8" stroke-width="1.5"/>
+    <text x="60" y="40" text-anchor="middle" class="sys-font box-title" fill="#334155">文件系统</text>
+    <text x="60" y="58" text-anchor="middle" class="sys-font api-desc">COG栅格底图</text>
+    <text x="60" y="73" text-anchor="middle" class="sys-font api-desc">JSON专题文件</text>
+  </g>
+
+
+  <!-- ================= 水平精准数据流路线与胶囊 ================= -->
+  
+  <!-- 1. Client -> Proxy (Biz) Y=205 -->
+  <path d="M 245 205 L 280 205" class="flow-biz" marker-end="url(#arr-biz)"/>
+  
+  <!-- 2. Client -> Proxy (Map) Y=275 -->
+  <path d="M 245 275 L 280 275" class="flow-map" marker-end="url(#arr-map)"/>
+
+  <!-- 3. Proxy -> FastAPI (Biz) Y=205 -->
+  <path d="M 420 205 L 480 205" class="flow-biz" marker-end="url(#arr-biz)"/>
+  <!-- 防穿透胶囊 -->
+  <rect x="428" y="194" width="44" height="22" fill="#EFF6FF" stroke="#BFDBFE" rx="11"/>
+  <text x="450" y="209" text-anchor="middle" class="sys-font flow-label" fill="#1D4ED8">JSON</text>
+
+  <!-- 4. Proxy -> FastAPI (Map) Y=275 to Y=370 -->
+  <path d="M 420 275 L 440 275 C 465 275, 465 370, 480 370" class="flow-map" marker-end="url(#arr-map)"/>
+  <!-- 防穿透胶囊 -->
+  <rect x="420" y="313" width="70" height="22" fill="#ECFDF5" stroke="#A7F3D0" rx="11"/>
+  <text x="455" y="328" text-anchor="middle" class="sys-font flow-label" fill="#047857">PNG/MVT</text>
+
+  <!-- 5. FastAPI -> DB (Biz) Y=205 -->
+  <path d="M 970 205 L 1050 205" class="flow-biz" stroke="#64748B" marker-end="url(#arr-gray)"/>
+  <!-- 防穿透胶囊 -->
+  <rect x="975" y="194" width="60" height="22" fill="#F8FAFC" stroke="#CBD5E1" rx="11"/>
+  <text x="1005" y="209" text-anchor="middle" class="sys-font flow-label">SQL 查询</text>
+
+  <!-- 6. FastAPI -> File System (Map) Y=370 -->
+  <path d="M 970 370 L 1050 370" class="flow-map" stroke="#64748B" marker-end="url(#arr-gray)"/>
+  <!-- 防穿透胶囊 -->
+  <rect x="970" y="359" width="75" height="22" fill="#F8FAFC" stroke="#CBD5E1" rx="11"/>
+  <text x="1007" y="374" text-anchor="middle" class="sys-font flow-label">rio-tiler 读取</text>
+
+</svg>

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>系统接口设计</title>
+  <style>
+@page { size: A4; margin: 2.5cm 2.6cm; }
+body { font-family: SimSun, "Songti SC", serif; font-size: 11pt; line-height: 1.65; color: #1f1f1f; background: #fff; }
+.doc { max-width: 18cm; margin: 0 auto; }
+h1, h2, h3, h4, h5, h6 { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color: #20382d; page-break-after: avoid; line-height: 1.35; }
+h1 { text-align: center; font-size: 22pt; margin: 0 0 18pt; }
+h2 { font-size: 16pt; margin: 22pt 0 10pt; border-bottom: 1px solid #d5ddd5; padding-bottom: 4pt; }
+h3 { font-size: 13.5pt; margin: 18pt 0 8pt; }
+h4 { font-size: 12pt; margin: 14pt 0 6pt; color: #345c44; }
+p { text-indent: 2em; margin: 0 0 8pt; text-align: justify; }
+blockquote { margin: 0 0 14pt; padding: 8pt 10pt; border-left: 4px solid #7fa961; background: #f4f7f4; color: #555; }
+blockquote p { text-indent: 0; margin: 0; }
+ul, ol { margin: 0 0 9pt 2em; padding: 0; }
+li { margin: 0 0 5pt; }
+table { border-collapse: collapse; width: 100%; margin: 8pt 0 16pt; font-size: 10pt; line-height: 1.45; page-break-inside: avoid; }
+th, td { border: 1px solid #c8d2c8; padding: 6pt 7pt; vertical-align: top; }
+th { background: #eaf2ea; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; text-align: left; color: #20382d; }
+code { font-family: Consolas, "Courier New", monospace; font-size: 9.5pt; background: #f5f5f5; padding: 0 2pt; }
+pre { background: #f7f7f7; border: 1px solid #ddd; padding: 8pt; white-space: pre-wrap; }
+.subtitle { text-align:center; color:#666; margin-top:-10pt; margin-bottom:18pt; font-family:"Microsoft YaHei", "PingFang SC", sans-serif; text-indent:0; }
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>系统接口设计</h1>
+<p>本章对“寻味地理”风味博物志 WebGIS 系统的外部接口、前后端业务接口、地图瓦片接口、系统状态接口、数据流和错误处理约定进行说明。接口设计以浏览器端 WebGIS 应用为服务对象，重点保证地图展示、风味浏览、传播路径展示、食材传播、叙事阅读和数据来源说明能够稳定获取数据。面向后续产业化演进，接口还应保持结构稳定和语义清楚，使同一批风味数据能够被专题页面、展陈大屏或外部系统复用。</p>
+<h2>外部接口</h2>
+<h3>与外部数据源的接口</h3>
+<h4>Natural Earth 数据接口</h4>
+<p>系统使用 Natural Earth 高程分层设色栅格底图和物理矢量数据作为基础地理数据来源。该接口属于离线数据接入接口，不在用户访问时实时调用外部服务。</p>
+<table>
+<tr><th>接口对象</th><th>数据内容</th><th>接入方式</th><th>系统用途</th></tr>
+<tr><td>高程分层设色栅格</td><td>全球自然地形背景</td><td>本地文件读取</td><td>生成栅格地图瓦片</td></tr>
+<tr><td>海岸线</td><td>全球海岸线矢量</td><td>本地矢量数据加载</td><td>地图物理边界展示</td></tr>
+<tr><td>河流</td><td>全球河流矢量</td><td>本地矢量数据加载</td><td>地图水系参照</td></tr>
+<tr><td>陆地轮廓</td><td>全球陆地矢量</td><td>本地矢量数据加载</td><td>地图陆海背景参照</td></tr>
+</table>
+<p>外部数据更新时，应先完成数据格式检查、坐标系检查和基本渲染检查，再进入系统数据目录。</p>
+<h4>WWF TEOW 数据接口</h4>
+<p>系统使用 WWF TEOW 全球陆地生态区划作为生态地理单元来源。该接口同样属于离线数据接入接口，生态区数据经整理后进入空间数据库。</p>
+<table>
+<tr><th>接口对象</th><th>数据内容</th><th>接入方式</th><th>系统用途</th></tr>
+<tr><td>生态区边界</td><td>MultiPolygon 面状几何</td><td>空间数据库导入</td><td>生态区图层和点击查询</td></tr>
+<tr><td>生态区属性</td><td>名称、编码、生物群系、生物地理界、面积</td><td>属性字段映射</td><td>详情面板和数据解释</td></tr>
+<tr><td>中文补充属性</td><td>中文名称、中文类型说明</td><td>人工整理或映射</td><td>面向公众展示</td></tr>
+</table>
+<p>生态区数据接入后，应保证边界几何有效、坐标系一致、属性字段可读。</p>
+<h4>媒体与文本来源接口</h4>
+<p>系统涉及图片材料、饮食文化材料、地方美食志、古籍和研究资料等来源。此类数据不应由前端直接抓取，而应在系统数据整理阶段确定可用资源和引用说明。</p>
+<table>
+<tr><th>数据类型</th><th>接口要求</th></tr>
+<tr><td>图片资源</td><td>记录来源链接、授权说明和用途，无法稳定加载时提供占位展示</td></tr>
+<tr><td>文本材料</td><td>记录材料名称、作者或来源、引用内容和整理用途</td></tr>
+<tr><td>LLM 辅助结果</td><td>记录原始材料、抽取结果、审核状态和入库状态</td></tr>
+</table>
+<p>外部数据接入不应直接等同于线上实时调用。当前系统以离线整理、入库和本地服务输出为主，能够降低外部服务不可用对页面展示的影响。后续若接入第三方图片、知识库或内容审核服务，应在服务层进行缓存和降级处理，避免前端直接依赖不稳定外部资源。</p>
+<h3>与浏览器的接口</h3>
+<p>浏览器通过 HTTP 请求访问前端静态资源、业务数据接口和地图瓦片接口。系统应支持现代浏览器的 JavaScript、WebGL、JSON 解析和图片瓦片加载能力。</p>
+<p>浏览器端接口交互应满足以下要求：</p>
+<ol>
+<li>所有业务数据接口返回 JSON 数据；</li>
+<li>栅格瓦片接口返回 PNG 图片；</li>
+<li>矢量图层接口返回 GeoJSON 或 MVT 数据；</li>
+<li>接口响应应设置合理缓存策略，减少重复请求；</li>
+<li>生产环境应通过 HTTPS 提供访问能力；</li>
+<li>面向外部复用的接口应预留版本号、权限和调用统计机制。</li>
+</ol>
+<h2>内部接口</h2>
+<h3>前后端接口设计</h3>
+<h4>数据格式约定</h4>
+<p>系统前后端接口主要采用 JSON 格式交换业务数据。接口字段命名保持稳定，前端不直接依赖数据库内部字段名。</p>
+<p>通用约定如下：</p>
+<table>
+<tr><th>项目</th><th>约定</th></tr>
+<tr><td>字符编码</td><td>UTF-8</td></tr>
+<tr><td>时间与年代</td><td>以展示型字符串为主，必要时补充排序字段</td></tr>
+<tr><td>坐标顺序</td><td>经度在前，纬度在后</td></tr>
+<tr><td>空间几何</td><td>点以坐标数组表达，路线以坐标数组或矢量格式表达</td></tr>
+<tr><td>颜色</td><td>使用十六进制颜色字符串</td></tr>
+<tr><td>空结果</td><td>返回空数组或空对象，不返回未定义结构</td></tr>
+</table>
+<h4>业务数据接口</h4>
+<h5>GET <code>/api/flavors</code></h5>
+<p>接口用途：获取风味节点展示数据，用于地图节点展示、风味基因库卡片和搜索结果对象定位。该接口当前由数据库 <code>flavor_genotype</code>、<code>recipe_link</code> 和 <code>ingredient</code> 等表组合生成，但前端不需要感知内部表结构。</p>
+<p>请求参数：无。</p>
+<p>响应类型：JSON 数组。</p>
+<p>主要响应字段：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>id</code></td><td>string</td><td>风味节点稳定标识</td></tr>
+<tr><td><code>city</code></td><td>string</td><td>城市或地域名称</td></tr>
+<tr><td><code>dish</code></td><td>string</td><td>菜品名称</td></tr>
+<tr><td><code>dish_family</code></td><td>string</td><td>食物类型</td></tr>
+<tr><td><code>region</code></td><td>string</td><td>区域标签</td></tr>
+<tr><td><code>eco</code></td><td>string</td><td>生态展示标签</td></tr>
+<tr><td><code>eco_name_ref</code></td><td>string</td><td>关联生态区名称</td></tr>
+<tr><td><code>scores</code></td><td>number[]</td><td>六维风味向量展示数组</td></tr>
+<tr><td><code>primary</code></td><td>string[]</td><td>主风味标签</td></tr>
+<tr><td><code>vals</code></td><td>number[]</td><td>主风味数值</td></tr>
+<tr><td><code>color</code></td><td>string</td><td>展示颜色</td></tr>
+<tr><td><code>cat</code></td><td>string</td><td>风味分类</td></tr>
+<tr><td><code>ingredients</code></td><td>string[]</td><td>食材名称列表</td></tr>
+<tr><td><code>coordinates</code></td><td>number[]</td><td>节点坐标</td></tr>
+<tr><td><code>genome_vector</code></td><td>object</td><td>六维风味向量对象</td></tr>
+<tr><td><code>description</code></td><td>string</td><td>风味描述</td></tr>
+<tr><td><code>bubbleImage</code></td><td>string</td><td>节点图片或占位图</td></tr>
+<tr><td><code>bubbleImageSource</code></td><td>string</td><td>图片来源</td></tr>
+</table>
+<h5>GET <code>/api/routes</code></h5>
+<p>接口用途：获取传播路径列表，用于地图路线展示、流光动画和叙事章节关联。</p>
+<p>请求参数：无。</p>
+<p>响应类型：JSON 数组。</p>
+<p>主要响应字段：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>name</code></td><td>string</td><td>路线名称</td></tr>
+<tr><td><code>color</code></td><td>string</td><td>路线展示颜色</td></tr>
+<tr><td><code>type</code></td><td>string</td><td>路线类型，取值为 land 或 sea</td></tr>
+<tr><td><code>path</code></td><td>number[][]</td><td>路径坐标数组</td></tr>
+</table>
+<h5>GET <code>/api/search</code></h5>
+<p>接口用途：根据关键词搜索风味节点和传播路径，用于全局搜索和地图跳转。</p>
+<p>请求参数：</p>
+<table>
+<tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+<tr><td><code>q</code></td><td>string</td><td>否</td><td>搜索关键词</td></tr>
+</table>
+<p>响应类型：JSON 数组。</p>
+<p>主要响应字段：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>type</code></td><td>string</td><td>结果类型，node 或 route</td></tr>
+<tr><td><code>label</code></td><td>string</td><td>结果主标题</td></tr>
+<tr><td><code>sub</code></td><td>string</td><td>结果副标题</td></tr>
+<tr><td><code>color</code></td><td>string</td><td>结果颜色</td></tr>
+<tr><td><code>data</code></td><td>object</td><td>可直接用于地图选择的对象数据</td></tr>
+</table>
+<p>当关键词为空时，接口返回空数组。</p>
+<h5>GET <code>/api/chapters</code></h5>
+<p>接口用途：获取时空叙事馆章节列表。</p>
+<p>请求参数：无。</p>
+<p>响应类型：JSON 数组。</p>
+<p>主要响应字段：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>id</code></td><td>number</td><td>章节编号</td></tr>
+<tr><td><code>title</code></td><td>string</td><td>章节标题</td></tr>
+<tr><td><code>date</code></td><td>string</td><td>年代标签</td></tr>
+<tr><td><code>body</code></td><td>string</td><td>正文内容</td></tr>
+<tr><td><code>cite</code></td><td>string</td><td>引用说明</td></tr>
+<tr><td><code>source</code></td><td>string</td><td>来源</td></tr>
+<tr><td><code>routeName</code></td><td>string</td><td>关联传播路线</td></tr>
+</table>
+<h5>GET <code>/api/data-sources</code></h5>
+<p>接口用途：获取系统数据来源列表，用于关于与方法说明页面展示。</p>
+<p>请求参数：无。</p>
+<p>响应类型：JSON 数组。</p>
+<p>主要响应字段：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>name</code></td><td>string</td><td>数据来源名称</td></tr>
+<tr><td><code>desc</code></td><td>string</td><td>来源说明</td></tr>
+<tr><td><code>color</code></td><td>string</td><td>展示颜色</td></tr>
+<tr><td><code>url</code></td><td>string</td><td>来源链接</td></tr>
+</table>
+<h5>GET <code>/api/ingredients/spread</code></h5>
+<p>接口用途：获取可用于食材传播页面的食材主题概要列表，包括食材编号、名称、物种、起源地、起源坐标、摘要、主题色、事件数量和年份范围。</p>
+<p>请求参数：无。</p>
+<p>响应类型：JSON 数组。前端使用该接口生成食材选择列表，并决定默认展示的传播主题。</p>
+<h5>GET <code>/api/ingredients/spread/{ingredient_id}</code></h5>
+<p>接口用途：获取单个食材的完整传播数据，包括起源信息、时间线事件、参考文献和可视化参数。该接口主要服务于食材传播页面的右侧说明、时间线和地图节点渲染。</p>
+<p>路径参数：<code>ingredient_id</code>，表示食材主题编号。</p>
+<p>异常情况：当食材编号不存在时返回 404，并给出可用编号提示。</p>
+<h5>GET <code>/api/ingredients/spread/{ingredient_id}/path</code></h5>
+<p>接口用途：获取单个食材按时间顺序生成的路径坐标和路径段信息。前端可使用该接口绘制传播路径、节点标记和阶段性镜头移动。</p>
+<p>路径参数：<code>ingredient_id</code>，表示食材主题编号。</p>
+<p>设计要求：接口返回的路径用于宏观传播叙事，不表示精确历史轨迹；每个节点应尽量关联时间、地点、路线描述和来源信息，便于后续进行专题审核和内容复用。</p>
+<h4>瓦片服务接口</h4>
+<h5>GET <code>/tiles/raster/{z}/{x}/{y}.png</code></h5>
+<p>接口用途：按 XYZ 瓦片规则获取 Natural Earth 栅格底图瓦片。</p>
+<p>路径参数：</p>
+<table>
+<tr><th>参数</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>z</code></td><td>number</td><td>缩放等级</td></tr>
+<tr><td><code>x</code></td><td>number</td><td>瓦片横向编号</td></tr>
+<tr><td><code>y</code></td><td>number</td><td>瓦片纵向编号</td></tr>
+</table>
+<p>响应类型：PNG 图片。</p>
+<p>异常情况：</p>
+<table>
+<tr><th>状态</th><th>说明</th></tr>
+<tr><td>400</td><td>缩放等级超出服务范围</td></tr>
+<tr><td>503</td><td>栅格底图尚不可用</td></tr>
+</table>
+<p>对于超出栅格边界的请求，系统应返回透明占位瓦片，避免地图渲染中断。</p>
+<h5>GET <code>/tiles/vector/{layer}</code></h5>
+<p>接口用途：获取指定矢量图层的 GeoJSON 数据。</p>
+<p>路径参数：</p>
+<table>
+<tr><th>参数</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>layer</code></td><td>string</td><td>图层名称</td></tr>
+</table>
+<p>可用图层包括 coastline、rivers、land、ecoregions 等。</p>
+<p>响应类型：GeoJSON FeatureCollection。</p>
+<p>异常情况：</p>
+<table>
+<tr><th>状态</th><th>说明</th></tr>
+<tr><td>404</td><td>请求图层不存在或尚未加载</td></tr>
+</table>
+<h5>GET <code>/tiles/vector</code></h5>
+<p>接口用途：获取当前可用矢量图层列表及要素数量。</p>
+<p>请求参数：无。</p>
+<p>响应示例结构：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>layers</code></td><td>object</td><td>图层名称与要素数量映射</td></tr>
+</table>
+<h5>GET <code>/tiles/mvt/{z}/{x}/{y}.pbf</code></h5>
+<p>接口用途：获取生态区边界矢量瓦片，用于后续高性能地图图层展示。</p>
+<p>路径参数：</p>
+<table>
+<tr><th>参数</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>z</code></td><td>number</td><td>缩放等级</td></tr>
+<tr><td><code>x</code></td><td>number</td><td>瓦片横向编号</td></tr>
+<tr><td><code>y</code></td><td>number</td><td>瓦片纵向编号</td></tr>
+</table>
+<p>响应类型：Mapbox Vector Tile 二进制数据。</p>
+<p>当瓦片内无生态区要素或查询异常时，接口应返回空矢量瓦片响应，避免前端地图报错。</p>
+<h5>GET <code>/tiles/status</code></h5>
+<p>接口用途：获取瓦片服务状态，用于地图初始化检查和调试显示。</p>
+<p>请求参数：无。</p>
+<p>主要响应字段：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>raster_ready</code></td><td>boolean</td><td>栅格底图是否可用</td></tr>
+<tr><td><code>vector_layers</code></td><td>string[]</td><td>已加载矢量图层</td></tr>
+<tr><td><code>tile_cache</code></td><td>object</td><td>瓦片缓存状态</td></tr>
+</table>
+<h4>系统状态接口</h4>
+<h5>GET <code>/health</code></h5>
+<p>接口用途：检查后端服务是否可用。</p>
+<p>请求参数：无。</p>
+<p>主要响应字段：</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>status</code></td><td>string</td><td>服务状态</td></tr>
+<tr><td><code>raster_ready</code></td><td>boolean</td><td>栅格底图是否可用</td></tr>
+<tr><td><code>vector_layers</code></td><td>string[]</td><td>已加载矢量图层</td></tr>
+</table>
+<h3>子系统间的数据流设计</h3>
+<h4>数据查询流</h4>
+<p>用户访问页面后，浏览器根据页面类型请求业务数据或瓦片数据。地图页加载风味节点、传播路径、底图瓦片和矢量图层；风味基因库加载风味节点；时空叙事馆加载章节和路线；食材传播页面加载食材主题、完整时间线和路径坐标；关于页面加载数据来源。后端从数据库、专题 JSON 或基础数据文件读取数据，经格式化后返回浏览器。</p>
+<h4>搜索定位流</h4>
+<p>用户输入关键词后，浏览器调用搜索接口。后端返回节点或路线类型的搜索结果。用户点击结果后，前端将结果对象写入当前选择状态，并跳转或定位到地图对应对象。</p>
+<h4>数据写入流</h4>
+<p>当前用户界面不提供在线编辑入口。风味节点、传播事件、食材、食材传播专题和叙事章节通过离线整理、审核和批量导入流程进入数据库或专题数据文件。后续如建设管理后台，应另行设计登录、权限、审核、版本发布和写入接口。</p>
+<h3>接口错误码约定</h3>
+<table>
+<tr><th>状态码</th><th>适用场景</th><th>处理方式</th></tr>
+<tr><td>200</td><td>请求成功</td><td>返回目标数据</td></tr>
+<tr><td>400</td><td>请求参数不符合要求</td><td>返回错误说明，前端提示用户</td></tr>
+<tr><td>404</td><td>请求资源不存在</td><td>返回错误说明，前端显示空状态或提示</td></tr>
+<tr><td>503</td><td>依赖数据或服务尚不可用</td><td>前端显示加载失败或稍后重试提示</td></tr>
+<tr><td>500</td><td>服务端异常</td><td>记录错误并返回通用错误说明</td></tr>
+</table>
+<h3>前后端接口调用约定</h3>
+<ol>
+<li>前端应将接口调用与页面状态分离，避免单个请求失败导致整个页面不可用；</li>
+<li>列表类接口应按稳定结构返回数组，即使无数据也应返回空数组；</li>
+<li>地图瓦片请求失败时，前端应尽量保持已有图层状态；</li>
+<li>搜索接口应限制结果数量，优先返回可被直接定位的节点和路线；</li>
+<li>接口新增字段应保持向后兼容，不应删除前端已使用字段；</li>
+<li>涉及外部来源链接的字段应在前端以安全方式打开；</li>
+<li>面向产业化复用的接口应优先保持响应字段稳定，确需调整时应通过版本号或兼容字段过渡。</li>
+</ol>
+</div>
+</body>
+</html>

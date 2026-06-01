@@ -1,0 +1,156 @@
+{
+  "ingredient_id": "pepper",
+  "name": "辣椒",
+  "name_en": "Chili Pepper",
+  "species": "Capsicum annuum",
+  "origin": "美洲",
+  "origin_coordinates": [-99.13, 19.43],
+  "summary": "辣椒原产中美洲，15世纪末由哥伦布带回欧洲，明代后期经海路传入中国，在三百余年间从观赏植物演变为改变中国饮食格局的核心调味料。",
+  "color": "#E5394E",
+  "image_url": "/ingredients/pepper-realistic.png",
+  "timeline": [
+    {
+      "year": 1493,
+      "dynasty": "明·弘治",
+      "location": "西班牙",
+      "coordinates": [-3.70, 40.42],
+      "historical_name": ["pimienta"],
+      "source_literature": "哥伦布航海日志",
+      "event_type": "跨洋传播",
+      "route": "哥伦布第二次航行带回欧洲",
+      "notes": "哥伦布将辣椒从加勒比海带回西班牙，误认为是一种胡椒，故称pimienta。"
+    },
+    {
+      "year": 1591,
+      "dynasty": "明代后期",
+      "location": "浙江",
+      "coordinates": [120.15, 30.28],
+      "historical_name": ["番椒"],
+      "source_literature": "《遵生八笺》",
+      "event_type": "首次记载",
+      "route": "华东沿海传入",
+      "notes": "中国目前公认的辣椒最早记载，推测因从海外传来且有辣味而得名。"
+    },
+    {
+      "year": 1621,
+      "dynasty": "明代后期",
+      "location": "山东",
+      "coordinates": [117.00, 36.67],
+      "historical_name": ["秦椒", "番椒"],
+      "source_literature": "《群芳谱·蔬谱》",
+      "event_type": "早期传播",
+      "route": "华东沿海传入",
+      "notes": "华北地区已有种植的早期记录。"
+    },
+    {
+      "year": 1671,
+      "dynasty": "清代康熙",
+      "location": "浙江",
+      "coordinates": [120.58, 30.05],
+      "historical_name": ["辣茄"],
+      "source_literature": "《山阴县志》",
+      "event_type": "地方志首记",
+      "route": "华东沿海传入",
+      "notes": "国内方志中最早的记载，也是最早将辣椒称为'辣茄'的地方，早期主要用于替代胡椒。"
+    },
+    {
+      "year": 1682,
+      "dynasty": "清代康熙",
+      "location": "辽宁",
+      "coordinates": [122.35, 40.13],
+      "historical_name": ["秦椒", "番椒"],
+      "source_literature": "《盖平县志》",
+      "event_type": "区域爆发",
+      "route": "东北海路传入(日本→朝鲜→东北)",
+      "notes": "推测在壬辰倭乱期间经日本传入朝鲜，再传入中国东北。"
+    },
+    {
+      "year": 1684,
+      "dynasty": "清代康熙",
+      "location": "湖南",
+      "coordinates": [111.47, 27.24],
+      "historical_name": ["海椒", "辣子"],
+      "source_literature": "《宝庆府志》、《邵阳县志》",
+      "event_type": "核心区形成",
+      "route": "内陆水运(浙江→长江→湘江)",
+      "notes": "国内最早称番椒为'海椒'的记载。湖南后来成为向西南各省传播的次级中心。"
+    },
+    {
+      "year": 1722,
+      "dynasty": "清代康熙",
+      "location": "贵州",
+      "coordinates": [108.71, 27.31],
+      "historical_name": ["海椒", "辣火", "辣角"],
+      "source_literature": "《思州府志》",
+      "event_type": "饮食演变",
+      "route": "湖南向西传播",
+      "notes": "记载土苗地区'用以代盐'，这是贵州人对辣椒用途的一大发明。"
+    },
+    {
+      "year": 1735,
+      "dynasty": "清代雍正",
+      "location": "陕西",
+      "coordinates": [108.95, 34.27],
+      "historical_name": ["番椒", "秦椒"],
+      "source_literature": "《陕西通志》",
+      "event_type": "向西扩展",
+      "route": "内陆传播",
+      "notes": "西部地区较早的大范围记载记录。"
+    },
+    {
+      "year": 1741,
+      "dynasty": "清代乾隆",
+      "location": "广西",
+      "coordinates": [108.33, 23.73],
+      "historical_name": ["辣椒"],
+      "source_literature": "《武缘县志》",
+      "event_type": "命名诞生",
+      "route": "湖南向南传播",
+      "notes": "全国最早将番椒正式定名为'辣椒'的地区，主要用于'消水气，解瘴毒'。"
+    },
+    {
+      "year": 1742,
+      "dynasty": "清代乾隆",
+      "location": "台湾",
+      "coordinates": [120.21, 23.00],
+      "historical_name": ["番姜"],
+      "source_literature": "《台湾府志》",
+      "event_type": "独立传入",
+      "route": "荷兰人引入",
+      "notes": "为木本辣椒，明确记载'种自荷兰'，与其他内陆省份品种和叫法均不同。"
+    },
+    {
+      "year": 1749,
+      "dynasty": "清代乾隆",
+      "location": "四川",
+      "coordinates": [103.52, 30.57],
+      "historical_name": ["秦椒", "海椒", "辣子"],
+      "source_literature": "《大邑县志》",
+      "event_type": "核心区形成",
+      "route": "湖南/浙江传入",
+      "notes": "四川地区最早的记载，随后在嘉庆年间迅速普及，彻底改变川菜格局。"
+    },
+    {
+      "year": 1788,
+      "dynasty": "清代乾隆",
+      "location": "湖北",
+      "coordinates": [110.78, 32.63],
+      "historical_name": ["赛胡椒", "辣子", "广椒"],
+      "source_literature": "《房县志抄》",
+      "event_type": "区域补齐",
+      "route": "长江沿线传播",
+      "notes": "早期湖北称呼非常特别，叫'赛胡椒'。"
+    },
+    {
+      "year": 1894,
+      "dynasty": "清代光绪",
+      "location": "云南",
+      "coordinates": [100.23, 26.56],
+      "historical_name": ["辣椒"],
+      "source_literature": "《鹤庆州志》",
+      "event_type": "晚期记载",
+      "route": "外省输入至本地种植",
+      "notes": "虽然云南人极可能早于光绪年间就已食辣，但长期靠四川等地输入，光绪年间才有确切的地方志种植记录。"
+    }
+  ]
+}

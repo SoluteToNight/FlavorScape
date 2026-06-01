@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" width="100%" height="100%">
+  <defs>
+    <filter id="box-shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#475569" flood-opacity="0.15"/>
+    </filter>
+    <style>
+      .sys-font { font-family: 'Arial', 'Microsoft YaHei', sans-serif; }
+      .main-title { font-size: 24px; font-weight: 900; fill: #0F172A; }
+      .block-title { font-size: 18px; font-weight: bold; fill: #FFFFFF; letter-spacing: 1px; }
+      .sub-title { font-size: 14px; font-weight: bold; fill: #1E293B; }
+      .list-text { font-size: 13px; fill: #334155; }
+      .flow-text { font-size: 12px; font-weight: bold; fill: #2563EB; }
+      .flow-line { fill: none; stroke: #3B82F6; stroke-width: 3; stroke-linejoin: round; }
+      .loop-line { fill: none; stroke: #F59E0B; stroke-width: 3; stroke-linejoin: round; stroke-dasharray: 8,4; }
+    </style>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,2 L8,5 L0,8 Z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,2 L8,5 L0,8 Z" fill="#F59E0B"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="700" fill="#F4F6F8"/>
+  <text x="550" y="45" text-anchor="middle" class="sys-font main-title">图 3-1 寻味地理系统总体技术路线图</text>
+
+  <!-- ================= BOTTOM LAYER: DATA PREP & ORG ================= -->
+  <rect x="50" y="420" width="1000" height="240" fill="#E2E8F0" rx="12" stroke="#CBD5E1"/>
+  <text x="550" y="450" text-anchor="middle" class="sys-font sub-title" fill="#475569">Step 1 &amp; 2: 基础地理数据整理与生态业务组织 (Data Preparation &amp; Organization)</text>
+
+  <!-- Left Bottom Block -->
+  <g transform="translate(80, 470)">
+    <rect width="450" height="170" fill="#FFFFFF" rx="8" filter="url(#box-shadow)"/>
+    <rect width="450" height="35" fill="#475569" rx="8"/>
+    <rect y="20" width="450" height="15" fill="#475569"/>
+    <text x="225" y="24" text-anchor="middle" class="sys-font block-title">1. 基础地理数据整理</text>
+    
+    <circle cx="30" cy="65" r="5" fill="#64748B"/>
+    <text x="45" y="70" class="sys-font sub-title">统一空间参考基底 (WGS84 EPSG:4326)</text>
+    <circle cx="30" cy="100" r="5" fill="#64748B"/>
+    <text x="45" y="105" class="sys-font sub-title">栅格底图清洗 (Natural Earth HYP COG)</text>
+    <circle cx="30" cy="135" r="5" fill="#64748B"/>
+    <text x="45" y="140" class="sys-font sub-title">海岸线/河流物理矢量骨架对齐</text>
+  </g>
+
+  <!-- Right Bottom Block -->
+  <g transform="translate(570, 470)">
+    <rect width="450" height="170" fill="#FFFFFF" rx="8" filter="url(#box-shadow)"/>
+    <rect width="450" height="35" fill="#059669" rx="8"/>
+    <rect y="20" width="450" height="15" fill="#059669"/>
+    <text x="225" y="24" text-anchor="middle" class="sys-font block-title">2. 生态与风味业务数据组织</text>
+    
+    <circle cx="30" cy="65" r="5" fill="#10B981"/>
+    <text x="45" y="70" class="sys-font sub-title">空间容器：WWF TEOW 生态区映射</text>
+    <circle cx="30" cy="100" r="5" fill="#10B981"/>
+    <text x="45" y="105" class="sys-font sub-title">多维关系构建：食材来源、配方与风味连结</text>
+    <circle cx="30" cy="135" r="5" fill="#10B981"/>
+    <text x="45" y="140" class="sys-font sub-title">时空属性抽象：叙事事件与几何路径绑定</text>
+  </g>
+
+  <!-- ================= MIDDLE LAYER: DB & BACKEND ================= -->
+  <rect x="50" y="230" width="1000" height="150" fill="#DBEAFE" rx="12" stroke="#BFDBFE"/>
+  <text x="550" y="255" text-anchor="middle" class="sys-font sub-title" fill="#2563EB">Step 3 &amp; 4: 空间数据库支撑与后端服务输出 (Backend Support &amp; Services)</text>
+
+  <!-- Database Block -->
+  <g transform="translate(80, 275)">
+    <rect width="350" height="90" fill="#FFFFFF" rx="8" filter="url(#box-shadow)"/>
+    <rect width="350" height="30" fill="#2563EB" rx="8"/>
+    <rect y="15" width="350" height="15" fill="#2563EB"/>
+    <text x="175" y="20" text-anchor="middle" class="sys-font block-title" font-size="16">3. PostgreSQL/PostGIS 空间引擎</text>
+    <text x="175" y="55" text-anchor="middle" class="sys-font list-text">对象关系模型统一管理 (点/线/面/业务属性)</text>
+    <text x="175" y="75" text-anchor="middle" class="sys-font list-text">空间索引(GiST) 与 半结构化索引(GIN) 协同</text>
+  </g>
+
+  <!-- Backend Services Block -->
+  <g transform="translate(470, 275)">
+    <rect width="550" height="90" fill="#FFFFFF" rx="8" filter="url(#box-shadow)"/>
+    <rect width="550" height="30" fill="#8B5CF6" rx="8"/>
+    <rect y="15" width="550" height="15" fill="#8B5CF6"/>
+    <text x="275" y="20" text-anchor="middle" class="sys-font block-title" font-size="16">4. FastAPI 数据服务封装与输出</text>
+    <text x="275" y="55" text-anchor="middle" class="sys-font list-text">基础地理数据转换为可调用的 栅格瓦片/矢量服务 (rio-tiler)</text>
+    <text x="275" y="75" text-anchor="middle" class="sys-font list-text">屏蔽内部库表结构，向前端输出标准的 业务与专题 JSON 接口</text>
+  </g>
+
+  <!-- ================= TOP LAYER: FRONTEND ================= -->
+  <rect x="50" y="80" width="1000" height="110" fill="#FCE7F3" rx="12" stroke="#FBCFE8"/>
+  <text x="550" y="105" text-anchor="middle" class="sys-font sub-title" fill="#BE185D">Step 5: 前端 WebGIS 综合展示 (Frontend Rendering &amp; Interaction)</text>
+
+  <!-- Frontend Block -->
+  <g transform="translate(80, 120)">
+    <rect width="940" height="55" fill="#FFFFFF" rx="8" filter="url(#box-shadow)"/>
+    <rect width="250" height="55" fill="#E11D48" rx="8"/>
+    <rect x="230" width="20" height="55" fill="#E11D48"/>
+    <text x="125" y="33" text-anchor="middle" class="sys-font block-title" font-size="16">5. 浏览器端可视化与叙事</text>
+    <text x="600" y="33" text-anchor="middle" class="sys-font list-text" font-weight="bold">MapLibre 底图控制 ➕ Deck.gl 传播流光 ➕ 多维度结构化叙事组件</text>
+  </g>
+
+  <!-- ================= DATA FLOW LINES & LOOPS ================= -->
+  <!-- Bottom to Middle Flow -->
+  <path d="M 255 470 L 255 365" class="flow-line" marker-end="url(#arrow-blue)"/>
+  <text x="265" y="400" class="sys-font flow-text">入库支撑</text>
+
+  <path d="M 795 470 L 795 420 L 600 420 L 600 365" class="flow-line" marker-end="url(#arrow-blue)"/>
+  <text x="610" y="400" class="sys-font flow-text">接口转换</text>
+
+  <!-- DB to Backend Flow -->
+  <path d="M 430 320 L 470 320" class="flow-line" marker-end="url(#arrow-blue)"/>
+
+  <!-- Middle to Top Flow -->
+  <path d="M 745 275 L 745 175" class="flow-line" marker-end="url(#arrow-blue)"/>
+  <text x="755" y="235" class="sys-font flow-text">消费接口</text>
+
+  <!-- Global Feedback Loop (Step 6) -->
+  <path d="M 1020 147 L 1070 147 L 1070 650 L 50 650 L 50 550 L 80 550" class="loop-line" marker-end="url(#arrow-orange)"/>
+  <rect x="400" y="635" width="250" height="30" fill="#FEF3C7" stroke="#FDE68A" rx="15"/>
+  <text x="525" y="655" text-anchor="middle" class="sys-font flow-text" fill="#D97706">Step 6: 数据扩展、审核机制与迭代闭环</text>
+
+</svg>

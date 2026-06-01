@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 680" width="100%" height="100%">
+  <defs>
+    <!-- 微小网格底纹 -->
+    <pattern id="grid" width="15" height="15" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.5" fill="#CBD5E1"/>
+    </pattern>
+    <!-- 学术风极简阴影 -->
+    <filter id="academic-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.1"/>
+    </filter>
+    <style>
+      .font-main { font-family: 'Times New Roman', 'Microsoft YaHei', sans-serif; }
+      .title { font-size: 18px; font-weight: bold; fill: #1E293B; }
+      .domain-title { font-size: 14px; font-weight: bold; fill: #475569; letter-spacing: 1px; }
+      .box-header { font-size: 13px; font-weight: bold; fill: #FFFFFF; }
+      .text-item { font-size: 12px; fill: #334155; }
+      .text-small { font-size: 10px; fill: #64748B; font-style: italic; }
+      .arrow-text { font-size: 11px; font-weight: bold; fill: #1565C0; background: white; }
+      .border-dashed { stroke-dasharray: 4,4; stroke-width: 1.2; }
+      .border-solid { stroke-width: 1.2; }
+    </style>
+    <!-- 箭头定义 -->
+    <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#1565C0"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="680" fill="#F8FAFC"/>
+  <rect width="1000" height="680" fill="url(#grid)"/>
+
+  <text x="500" y="30" text-anchor="middle" class="font-main title">图 3-1 系统总体架构与多层数据交互图 (System Architecture &amp; Data Flow)</text>
+
+  <!-- ================= DOMAIN 3: PRESENTATION (TOP) ================= -->
+  <rect x="50" y="60" width="900" height="150" fill="#FFFFFF" stroke="#94A3B8" rx="4" class="border-dashed"/>
+  <text x="60" y="80" class="font-main domain-title">前端展示层 (Presentation Layer / Browser Environment)</text>
+
+  <g transform="translate(80, 100)">
+    <!-- Vue App Box -->
+    <rect width="840" height="90" fill="#F1F8E9" stroke="#7CB342" rx="2" class="border-solid" filter="url(#academic-shadow)"/>
+    <rect width="840" height="25" fill="#558B2F" rx="2"/>
+    <text x="420" y="17" text-anchor="middle" class="font-main box-header">Vue 3 单页应用 (SPA) 核心交互控制</text>
+    
+    <!-- Sub modules -->
+    <rect x="20" y="35" width="250" height="40" fill="#FFFFFF" stroke="#AED581" rx="2"/>
+    <text x="145" y="52" text-anchor="middle" class="font-main text-item" font-weight="bold">MapLibre GL JS</text>
+    <text x="145" y="67" text-anchor="middle" class="font-main text-small">物理底图与生态区划矢量渲染</text>
+
+    <rect x="290" y="35" width="250" height="40" fill="#FFFFFF" stroke="#AED581" rx="2"/>
+    <text x="415" y="52" text-anchor="middle" class="font-main text-item" font-weight="bold">Deck.gl WebGL 可视化</text>
+    <text x="415" y="67" text-anchor="middle" class="font-main text-small">传播路径流光 / 风味散点聚合</text>
+
+    <rect x="560" y="35" width="260" height="40" fill="#FFFFFF" stroke="#AED581" rx="2"/>
+    <text x="690" y="52" text-anchor="middle" class="font-main text-item" font-weight="bold">Pinia &amp; UI 组件</text>
+    <text x="690" y="67" text-anchor="middle" class="font-main text-small">全局状态互斥 / 雷达图 / 叙事面板</text>
+  </g>
+
+  <!-- ================= DOMAIN 2: SERVICE (MIDDLE) ================= -->
+  <rect x="50" y="250" width="900" height="180" fill="#FFFFFF" stroke="#94A3B8" rx="4" class="border-dashed"/>
+  <text x="60" y="270" class="font-main domain-title">后端服务层 (Service Layer / FastAPI &amp; Node.js)</text>
+
+  <g transform="translate(80, 290)">
+    <!-- API Server -->
+    <rect width="550" height="120" fill="#E3F2FD" stroke="#1E88E5" rx="2" class="border-solid" filter="url(#academic-shadow)"/>
+    <rect width="550" height="25" fill="#1565C0" rx="2"/>
+    <text x="275" y="17" text-anchor="middle" class="font-main box-header">FastAPI 核心业务与空间服务</text>
+
+    <rect x="20" y="40" width="160" height="60" fill="#FFFFFF" stroke="#90CAF9" rx="2"/>
+    <text x="100" y="58" text-anchor="middle" class="font-main text-item" font-weight="bold">业务数据 REST API</text>
+    <text x="100" y="73" text-anchor="middle" class="font-main text-small">风味查询 / 搜索定位</text>
+    <text x="100" y="88" text-anchor="middle" class="font-main text-small">食材传播序列封装</text>
+
+    <rect x="195" y="40" width="160" height="60" fill="#FFFFFF" stroke="#90CAF9" rx="2"/>
+    <text x="275" y="58" text-anchor="middle" class="font-main text-item" font-weight="bold">空间瓦片服务 (Tiles)</text>
+    <text x="275" y="73" text-anchor="middle" class="font-main text-small">栅格动态切片 (rio-tiler)</text>
+    <text x="275" y="88" text-anchor="middle" class="font-main text-small">矢量要素 GeoJSON 转换</text>
+
+    <rect x="370" y="40" width="160" height="60" fill="#FFFFFF" stroke="#90CAF9" rx="2"/>
+    <text x="450" y="58" text-anchor="middle" class="font-main text-item" font-weight="bold">运行状态与缓存</text>
+    <text x="450" y="73" text-anchor="middle" class="font-main text-small">LRU 瓦片内存缓存</text>
+    <text x="450" y="88" text-anchor="middle" class="font-main text-small">数据库连接池与健康检查</text>
+  </g>
+
+  <!-- Node Proxy -->
+  <g transform="translate(660, 290)">
+    <rect width="260" height="120" fill="#FFF8E1" stroke="#FFB300" rx="2" class="border-solid" filter="url(#academic-shadow)"/>
+    <rect width="260" height="25" fill="#F57C00" rx="2"/>
+    <text x="130" y="17" text-anchor="middle" class="font-main box-header">Node.js 运行辅助</text>
+    
+    <rect x="20" y="40" width="220" height="25" fill="#FFFFFF" stroke="#FFE082" rx="2"/>
+    <text x="130" y="57" text-anchor="middle" class="font-main text-item">开发环境 Vite 热更新代理</text>
+
+    <rect x="20" y="75" width="220" height="25" fill="#FFFFFF" stroke="#FFE082" rx="2"/>
+    <text x="130" y="92" text-anchor="middle" class="font-main text-item">生产环境 Express 静态托管</text>
+  </g>
+
+  <!-- ================= DOMAIN 1: DATA (BOTTOM) ================= -->
+  <rect x="50" y="470" width="900" height="160" fill="#FFFFFF" stroke="#94A3B8" rx="4" class="border-dashed"/>
+  <text x="60" y="490" class="font-main domain-title">数据持久层与外部支撑 (Data Layer &amp; External Resources)</text>
+
+  <g transform="translate(80, 510)">
+    <!-- PostGIS -->
+    <rect width="400" height="100" fill="#ECEFF1" stroke="#607D8B" rx="2" class="border-solid" filter="url(#academic-shadow)"/>
+    <rect width="400" height="25" fill="#37474F" rx="2"/>
+    <text x="200" y="17" text-anchor="middle" class="font-main box-header">PostgreSQL / PostGIS 空间数据库</text>
+    
+    <path d="M 20 50 A 15 5 0 1 1 50 50 L 50 80 A 15 5 0 1 0 20 80 Z" fill="#90A4AE" stroke="#455A64"/>
+    <text x="65" y="55" class="font-main text-item" font-weight="bold">生态与业务模型库</text>
+    <text x="65" y="72" class="font-main text-small">eco_geo_unit (MultiPolygon) / flavor_genotype</text>
+    <text x="65" y="87" class="font-main text-small">ingredient_origin / dispersal_event (LineString)</text>
+  </g>
+
+  <g transform="translate(510, 510)">
+    <!-- Files -->
+    <rect width="410" height="100" fill="#ECEFF1" stroke="#607D8B" rx="2" class="border-solid" filter="url(#academic-shadow)"/>
+    <rect width="410" height="25" fill="#37474F" rx="2"/>
+    <text x="205" y="17" text-anchor="middle" class="font-main box-header">文件系统与专题数据 (File System)</text>
+    
+    <rect x="20" y="40" width="175" height="45" fill="#FFFFFF" stroke="#CFD8DC" rx="2"/>
+    <text x="107" y="58" text-anchor="middle" class="font-main text-item">Natural Earth 基底</text>
+    <text x="107" y="75" text-anchor="middle" class="font-main text-small">COG 栅格 / 物理矢量</text>
+
+    <rect x="215" y="40" width="175" height="45" fill="#FFFFFF" stroke="#CFD8DC" rx="2"/>
+    <text x="302" y="58" text-anchor="middle" class="font-main text-item">专题 JSON 与语料</text>
+    <text x="302" y="75" text-anchor="middle" class="font-main text-small">食材传播专题 / 图片媒体</text>
+  </g>
+
+  <!-- ================= INTER-DOMAIN FLOWS (VERTICAL) ================= -->
+  
+  <!-- Data to Service -->
+  <!-- SQL Query -->
+  <path d="M 280 510 L 280 410" class="border-solid" stroke="#1565C0" marker-end="url(#arr-blue)"/>
+  <rect x="235" y="450" width="90" height="16" fill="#FFFFFF"/>
+  <text x="280" y="462" text-anchor="middle" class="font-main arrow-text">SQL / 空间查询</text>
+
+  <!-- File IO -->
+  <path d="M 550 510 L 550 410" class="border-solid" stroke="#1565C0" marker-end="url(#arr-blue)"/>
+  <rect x="520" y="450" width="60" height="16" fill="#FFFFFF"/>
+  <text x="550" y="462" text-anchor="middle" class="font-main arrow-text">文件 I/O</text>
+
+  <!-- Service to Presentation -->
+  <!-- API Data -->
+  <path d="M 230 290 L 230 190" class="border-solid" stroke="#2E7D32" marker-end="url(#arr-green)"/>
+  <rect x="180" y="230" width="100" height="16" fill="#FFFFFF"/>
+  <text x="230" y="242" text-anchor="middle" class="font-main arrow-text" fill="#2E7D32">RESTful JSON</text>
+
+  <!-- Tiles -->
+  <path d="M 400 290 L 400 190" class="border-solid" stroke="#2E7D32" marker-end="url(#arr-green)"/>
+  <rect x="350" y="230" width="100" height="16" fill="#FFFFFF"/>
+  <text x="400" y="242" text-anchor="middle" class="font-main arrow-text" fill="#2E7D32">XYZ PNG / MVT</text>
+
+  <!-- Proxy -->
+  <path d="M 790 290 L 790 190" class="border-solid" stroke="#E65100" marker-end="url(#arr-green)"/>
+  <rect x="740" y="230" width="100" height="16" fill="#FFFFFF"/>
+  <text x="790" y="242" text-anchor="middle" class="font-main arrow-text" fill="#E65100">代理请求 / 托管</text>
+
+</svg>

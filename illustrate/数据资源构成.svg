@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" width="100%" height="100%">
+  <defs>
+    <filter id="shadow" x="-2%" y="-5%" width="104%" height="115%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#94A3B8" flood-opacity="0.2"/>
+    </filter>
+    <style>
+      .sys-font { font-family: 'Arial', 'Microsoft YaHei', sans-serif; }
+      .title { font-size: 22px; font-weight: bold; fill: #1E293B; }
+      .layer-title { font-size: 18px; font-weight: bold; fill: #334155; }
+      .box-title { font-size: 15px; font-weight: bold; fill: #0F172A; }
+      .box-desc { font-size: 13px; fill: #475569; }
+      .tag-text { font-size: 12px; fill: #FFFFFF; font-weight: bold; }
+    </style>
+  </defs>
+
+  <rect width="1000" height="650" fill="#FFFFFF"/>
+  <text x="500" y="40" text-anchor="middle" class="sys-font title">图 2-1 系统数据资源架构与构成图</text>
+
+  <!-- Level 3: Source Corpus (Top) -->
+  <rect x="150" y="100" width="700" height="130" fill="#FFF7ED" stroke="#FDBA74" rx="10" filter="url(#shadow)"/>
+  <text x="180" y="135" class="sys-font layer-title">顶层：来源语料与媒体支撑数据 (非结构化)</text>
+  
+  <g transform="translate(180, 160)">
+    <rect x="0" y="0" width="120" height="40" fill="#F97316" rx="20"/>
+    <text x="60" y="25" text-anchor="middle" class="sys-font tag-text">古籍与方志</text>
+    <rect x="140" y="0" width="120" height="40" fill="#F97316" rx="20"/>
+    <text x="200" y="25" text-anchor="middle" class="sys-font tag-text">饮食研究论文</text>
+    <rect x="280" y="0" width="120" height="40" fill="#F97316" rx="20"/>
+    <text x="340" y="25" text-anchor="middle" class="sys-font tag-text">地方菜谱资源</text>
+    <rect x="420" y="0" width="100" height="40" fill="#F97316" rx="20"/>
+    <text x="470" y="25" text-anchor="middle" class="sys-font tag-text">授权图片</text>
+    <rect x="540" y="0" width="100" height="40" fill="#F97316" rx="20"/>
+    <text x="590" y="25" text-anchor="middle" class="sys-font tag-text">地图底图授权</text>
+  </g>
+
+  <!-- Connection 3 -> 2 -->
+  <path d="M 500 230 L 500 270" stroke="#94A3B8" stroke-width="3" stroke-dasharray="6,4"/>
+  <polygon points="495,260 505,260 500,270" fill="#94A3B8"/>
+
+  <!-- Level 2: Business & Narrative (Middle) -->
+  <rect x="100" y="270" width="800" height="150" fill="#F0FDF4" stroke="#86EFAC" rx="10" filter="url(#shadow)"/>
+  <text x="130" y="305" class="sys-font layer-title">核心层：风味业务与空间叙事数据 (结构化/半结构化)</text>
+
+  <g transform="translate(130, 330)">
+    <rect x="0" y="0" width="170" height="60" fill="#FFFFFF" stroke="#22C55E" rx="6"/>
+    <text x="85" y="25" text-anchor="middle" class="sys-font box-title">风味节点模型</text>
+    <text x="85" y="45" text-anchor="middle" class="sys-font box-desc">成品坐标与六维基因型</text>
+
+    <rect x="190" y="0" width="170" height="60" fill="#FFFFFF" stroke="#22C55E" rx="6"/>
+    <text x="275" y="25" text-anchor="middle" class="sys-font box-title">食材与配方连结</text>
+    <text x="275" y="45" text-anchor="middle" class="sys-font box-desc">本地物产与权重比例</text>
+
+    <rect x="380" y="0" width="170" height="60" fill="#FFFFFF" stroke="#22C55E" rx="6"/>
+    <text x="465" y="25" text-anchor="middle" class="sys-font box-title">传播事件路线</text>
+    <text x="465" y="45" text-anchor="middle" class="sys-font box-desc">包含起止点与时序几何</text>
+
+    <rect x="570" y="0" width="170" height="60" fill="#FFFFFF" stroke="#22C55E" rx="6"/>
+    <text x="655" y="25" text-anchor="middle" class="sys-font box-title">专题时空叙事</text>
+    <text x="655" y="45" text-anchor="middle" class="sys-font box-desc">阅读章节与食材JSON</text>
+  </g>
+
+  <!-- Connection 2 -> 1 -->
+  <path d="M 500 420 L 500 460" stroke="#94A3B8" stroke-width="3" stroke-dasharray="6,4"/>
+  <polygon points="495,450 505,450 500,460" fill="#94A3B8"/>
+
+  <!-- Level 1: Geography & Ecology (Bottom) -->
+  <rect x="50" y="460" width="900" height="150" fill="#EFF6FF" stroke="#93C5FD" rx="10" filter="url(#shadow)"/>
+  <text x="80" y="495" class="sys-font layer-title">基底层：自然物理与生态空间容器 (栅格/矢量GIS数据)</text>
+
+  <g transform="translate(80, 520)">
+    <rect x="0" y="0" width="410" height="60" fill="#FFFFFF" stroke="#3B82F6" rx="6"/>
+    <text x="205" y="25" text-anchor="middle" class="sys-font box-title">WWF TEOW 全球陆地生态区划</text>
+    <text x="205" y="45" text-anchor="middle" class="sys-font box-desc">827个MultiPolygon 面状单元，包含生物群系与气候特征扩展</text>
+
+    <rect x="430" y="0" width="410" height="60" fill="#FFFFFF" stroke="#3B82F6" rx="6"/>
+    <text x="635" y="25" text-anchor="middle" class="sys-font box-title">Natural Earth 基础物理地理底座</text>
+    <text x="635" y="45" text-anchor="middle" class="sys-font box-desc">HYP高程分层设色栅格(COG) + 海岸线/河流基础骨架矢量</text>
+  </g>
+
+  <!-- Abstract Vertical Decorators -->
+  <path d="M 30 100 L 30 610" stroke="#E2E8F0" stroke-width="4"/>
+  <circle cx="30" cy="165" r="8" fill="#F97316"/>
+  <circle cx="30" cy="345" r="8" fill="#22C55E"/>
+  <circle cx="30" cy="535" r="8" fill="#3B82F6"/>
+  <text x="45" y="170" class="sys-font tag-text" fill="#94A3B8">数据抽象度 低</text>
+  <text x="45" y="540" class="sys-font tag-text" fill="#94A3B8">空间具象度 高</text>
+</svg>

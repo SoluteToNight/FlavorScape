@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 650" width="100%" height="100%">
+  <defs>
+    <!-- 背景网格 -->
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#94A3B8" stroke-width="0.3" opacity="0.5"/>
+    </pattern>
+    <!-- 设备与卡片的高级投影 -->
+    <filter id="device-shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    
+    <style>
+      .sys-font { font-family: 'Helvetica Neue', 'Arial', sans-serif; }
+      .main-title { font-size: 22px; font-weight: 900; fill: #0F172A; letter-spacing: 0.5px; }
+      .zone-title { font-size: 16px; font-weight: bold; fill: #1E293B; letter-spacing: 1px; }
+      .node-title { font-size: 13px; font-weight: bold; fill: #1E293B; }
+      .node-desc { font-size: 11px; fill: #475569; }
+      .ui-label { font-size: 10px; font-weight: bold; fill: #334155; }
+      .ui-label-light { font-size: 10px; font-weight: bold; fill: #FFFFFF; }
+      .tag { font-size: 9px; font-weight: bold; fill: #FFFFFF; }
+      .map-desc { font-size: 11px; font-weight: bold; fill: #047857; }
+      
+      .tree-line { fill: none; stroke: #94A3B8; stroke-width: 1.5; stroke-linejoin: round; }
+      .map-line { fill: none; stroke: #3B82F6; stroke-width: 1.5; stroke-dasharray: 4,4; }
+    </style>
+
+    <!-- 箭头 -->
+    <marker id="arr-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 2 L 8 5 L 0 8 Z" fill="#94A3B8"/>
+    </marker>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 2 L 8 5 L 0 8 Z" fill="#3B82F6"/>
+    </marker>
+  </defs>
+
+  <rect width="1150" height="650" fill="#F8FAFC"/>
+  <rect width="1150" height="650" fill="url(#grid)"/>
+
+  <text x="575" y="40" text-anchor="middle" class="sys-font main-title">图 7-1 系统信息架构与跨端响应式空间布局策略图 (IA &amp; Responsive Layout)</text>
+
+  <!-- ================= ZONE 1: INFORMATION ARCHITECTURE (LEFT) ================= -->
+  <rect x="40" y="80" width="380" height="520" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" rx="8" filter="url(#shadow-sm)"/>
+  <text x="60" y="110" class="sys-font zone-title">1. 全局信息架构 (Information Architecture)</text>
+  <path d="M 40 125 L 420 125" stroke="#E2E8F0" stroke-width="1.5"/>
+
+  <!-- Root Node -->
+  <rect x="60" y="300" width="40" height="40" fill="#1E293B" rx="6" filter="url(#card-shadow)"/>
+  <text x="80" y="325" text-anchor="middle" class="sys-font tag">App</text>
+
+  <!-- Tree Lines (Orthogonal) -->
+  <path d="M 100 320 L 120 320 L 120 170 L 140 170" class="tree-line"/>
+  <path d="M 120 320 L 120 250 L 140 250" class="tree-line"/>
+  <path d="M 120 320 L 140 320" class="tree-line"/>
+  <path d="M 120 320 L 120 400 L 140 400" class="tree-line"/>
+  <path d="M 120 320 L 120 480 L 140 480" class="tree-line"/>
+
+  <!-- Node 1: Home -->
+  <g transform="translate(140, 150)">
+    <rect width="240" height="40" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" rx="4" filter="url(#card-shadow)"/>
+    <rect width="6" height="40" fill="#64748B" rx="2"/>
+    <text x="15" y="18" class="sys-font node-title">首页 (Home)</text>
+    <text x="15" y="33" class="sys-font node-desc">背景动效 / 主题定位 / 核心入口</text>
+  </g>
+
+  <!-- Node 2: Map Explore (Core) -->
+  <g transform="translate(140, 220)">
+    <rect width="240" height="60" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.5" rx="4" filter="url(#card-shadow)"/>
+    <rect width="6" height="60" fill="#10B981" rx="2"/>
+    <text x="15" y="18" class="sys-font node-title" fill="#047857">探索地图 (Map Explore)</text>
+    <text x="15" y="34" class="sys-font node-desc">物理底图 / 生态边界 / 风味节点 / 路线</text>
+    <rect x="15" y="42" width="40" height="14" fill="#A7F3D0" rx="2"/><text x="35" y="52" text-anchor="middle" class="sys-font tag" fill="#064E3B">搜索</text>
+    <rect x="60" y="42" width="40" height="14" fill="#A7F3D0" rx="2"/><text x="80" y="52" text-anchor="middle" class="sys-font tag" fill="#064E3B">图层</text>
+    <rect x="105" y="42" width="60" height="14" fill="#A7F3D0" rx="2"/><text x="135" y="52" text-anchor="middle" class="sys-font tag" fill="#064E3B">详情面板</text>
+  </g>
+
+  <!-- Node 3: Gene Bank -->
+  <g transform="translate(140, 295)">
+    <rect width="240" height="40" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" rx="4" filter="url(#card-shadow)"/>
+    <rect width="6" height="40" fill="#3B82F6" rx="2"/>
+    <text x="15" y="18" class="sys-font node-title">风味基因库 (Gene Bank)</text>
+    <text x="15" y="33" class="sys-font node-desc">分类筛选 / 卡片网格 / 雷达图概览</text>
+  </g>
+
+  <!-- Node 4: Narrative -->
+  <g transform="translate(140, 350)">
+    <rect width="240" height="50" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" rx="4" filter="url(#card-shadow)"/>
+    <rect width="6" height="50" fill="#8B5CF6" rx="2"/>
+    <text x="15" y="18" class="sys-font node-title">时空叙事馆 (Narrative)</text>
+    <text x="15" y="33" class="sys-font node-desc">线性阅读 / 历史材料 / 路线协同</text>
+    <text x="15" y="45" class="sys-font node-desc" fill="#8B5CF6">→ 点击触发地图高亮联动</text>
+  </g>
+
+  <!-- Node 5: Ingredient Spread -->
+  <g transform="translate(140, 415)">
+    <rect width="240" height="60" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5" rx="4" filter="url(#card-shadow)"/>
+    <rect width="6" height="60" fill="#F59E0B" rx="2"/>
+    <text x="15" y="18" class="sys-font node-title" fill="#B45309">食材传播专题 (Ingredient Spread)</text>
+    <text x="15" y="34" class="sys-font node-desc">宏观视角 / 阶段高亮 / 叙事解析</text>
+    <rect x="15" y="42" width="60" height="14" fill="#FDE68A" rx="2"/><text x="45" y="52" text-anchor="middle" class="sys-font tag" fill="#92400E">时间线播放</text>
+    <rect x="80" y="42" width="60" height="14" fill="#FDE68A" rx="2"/><text x="110" y="52" text-anchor="middle" class="sys-font tag" fill="#92400E">镜头追随</text>
+  </g>
+
+  <!-- Node 6: About -->
+  <g transform="translate(140, 490)">
+    <rect width="240" height="40" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1.5" rx="4"/>
+    <rect width="6" height="40" fill="#94A3B8" rx="2"/>
+    <text x="15" y="18" class="sys-font node-title" fill="#64748B">关于与方法说明 (About)</text>
+    <text x="15" y="33" class="sys-font node-desc" fill="#94A3B8">来源声明 / 数据方法 / 系统边界</text>
+  </g>
+
+
+  <!-- ================= ZONE 2: RESPONSIVE LAYOUTS (RIGHT) ================= -->
+  <rect x="440" y="80" width="670" height="520" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" rx="8" filter="url(#shadow-sm)"/>
+  <text x="460" y="110" class="sys-font zone-title">2. 跨端响应式空间布局策略 (Responsive Spatial Layouts)</text>
+  <path d="M 440 125 L 1110 125" stroke="#E2E8F0" stroke-width="1.5"/>
+
+  <!-- ================= DESKTOP WIREFRAME ================= -->
+  <g transform="translate(470, 160)">
+    <text x="190" y="-10" text-anchor="middle" class="sys-font node-title" fill="#334155">桌面端 (Desktop / Tablet Landscape)</text>
+    
+    <!-- MacBook Frame -->
+    <rect width="380" height="240" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" rx="6" filter="url(#device-shadow)"/>
+    <rect y="0" width="380" height="14" fill="#E2E8F0" rx="6"/>
+    <rect y="8" width="380" height="6" fill="#E2E8F0"/>
+    <circle cx="12" cy="7" r="2.5" fill="#EF4444"/><circle cx="20" cy="7" r="2.5" fill="#F59E0B"/><circle cx="28" cy="7" r="2.5" fill="#10B981"/>
+
+    <!-- App Header -->
+    <rect x="0" y="14" width="380" height="20" fill="#1E293B"/>
+    <text x="10" y="27" class="sys-font ui-label-light">寻味地理 WebGIS</text>
+    <text x="360" y="27" text-anchor="end" class="sys-font ui-label-light" opacity="0.7">导航栏 Nav</text>
+
+    <!-- Layout Container -->
+    <!-- Left: Omni Search & Tools -->
+    <rect x="10" y="44" width="70" height="186" fill="#FFFFFF" stroke="#CBD5E1" rx="4"/>
+    <text x="45" y="130" text-anchor="middle" class="sys-font ui-label">搜索/导航</text>
+    
+    <!-- Center: Main Map -->
+    <rect x="90" y="44" width="160" height="186" fill="#ECFDF5" stroke="#A7F3D0" rx="4"/>
+    <path d="M 90 100 Q 140 60 170 140 T 250 120" fill="none" stroke="#10B981" stroke-width="2" opacity="0.5"/>
+    <circle cx="170" cy="140" r="4" fill="#047857"/>
+    <text x="170" y="125" text-anchor="middle" class="sys-font map-desc">地图核心视口</text>
+    <text x="170" y="160" text-anchor="middle" class="sys-font" font-size="9" fill="#059669">(交互主体区域)</text>
+
+    <!-- Overlay: Timeline (Bottom Center) -->
+    <rect x="100" y="195" width="140" height="25" fill="#F5F3FF" stroke="#C4B5FD" rx="4" opacity="0.95"/>
+    <circle cx="110" cy="207" r="4" fill="#8B5CF6"/>
+    <path d="M 115 207 L 230 207" stroke="#8B5CF6" stroke-width="1.5"/>
+    <text x="170" y="202" text-anchor="middle" class="sys-font ui-label" fill="#6D28D9">浮动播放时间线</text>
+
+    <!-- Right: Detail Panel -->
+    <rect x="260" y="44" width="110" height="186" fill="#EFF6FF" stroke="#93C5FD" rx="4"/>
+    <!-- Mock content in panel -->
+    <rect x="270" y="55" width="60" height="8" fill="#BFDBFE" rx="2"/>
+    <rect x="270" y="70" width="90" height="60" fill="#DBEAFE" rx="2"/>
+    <polygon points="315,75 330,100 315,120 285,110 285,85" fill="#60A5FA" opacity="0.3" stroke="#2563EB"/>
+    <rect x="270" y="140" width="90" height="6" fill="#E2E8F0" rx="2"/>
+    <rect x="270" y="152" width="80" height="6" fill="#E2E8F0" rx="2"/>
+    <rect x="270" y="164" width="85" height="6" fill="#E2E8F0" rx="2"/>
+    
+    <text x="315" y="185" text-anchor="middle" class="sys-font ui-label" fill="#1D4ED8">对象详情面板</text>
+  </g>
+
+  <!-- ================= MOBILE WIREFRAME ================= -->
+  <g transform="translate(900, 160)">
+    <text x="65" y="-10" text-anchor="middle" class="sys-font node-title" fill="#334155">移动端 (Mobile / Portrait)</text>
+    
+    <!-- Phone Frame -->
+    <rect width="130" height="260" fill="#F8FAFC" stroke="#94A3B8" stroke-width="2" rx="14" filter="url(#device-shadow)"/>
+    <rect x="50" y="5" width="30" height="4" fill="#CBD5E1" rx="2"/>
+
+    <!-- Map Fullscreen -->
+    <rect x="4" y="15" width="122" height="235" fill="#ECFDF5" rx="10"/>
+    <path d="M 4 80 Q 40 40 80 120 T 120 100" fill="none" stroke="#10B981" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="80" cy="120" r="3" fill="#047857"/>
+
+    <!-- App Header -->
+    <rect x="4" y="15" width="122" height="25" fill="#1E293B"/>
+    <text x="65" y="31" text-anchor="middle" class="sys-font ui-label-light">寻味地理</text>
+
+    <!-- Floating Search -->
+    <rect x="12" y="48" width="106" height="20" fill="#FFFFFF" stroke="#CBD5E1" rx="10" filter="url(#card-shadow)"/>
+    <text x="65" y="61" text-anchor="middle" class="sys-font" font-size="9" fill="#94A3B8">搜索风味...</text>
+
+    <!-- Bottom Sheet (The mapped detail panel) -->
+    <rect x="4" y="150" width="122" height="100" fill="#EFF6FF" stroke="#93C5FD" rx="10" filter="url(#card-shadow)"/>
+    <rect x="50" y="156" width="30" height="3" fill="#93C5FD" rx="1.5"/> <!-- Pull bar -->
+    
+    <text x="65" y="172" text-anchor="middle" class="sys-font ui-label" fill="#1D4ED8">详情面板 (抽屉折叠)</text>
+    <rect x="12" y="180" width="106" height="40" fill="#DBEAFE" rx="2"/>
+    <rect x="12" y="228" width="80" height="4" fill="#93C5FD" rx="2"/>
+    <rect x="12" y="238" width="60" height="4" fill="#93C5FD" rx="2"/>
+  </g>
+
+  <!-- ================= RESPONSIVE MAPPING LINES ================= -->
+  
+  <!-- Right Panel mapped to Bottom Sheet -->
+  <path d="M 850 280 C 880 280, 880 340, 900 340" class="map-line" marker-end="url(#arr-blue)"/>
+  <rect x="855" y="300" width="20" height="16" fill="#FFFFFF"/> <!-- clean mask -->
+  <text x="865" y="312" text-anchor="middle" class="sys-font" font-size="10" fill="#2563EB" font-weight="bold">折叠/下沉</text>
+
+  <!-- Center Map mapped to Full Background Map -->
+  <path d="M 640 230 C 640 130, 850 130, 930 220" class="map-line" stroke="#10B981"/>
+  <rect x="750" y="130" width="70" height="16" fill="#FFFFFF"/>
+  <text x="785" y="142" text-anchor="middle" class="sys-font" font-size="10" fill="#059669" font-weight="bold">视图扩展至全屏</text>
+
+
+  <!-- ================= ANNOTATIONS / LEGEND ================= -->
+  <rect x="470" y="440" width="560" height="60" fill="#F8FAFC" stroke="#E2E8F0" rx="4"/>
+  <text x="480" y="460" class="sys-font node-title" fill="#0F172A">响应式设计核心原则 (Responsive Principles):</text>
+  <text x="480" y="480" class="sys-font node-desc">1. <tspan font-weight="bold" fill="#0F172A">地图优先</tspan>：桌面端预留中央安全区，移动端地图作为全屏背景垫底，确保空间叙事不被阻断。</text>
+  <text x="480" y="495" class="sys-font node-desc">2. <tspan font-weight="bold" fill="#0F172A">面板降级</tspan>：桌面端的“右侧固定详情面板”与“左侧搜索”在移动端转换为“底部抽屉”与“顶部悬浮条”。</text>
+
+</svg>

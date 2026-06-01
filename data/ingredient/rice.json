@@ -1,0 +1,109 @@
+{
+  "ingredient_id": "rice",
+  "name": "稻米",
+  "name_en": "Rice",
+  "species": "Oryza sativa",
+  "origin": "长江下游湿地",
+  "origin_coordinates": [121.30, 30.05],
+  "summary": "稻米是中国南方饮食结构的基础性谷物。它的传播不是单纯的作物迁移，而是湿地农耕、水利工程、漕运制度与城市消费共同推动的长期地理过程。",
+  "color": "#C9A646",
+  "image_url": "/ingredients/rice-realistic.png",
+  "timeline": [
+    {
+      "year": -5000,
+      "dynasty": "新石器时代",
+      "location": "河姆渡",
+      "region_key": "浙江",
+      "coordinates": [121.35, 30.02],
+      "historical_name": ["稻作遗存", "炭化稻谷"],
+      "source_literature": "河姆渡遗址考古资料",
+      "event_type": "稻作起源",
+      "route": "长江下游湿地驯化",
+      "notes": "河姆渡文化出土大量稻作遗存，说明长江下游湿地已经形成较成熟的稻作生产方式。"
+    },
+    {
+      "year": -3300,
+      "dynasty": "良渚文化时期",
+      "location": "太湖流域",
+      "region_key": "太湖流域",
+      "coordinates": [120.15, 30.28],
+      "historical_name": ["水田稻作"],
+      "source_literature": "良渚文化考古研究",
+      "event_type": "区域扩展",
+      "route": "河网湿地向太湖平原扩展",
+      "notes": "稻作与聚落、水利和手工业共同发展，推动江南地区形成高密度的农耕景观。"
+    },
+    {
+      "year": -2200,
+      "dynasty": "先秦以前",
+      "location": "岭南",
+      "region_key": "岭南",
+      "coordinates": [113.27, 23.13],
+      "historical_name": ["籼稻", "水稻"],
+      "source_literature": "岭南史前农业考古综述",
+      "event_type": "南向传播",
+      "route": "江南稻作沿丘陵水系进入珠江流域",
+      "notes": "稻米进入岭南后与湿热季风环境结合，成为珠江三角洲饮食与鱼稻共生景观的底层基础。"
+    },
+    {
+      "year": -1000,
+      "dynasty": "商周时期",
+      "location": "成都平原",
+      "region_key": "四川",
+      "coordinates": [104.07, 30.66],
+      "historical_name": ["水稻"],
+      "source_literature": "成都平原先秦农业研究",
+      "event_type": "西向进入盆地",
+      "route": "长江上游通道进入四川盆地",
+      "notes": "稻作进入成都平原后，依托岷江水系和后续水利工程，逐渐成为川西平原稳定的粮食基础。"
+    },
+    {
+      "year": 605,
+      "dynasty": "隋唐",
+      "location": "洛阳",
+      "region_key": "河南",
+      "coordinates": [112.45, 34.62],
+      "historical_name": ["漕粮", "稻米"],
+      "source_literature": "隋唐漕运制度研究",
+      "event_type": "制度性北运",
+      "route": "江淮稻米经运河北上",
+      "notes": "大运河打通南北粮食运输，稻米开始以制度化漕运进入北方都城消费体系。"
+    },
+    {
+      "year": 1127,
+      "dynasty": "南宋",
+      "location": "临安",
+      "region_key": "浙江",
+      "coordinates": [120.16, 30.25],
+      "historical_name": ["江南稻米", "占城稻"],
+      "source_literature": "宋代江南农业史研究",
+      "event_type": "江南强化",
+      "route": "江南双季稻和城市消费共同推动",
+      "notes": "南宋以后江南稻作强度提高，稻米不只是粮食作物，也成为城市餐饮、酒酿和点心系统的基础。"
+    },
+    {
+      "year": 1421,
+      "dynasty": "明代",
+      "location": "北京",
+      "region_key": "北京",
+      "coordinates": [116.40, 39.90],
+      "historical_name": ["南粮", "漕米"],
+      "source_literature": "明清漕运史资料",
+      "event_type": "南稻北运",
+      "route": "江南漕粮经京杭大运河北上",
+      "notes": "北京成为政治中心后，南方稻米通过漕运长期进入北方城市，改变了北方都城的粮食供给和饮食想象。"
+    },
+    {
+      "year": 1700,
+      "dynasty": "清代",
+      "location": "东北",
+      "region_key": "东北",
+      "coordinates": [126.64, 45.76],
+      "historical_name": ["水稻", "粳稻"],
+      "source_literature": "东北水稻种植史研究",
+      "event_type": "寒地扩展",
+      "route": "移民、屯垦与寒地稻作试种",
+      "notes": "东北水稻扩展较晚，但它使稻米从南方湿热区域进一步进入寒地农业和现代粮食产业格局。"
+    }
+  ]
+}

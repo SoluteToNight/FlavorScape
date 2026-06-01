@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<defs>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#23352D" flood-opacity="0.12"/></filter>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6C7A72"/></marker>
+</defs>
+<rect width="1600" height="1000" fill="#F7F9F5"/>
+<text x="70.0" y="62.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="34" font-weight="700">
+<tspan x="70.0" dy="0">核心业务对象关系图</tspan>
+</text>
+<line x1="70.0" y1="112.0" x2="1530.0" y2="112.0" stroke="#D9E2DA" stroke-width="2" stroke-linecap="round"/>
+<text x="72.0" y="132.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="21" font-weight="400">
+<tspan x="72.0" dy="0">围绕同一批风味知识对象，组织生态背景、食材来源、传播过程、叙事解释和数据来源。</tspan>
+</text>
+<rect x="620.0" y="170.0" width="360.0" height="140.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="620.0" y="170.0" width="10" height="140.0" rx="5" fill="#4E79A7"/>
+<text x="648.0" y="196.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="648.0" dy="0">数据来源</tspan>
+</text>
+<text x="648.0" y="238.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="648.0" dy="0">地图、生态区</tspan>
+<tspan x="648.0" dy="22">图片与文本材料</tspan>
+<tspan x="648.0" dy="22">文献与地方志</tspan>
+</text>
+<rect x="105.0" y="380.0" width="330.0" height="145.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="105.0" y="380.0" width="10" height="145.0" rx="5" fill="#7FA961"/>
+<text x="133.0" y="406.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="133.0" dy="0">生态地理单元</tspan>
+</text>
+<text x="133.0" y="448.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="133.0" dy="0">TEOW 生态区</tspan>
+<tspan x="133.0" dy="22">自然空间容器</tspan>
+</text>
+<rect x="620.0" y="370.0" width="360.0" height="170.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="620.0" y="370.0" width="10" height="170.0" rx="5" fill="#315F4D"/>
+<text x="648.0" y="396.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="648.0" dy="0">风味基因型记录</tspan>
+</text>
+<text x="648.0" y="438.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="648.0" dy="0">地方食物版本</tspan>
+<tspan x="648.0" dy="22">六维风味向量</tspan>
+<tspan x="648.0" dy="22">坐标与展示属性</tspan>
+</text>
+<rect x="1165.0" y="380.0" width="330.0" height="145.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1165.0" y="380.0" width="10" height="145.0" rx="5" fill="#D6A23F"/>
+<text x="1193.0" y="406.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="1193.0" dy="0">食材</tspan>
+</text>
+<text x="1193.0" y="448.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="1193.0" dy="0">标准名称</tspan>
+<tspan x="1193.0" dy="22">类型与风味标签</tspan>
+</text>
+<rect x="105.0" y="680.0" width="330.0" height="145.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="105.0" y="680.0" width="10" height="145.0" rx="5" fill="#C95A49"/>
+<text x="133.0" y="706.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="133.0" dy="0">传播事件</tspan>
+</text>
+<text x="133.0" y="748.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="133.0" dy="0">路线几何</tspan>
+<tspan x="133.0" dy="22">媒介与时期</tspan>
+<tspan x="133.0" dy="22">起止生态区</tspan>
+</text>
+<rect x="620.0" y="675.0" width="360.0" height="155.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="620.0" y="675.0" width="10" height="155.0" rx="5" fill="#4FA69A"/>
+<text x="648.0" y="701.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="648.0" dy="0">食材传播专题</tspan>
+</text>
+<text x="648.0" y="743.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="648.0" dy="0">起源、时间线</tspan>
+<tspan x="648.0" dy="22">路径段与参考文献</tspan>
+<tspan x="648.0" dy="22">可复用专题模板</tspan>
+</text>
+<rect x="1165.0" y="680.0" width="330.0" height="145.0" rx="18" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<rect x="1165.0" y="680.0" width="10" height="145.0" rx="5" fill="#7B6BB1"/>
+<text x="1193.0" y="706.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="22" font-weight="700">
+<tspan x="1193.0" dy="0">叙事章节</tspan>
+</text>
+<text x="1193.0" y="748.0" fill="#5B6B63" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="17" font-weight="400">
+<tspan x="1193.0" dy="0">标题、正文</tspan>
+<tspan x="1193.0" dy="22">引用与路线关联</tspan>
+</text>
+<line x1="800.0" y1="328.0" x2="800.0" y2="352.0" stroke="#4E79A7" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="818.0" y="332.0" fill="#4E79A7" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="818.0" dy="0">来源支撑</tspan>
+</text>
+<line x1="453.0" y1="452.5" x2="602.0" y2="452.5" stroke="#7FA961" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="499.5" y="422.5" fill="#7FA961" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="499.5" dy="0">空间归属</tspan>
+</text>
+<line x1="998.0" y1="455.0" x2="1147.0" y2="455.0" stroke="#D6A23F" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1044.5" y="425.0" fill="#D6A23F" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="1044.5" dy="0">配方连接</tspan>
+</text>
+<line x1="453.0" y1="752.5" x2="602.0" y2="752.5" stroke="#4FA69A" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="499.5" y="722.5" fill="#4FA69A" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="499.5" dy="0">专题路径</tspan>
+</text>
+<line x1="998.0" y1="752.5" x2="1147.0" y2="752.5" stroke="#7B6BB1" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1044.5" y="722.5" fill="#7B6BB1" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="1044.5" dy="0">章节解释</tspan>
+</text>
+<polyline points="270.0,662.0 270.0,585.0 680.0,585.0 680.0,558.0" fill="none" stroke="#C95A49" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="355.0" y="555.0" fill="#C95A49" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="16" font-weight="700">
+<tspan x="355.0" dy="0">传播上下文</tspan>
+</text>
+<rect x="455.0" y="875.0" width="690.0" height="65.0" rx="22" fill="#FFFFFF" stroke="#D5DED6" stroke-width="2" filter="url(#shadow)"/>
+<text x="500.0" y="898.0" fill="#20382D" font-family="Microsoft YaHei, SimSun, sans-serif" font-size="20" font-weight="400">
+<tspan x="500.0" dy="0">图中对象既对应当前数据结构，也为后续数据审核、专题交付和接口复用预留边界。</tspan>
+</text>
+</svg>

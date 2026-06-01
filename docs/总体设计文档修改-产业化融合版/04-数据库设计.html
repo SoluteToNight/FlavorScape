@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>数据库设计</title>
+  <style>
+@page { size: A4; margin: 2.5cm 2.6cm; }
+body { font-family: SimSun, "Songti SC", serif; font-size: 11pt; line-height: 1.65; color: #1f1f1f; background: #fff; }
+.doc { max-width: 18cm; margin: 0 auto; }
+h1, h2, h3, h4, h5, h6 { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color: #20382d; page-break-after: avoid; line-height: 1.35; }
+h1 { text-align: center; font-size: 22pt; margin: 0 0 18pt; }
+h2 { font-size: 16pt; margin: 22pt 0 10pt; border-bottom: 1px solid #d5ddd5; padding-bottom: 4pt; }
+h3 { font-size: 13.5pt; margin: 18pt 0 8pt; }
+h4 { font-size: 12pt; margin: 14pt 0 6pt; color: #345c44; }
+p { text-indent: 2em; margin: 0 0 8pt; text-align: justify; }
+blockquote { margin: 0 0 14pt; padding: 8pt 10pt; border-left: 4px solid #7fa961; background: #f4f7f4; color: #555; }
+blockquote p { text-indent: 0; margin: 0; }
+ul, ol { margin: 0 0 9pt 2em; padding: 0; }
+li { margin: 0 0 5pt; }
+table { border-collapse: collapse; width: 100%; margin: 8pt 0 16pt; font-size: 10pt; line-height: 1.45; page-break-inside: avoid; }
+th, td { border: 1px solid #c8d2c8; padding: 6pt 7pt; vertical-align: top; }
+th { background: #eaf2ea; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; text-align: left; color: #20382d; }
+code { font-family: Consolas, "Courier New", monospace; font-size: 9.5pt; background: #f5f5f5; padding: 0 2pt; }
+pre { background: #f7f7f7; border: 1px solid #ddd; padding: 8pt; white-space: pre-wrap; }
+.subtitle { text-align:center; color:#666; margin-top:-10pt; margin-bottom:18pt; font-family:"Microsoft YaHei", "PingFang SC", sans-serif; text-indent:0; }
+</style>
+</head>
+<body>
+<div class="doc">
+<h1>数据库设计</h1>
+<p>数据库是“寻味地理”风味博物志 WebGIS 系统的数据基础。本章对系统数据库的数据内容、设计原则、总体结构、生态区空间数据库、风味业务数据库、物理存储和维护方式进行说明。系统数据库以 PostgreSQL/PostGIS 为核心，统一管理空间几何、风味基因型记录、食材、传播叙事内容和数据来源信息。面向后续产业化演进，数据库不只是页面的数据仓库，还应成为风味知识资产的沉淀位置，支撑内容复用、接口输出和数据质量追踪。</p>
+<h2>数据库内容</h2>
+<h3>数据概况</h3>
+<p>系统数据库涉及的主要数据如下：</p>
+<table>
+<tr><th>序号</th><th>数据名称</th><th>数据类型</th><th>主要用途</th></tr>
+<tr><td>1</td><td>Natural Earth 栅格底图</td><td>COG GeoTIFF</td><td>作为地图自然地形背景，按需生成栅格瓦片</td></tr>
+<tr><td>2</td><td>Natural Earth 物理矢量</td><td>矢量图层</td><td>提供海岸线、河流、陆地轮廓等基础地理参照</td></tr>
+<tr><td>3</td><td>WWF TEOW 生态区</td><td>PostGIS MultiPolygon</td><td>作为风味形成和食材来源解释的自然空间单元</td></tr>
+<tr><td>4</td><td>风味基因型记录</td><td>PostgreSQL 关系表 + Point</td><td>记录地方食物版本、坐标、六维风味向量和展示属性</td></tr>
+<tr><td>5</td><td>食材</td><td>PostgreSQL 关系表</td><td>记录食材名称、类型和风味标签</td></tr>
+<tr><td>6</td><td>传播事件</td><td>PostgreSQL 关系表 + LineString</td><td>记录食材、技法和味型的历史传播路径</td></tr>
+<tr><td>7</td><td>叙事章节</td><td>PostgreSQL 关系表</td><td>记录时空叙事馆的章节内容和引用来源</td></tr>
+<tr><td>8</td><td>数据来源</td><td>PostgreSQL 关系表</td><td>记录地图、生态区、图片和文本材料来源</td></tr>
+</table>
+<h3>数据入库前处理</h3>
+<p>生态区空间数据入库前应进行坐标系检查、几何有效性检查、属性字段整理和必要的边界简化。风味业务数据入库前应进行字段完整性检查、风味向量取值范围检查、食材名称规范化和生态区映射检查。传播事件数据入库前应检查路线几何、起止生态区、传播对象和来源说明。若数据来自 LLM 辅助抽取，还应补充原始材料、抽取时间、人工审核状态和置信度说明，避免未经核验的内容直接进入正式展示。</p>
+<p>基础栅格底图不作为关系表入库，而是以文件形式保存，由后端服务按需读取并生成地图瓦片。海岸线、河流和陆地轮廓等物理矢量可在服务启动时加载，用于地图基础图层输出。</p>
+<p>食材传播专题数据当前以 <code>data/ingredient/*.json</code> 文件形式维护，主要服务于食材传播页面。该设计适合当前专题数量较少、迭代频繁的阶段；当后续专题数量增加、需要多人协作编辑或对外提供稳定接口时，可将其拆分为食材传播主题表、时间线事件表、路径段表和参考文献表。</p>
+<h2>数据库设计原则</h2>
+<ol>
+<li><strong>空间与属性一体化</strong>：生态区边界、风味节点坐标和传播路径几何均在统一空间参考下组织，保证地图叠加和空间查询一致。</li>
+<li><strong>核心实体清晰</strong>：生态地理单元、风味基因型记录、食材、传播事件、叙事章节和数据来源作为核心实体，分别承担明确业务职责。</li>
+<li><strong>属性语义清晰</strong>：风味基因型记录对应当前物理表 <code>flavor_genotype</code>，在业务上表示一个地方食物版本，内部的 <code>genome_vector</code> 字段保存六维风味向量。</li>
+<li><strong>关联实体规范</strong>：食材原产地、配方连结和基因型溯源链作为关联实体，用于表达多对多关系和自引用关系。</li>
+<li><strong>减少数据冗余</strong>：可独立成为实体的数据应通过外键和关联表组织，避免在多个表中重复维护。</li>
+<li><strong>索引驱动查询</strong>：空间几何、关联字段、标签数组和半结构化字段应建立相应索引，保证地图浏览和搜索查询效率。</li>
+<li><strong>来源与版本可追踪</strong>：面向公开展示和行业交付的数据，应在扩展阶段逐步补充来源、审核状态、版本和更新时间，保证数据可以解释、可以回溯、可以更新。</li>
+</ol>
+<h2>数据库总体设计</h2>
+<h3>数据库体系构成</h3>
+<p>系统数据库采用单数据库、单 Schema 的组织方式，主要包含以下数据组：</p>
+<table>
+<tr><th>数据组</th><th>数据表</th><th>说明</th></tr>
+<tr><td>生态区空间数据组</td><td><code>eco_geo_unit</code></td><td>保存 WWF TEOW 生态区边界和属性</td></tr>
+<tr><td>风味业务数据组</td><td><code>flavor_genotype</code>、<code>ingredient</code>、<code>ingredient_origin</code>、<code>recipe_link</code></td><td>保存风味基因型记录、食材及其关联关系</td></tr>
+<tr><td>传播叙事数据组</td><td><code>dispersal_event</code>、<code>chapter</code>、<code>genotype_lineage</code></td><td>保存传播路径、叙事章节和风味谱系关系</td></tr>
+<tr><td>系统元数据组</td><td><code>data_source</code></td><td>保存数据来源说明</td></tr>
+<tr><td>枚举类型</td><td><code>ingredient_type</code></td><td>约束食材类型取值</td></tr>
+</table>
+<p>系统当前采用单版本数据库组织方式，不划分现势库、历史库和工作库。该方式适合当前展示型 WebGIS 和批次导入数据模式。后续若出现频繁更新、多人编辑或历史版本追踪需求，可扩展版本字段或建立历史表。产业化阶段建议优先增加审核状态、发布状态和来源版本字段，再考虑更复杂的多库架构。</p>
+<h3>数学基础设计</h3>
+<table>
+<tr><th>属性</th><th>取值</th></tr>
+<tr><td>坐标系</td><td>WGS84 大地坐标系</td></tr>
+<tr><td>空间参考标识符</td><td>EPSG:4326</td></tr>
+<tr><td>坐标单位</td><td>十进制度</td></tr>
+<tr><td>几何类型</td><td>Point、LineString、MultiPolygon</td></tr>
+<tr><td>地图渲染</td><td>浏览器端根据地图引擎进行显示转换</td></tr>
+</table>
+<h3>数据库对象命名规则</h3>
+<table>
+<tr><th>对象类型</th><th>命名规则</th><th>示例</th></tr>
+<tr><td>表名</td><td>小写蛇形命名</td><td><code>eco_geo_unit</code>、<code>flavor_genotype</code></td></tr>
+<tr><td>主键</td><td>能表达业务对象身份的 ID 或名称</td><td><code>genotype_id</code>、<code>eco_name</code></td></tr>
+<tr><td>外键</td><td>与引用对象保持语义一致</td><td><code>ingredient_id</code>、<code>eco_name</code></td></tr>
+<tr><td>空间字段</td><td>按几何含义命名</td><td><code>boundary</code>、<code>coordinates</code>、<code>route_geom</code></td></tr>
+<tr><td>索引</td><td>使用表名和字段含义组合</td><td><code>idx_genotype_coord</code></td></tr>
+</table>
+<h2>生态区空间数据库设计</h2>
+<h3>数据内容</h3>
+<p>生态区空间数据库以 WWF TEOW 全球陆地生态区为核心。每个生态区记录生态区名称、中文名称、生态区编码、生物地理界、生物群系、面积、气候属性、相邻生态区、本地优势食材、环境描述和边界几何。</p>
+<p>生态区边界是系统进行地图展示和空间解释的主要面状数据。生态区属性用于支撑地图详情面板、风味节点生态解释和食材原产地关联。</p>
+<h3>概念模型设计</h3>
+<p>生态地理单元是系统的核心空间容器。一个生态区可包含多个风味节点，也可作为多种食材的可能来源地。传播事件可以从一个生态区指向另一个生态区，表达食材、技法或味型在自然空间中的迁移过程。</p>
+<h3>逻辑模型设计</h3>
+<p><strong>表名：<code>eco_geo_unit</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>eco_name</code></td><td>VARCHAR(150)</td><td>主键</td><td>生态区英文名称</td></tr>
+<tr><td><code>eco_name_cn</code></td><td>VARCHAR(100)</td><td>可空</td><td>生态区中文名称</td></tr>
+<tr><td><code>eco_code</code></td><td>VARCHAR(20)</td><td>可空</td><td>生态区编码</td></tr>
+<tr><td><code>realm</code></td><td>VARCHAR(20)</td><td>可空</td><td>生物地理界</td></tr>
+<tr><td><code>biome</code></td><td>VARCHAR(80)</td><td>可空</td><td>生物群系英文名</td></tr>
+<tr><td><code>biome_cn</code></td><td>VARCHAR(30)</td><td>可空</td><td>生物群系中文名</td></tr>
+<tr><td><code>area_km2</code></td><td>NUMERIC</td><td>可空</td><td>面积，单位平方千米</td></tr>
+<tr><td><code>climate</code></td><td>JSONB</td><td>可空</td><td>气候属性扩展</td></tr>
+<tr><td><code>adjacent_ecos</code></td><td>TEXT[]</td><td>可空</td><td>相邻生态区</td></tr>
+<tr><td><code>dominant_ingredients</code></td><td>TEXT[]</td><td>可空</td><td>本地优势食材</td></tr>
+<tr><td><code>description</code></td><td>TEXT</td><td>可空</td><td>环境描述</td></tr>
+<tr><td><code>boundary</code></td><td>GEOMETRY(MultiPolygon, 4326)</td><td>可空</td><td>生态区边界</td></tr>
+</table>
+<h3>物理模型设计</h3>
+<p>生态区边界字段建立 GiST 空间索引，用于生态区图层输出和空间过滤。生态区编码字段建立普通索引，用于按编码检索。气候属性字段建立 GIN 索引，为后续 JSONB 属性查询预留能力。</p>
+<p>生态区边界在入库或输出前应进行几何有效性检查和必要简化，避免复杂边界造成地图传输和前端渲染压力过大。</p>
+<h2>系统业务数据库设计</h2>
+<h3>数据内容</h3>
+<p>系统业务数据库包括风味基因型记录、食材、食材原产地、配方连结、传播事件、叙事章节、基因型溯源链和数据来源。其核心目标是将地方食物、生态环境、食材来源、传播路径和叙事材料组织为可查询、可展示、可扩展的数据体系。</p>
+<h3>概念模型设计</h3>
+<p>核心关系如下：</p>
+<table>
+<tr><th>关系</th><th>类型</th><th>说明</th></tr>
+<tr><td>生态地理单元与风味节点</td><td>一对多</td><td>一个生态区可关联多个地方风味记录</td></tr>
+<tr><td>食材与生态地理单元</td><td>多对多</td><td>一种食材可对应多个可能原产生态区</td></tr>
+<tr><td>风味节点与食材</td><td>多对多</td><td>一种地方风味由多种食材构成</td></tr>
+<tr><td>传播事件与食材</td><td>多对一</td><td>一条传播路径可指向一个关键传播食材</td></tr>
+<tr><td>传播事件与生态地理单元</td><td>多对一</td><td>路线起点和终点分别关联生态区</td></tr>
+<tr><td>传播事件与叙事章节</td><td>一对多</td><td>一条路线可关联多个叙事章节</td></tr>
+<tr><td>风味节点与风味节点</td><td>自引用多对多</td><td>用于表达地方风味谱系或变异关系</td></tr>
+</table>
+<p>食材原产地、配方连结和基因型溯源链属于关联实体。它们不仅用于连接核心实体，还可记录关系自身的业务属性。</p>
+<h3>逻辑模型设计</h3>
+<h4>风味基因型记录表</h4>
+<p><strong>表名：<code>flavor_genotype</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>genotype_id</code></td><td>CHAR(12)</td><td>主键</td><td>风味基因型记录编号</td></tr>
+<tr><td><code>node_key</code></td><td>VARCHAR(80)</td><td>唯一、非空</td><td>前端稳定标识</td></tr>
+<tr><td><code>city_name</code></td><td>VARCHAR(50)</td><td>非空</td><td>城市或地域名称</td></tr>
+<tr><td><code>dish_name</code></td><td>VARCHAR(50)</td><td>非空</td><td>菜品名称</td></tr>
+<tr><td><code>dish_family</code></td><td>VARCHAR(50)</td><td>可空</td><td>食物类型</td></tr>
+<tr><td><code>region_label</code></td><td>VARCHAR(100)</td><td>可空</td><td>区域标签</td></tr>
+<tr><td><code>eco_label</code></td><td>VARCHAR(80)</td><td>可空</td><td>生态展示标签</td></tr>
+<tr><td><code>category</code></td><td>VARCHAR(30)</td><td>可空</td><td>风味分类</td></tr>
+<tr><td><code>eco_name</code></td><td>VARCHAR(150)</td><td>外键</td><td>关联生态区</td></tr>
+<tr><td><code>genome_vector</code></td><td>JSONB</td><td>可空</td><td>六维风味向量属性</td></tr>
+<tr><td><code>primary_labels</code></td><td>TEXT[]</td><td>可空</td><td>主风味标签</td></tr>
+<tr><td><code>primary_values</code></td><td>NUMERIC(4,2)[]</td><td>可空</td><td>主风味数值</td></tr>
+<tr><td><code>color_hex</code></td><td>VARCHAR(7)</td><td>可空</td><td>可视化颜色</td></tr>
+<tr><td><code>coordinates</code></td><td>GEOMETRY(Point, 4326)</td><td>可空</td><td>地理坐标</td></tr>
+</table>
+<h4>食材表</h4>
+<p><strong>表名：<code>ingredient</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>ingredient_id</code></td><td>CHAR(8)</td><td>主键</td><td>食材编号</td></tr>
+<tr><td><code>name</code></td><td>VARCHAR(50)</td><td>非空</td><td>食材标准名称</td></tr>
+<tr><td><code>type</code></td><td>ingredient_type</td><td>非空</td><td>食材类型</td></tr>
+<tr><td><code>flavor_tags</code></td><td>TEXT[]</td><td>可空</td><td>风味标签</td></tr>
+</table>
+<p>食材类型枚举包括香辛料、油脂、谷物、蛋白、蔬果、发酵和其他。</p>
+<h4>食材原产地关联表</h4>
+<p><strong>表名：<code>ingredient_origin</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>ingredient_id</code></td><td>CHAR(8)</td><td>主键、外键</td><td>食材编号</td></tr>
+<tr><td><code>eco_name</code></td><td>VARCHAR(150)</td><td>主键、外键</td><td>生态区名称</td></tr>
+</table>
+<p>该表用于表达食材与生态地理单元之间的多对多关系。</p>
+<h4>配方连结表</h4>
+<p><strong>表名：<code>recipe_link</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>genotype_id</code></td><td>CHAR(12)</td><td>主键、外键</td><td>风味基因型记录编号</td></tr>
+<tr><td><code>ingredient_id</code></td><td>CHAR(8)</td><td>主键、外键</td><td>食材编号</td></tr>
+<tr><td><code>role</code></td><td>VARCHAR(20)</td><td>可空</td><td>食材角色</td></tr>
+<tr><td><code>importance</code></td><td>NUMERIC(3,2)</td><td>0 至 1</td><td>贡献权重</td></tr>
+<tr><td><code>is_native</code></td><td>BOOLEAN</td><td>可空</td><td>是否为本地物产</td></tr>
+</table>
+<p>该表用于表达风味基因型记录与食材之间的多对多关系，并记录关系属性。</p>
+<h4>传播事件表</h4>
+<p><strong>表名：<code>dispersal_event</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>event_id</code></td><td>CHAR(12)</td><td>主键</td><td>传播事件编号</td></tr>
+<tr><td><code>route_name</code></td><td>VARCHAR(40)</td><td>唯一、非空</td><td>路线名称</td></tr>
+<tr><td><code>route_type</code></td><td>VARCHAR(10)</td><td>非空</td><td>路线类型，陆路或海路</td></tr>
+<tr><td><code>route_color</code></td><td>VARCHAR(7)</td><td>非空</td><td>路线展示颜色</td></tr>
+<tr><td><code>display_order</code></td><td>SMALLINT</td><td>非空</td><td>展示顺序</td></tr>
+<tr><td><code>ingredient_id</code></td><td>CHAR(8)</td><td>外键</td><td>关键传播食材</td></tr>
+<tr><td><code>from_eco_name</code></td><td>VARCHAR(150)</td><td>外键</td><td>起点生态区</td></tr>
+<tr><td><code>to_eco_name</code></td><td>VARCHAR(150)</td><td>外键</td><td>终点生态区</td></tr>
+<tr><td><code>route_geom</code></td><td>GEOMETRY(LineString, 4326)</td><td>可空</td><td>路径几何</td></tr>
+</table>
+<h4>叙事章节表</h4>
+<p><strong>表名：<code>chapter</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>chapter_id</code></td><td>INT</td><td>主键</td><td>章节编号</td></tr>
+<tr><td><code>title</code></td><td>VARCHAR(50)</td><td>非空</td><td>章节标题</td></tr>
+<tr><td><code>date_label</code></td><td>VARCHAR(40)</td><td>可空</td><td>年代标签</td></tr>
+<tr><td><code>body</code></td><td>TEXT</td><td>可空</td><td>正文内容</td></tr>
+<tr><td><code>cite</code></td><td>TEXT</td><td>可空</td><td>引用说明</td></tr>
+<tr><td><code>source</code></td><td>VARCHAR(80)</td><td>可空</td><td>来源</td></tr>
+<tr><td><code>route_name</code></td><td>VARCHAR(40)</td><td>外键</td><td>关联传播路线</td></tr>
+</table>
+<h4>基因型溯源链表</h4>
+<p><strong>表名：<code>genotype_lineage</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>ancestor_id</code></td><td>CHAR(12)</td><td>主键、外键</td><td>祖先风味基因型记录</td></tr>
+<tr><td><code>descendant_id</code></td><td>CHAR(12)</td><td>主键、外键</td><td>后代风味基因型记录</td></tr>
+<tr><td><code>mutation_desc</code></td><td>TEXT</td><td>可空</td><td>变异说明</td></tr>
+</table>
+<p>该表用于表达风味基因型记录之间的自引用多对多关系，祖先与后代不应为同一对象。</p>
+<h4>数据来源表</h4>
+<p><strong>表名：<code>data_source</code></strong></p>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td><code>source_id</code></td><td>INT</td><td>主键</td><td>数据来源编号</td></tr>
+<tr><td><code>name</code></td><td>VARCHAR(80)</td><td>非空</td><td>数据来源名称</td></tr>
+<tr><td><code>description</code></td><td>TEXT</td><td>非空</td><td>来源说明</td></tr>
+<tr><td><code>color_hex</code></td><td>VARCHAR(7)</td><td>非空</td><td>展示颜色</td></tr>
+<tr><td><code>url</code></td><td>TEXT</td><td>非空</td><td>来源链接</td></tr>
+</table>
+<h3>物理模型设计</h3>
+<h4>空间索引</h4>
+<table>
+<tr><th>表</th><th>字段</th><th>索引类型</th><th>用途</th></tr>
+<tr><td><code>eco_geo_unit</code></td><td><code>boundary</code></td><td>GiST</td><td>生态区空间过滤和图层输出</td></tr>
+<tr><td><code>flavor_genotype</code></td><td><code>coordinates</code></td><td>GiST</td><td>风味节点空间查询</td></tr>
+<tr><td><code>dispersal_event</code></td><td><code>route_geom</code></td><td>GiST</td><td>传播路线空间查询</td></tr>
+</table>
+<h4>半结构化与数组索引</h4>
+<table>
+<tr><th>表</th><th>字段</th><th>索引类型</th><th>用途</th></tr>
+<tr><td><code>eco_geo_unit</code></td><td><code>climate</code></td><td>GIN</td><td>气候扩展属性查询</td></tr>
+<tr><td><code>flavor_genotype</code></td><td><code>genome_vector</code></td><td>GIN</td><td>风味向量属性查询</td></tr>
+<tr><td><code>ingredient</code></td><td><code>flavor_tags</code></td><td>GIN</td><td>食材标签查询</td></tr>
+</table>
+<h4>普通关系索引</h4>
+<p>数据库应在生态区编码、风味基因型记录所属生态区、城市名、菜品名、传播事件名称、传播事件顺序、起止生态区、配方食材和章节路线等字段上建立普通索引，以提升列表查询、搜索和多表关联查询效率。</p>
+<h2>数据库建库与维护更新</h2>
+<h3>建库流程</h3>
+<p>数据库建库应完成空间扩展启用、核心表创建、枚举类型创建、索引创建、生态区数据导入、风味业务数据导入和数据质量检查等步骤。建库完成后，应检查各表记录数量、空间字段有效性、外键关联完整性和主要接口输出结果。</p>
+<h3>数据维护更新</h3>
+<p>数据维护以批次导入为主。风味基因型记录、食材、传播事件和叙事章节更新后，应同步检查关联实体是否完整、风味向量取值是否符合范围、传播路径是否具有有效几何、叙事章节是否能正确关联路线。</p>
+<p>数据库应定期进行逻辑备份。后续如系统进入多人协作或高频更新阶段，可进一步引入数据版本、审核状态、历史记录和回滚机制。对于面向文旅、教育或展陈交付的数据批次，应在发布前保留冻结版本，保证线上展示、文档说明和接口响应使用同一批数据。</p>
+</div>
+</body>
+</html>

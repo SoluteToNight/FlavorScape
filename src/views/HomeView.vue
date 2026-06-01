@@ -17,16 +17,36 @@
       </svg>
     </div>
     <canvas ref="canvasEl" class="bg-canvas" />
+    <section class="hero-section">
     <div class="content">
-      <p class="eyebrow">Flavor Geography · 食物地理博物志</p>
+      <p class="eyebrow">Flavor Geography Product Studio</p>
       <h1 class="tagline">寻味地理</h1>
-      <p class="identity-line">一座食物的地理博物志</p>
+      <p class="identity-line">地方食材可视化产品生成器</p>
       <p class="subtitle">
-        从水系、山脉、贸易路线到风味基因，观察同一种食物如何在不同地方长出不同味道。
+        把产地、加工、流通、历史传播和餐桌应用组织成可展示、可嵌入、可导出的品牌故事地图、溯源公示牌和产业图谱。
       </p>
-      <p class="poetic-line">探寻同一种食物，在不同水土中写下的味道基因。</p>
-      <button class="cta-btn" @click="router.push('/map')">开&ensp;启&ensp;地&ensp;图</button>
+      <p class="poetic-line">从空间证据到商业叙事，把地方风味做成一份可交付产品。</p>
+      <div class="hero-actions">
+        <button class="cta-btn primary" @click="router.push('/brand')">进入产品生成器</button>
+        <button class="cta-btn secondary" @click="router.push('/spread')">查看传播图谱</button>
+      </div>
     </div>
+    <div class="product-preview" aria-label="产品输出预览">
+      <div class="preview-map">
+        <span v-for="dot in previewDots" :key="dot.label" :style="{ left: dot.x, top: dot.y, background: dot.color }" />
+      </div>
+      <div class="preview-body">
+        <span class="preview-label">Traceability Report</span>
+        <strong>汉源花椒可信产地报告</strong>
+        <p>产区、加工、城市集散和餐桌应用已组织为一份可嵌入报告。</p>
+      </div>
+      <div class="preview-output">
+        <span>H5</span>
+        <span>PDF</span>
+        <span>PNG</span>
+      </div>
+    </div>
+    </section>
     <div class="sample-strip" aria-label="首页数据样本">
       <article v-for="sample in sampleCards" :key="sample.title" class="sample-card">
         <span class="sample-type">{{ sample.type }}</span>
@@ -46,30 +66,37 @@ const canvasEl = ref(null)
 
 const sampleCards = [
   {
-    type: '火锅样本',
-    title: '成都：麻 0.90 / 辣 0.95',
-    body: '顺德：鲜 0.82 / 麻 0.05，同一饮食类型在不同水土中改写风味重心。',
+    type: '产品模板',
+    title: '品牌故事地图、溯源公示牌、产业图谱',
+    body: '同一份食材数据可以输出多种展示形态，服务品牌官网、展厅、汇报和电商详情页。',
   },
   {
-    type: '传播线索',
-    title: '辣椒入华 → 长江上游',
-    body: '路线、港口与山地通道共同决定食材进入地方菜系的速度。',
+    type: '空间证据',
+    title: '产地、加工、流通、餐桌节点',
+    body: 'GIS 不只画地图，而是把地方食材的可信来源和使用场景转化为可阅读证据链。',
   },
   {
-    type: '生态影响',
-    title: '湿热盆地提高辛香依赖',
-    body: '气候、水系和盐业网络会改变保存方式、调味偏好与味觉表达。',
+    type: '批量生成',
+    title: '风格预设与报告输出',
+    body: '先支持地理志、公示牌和产业图谱三类视觉模板，后续可扩展到更多地方食材。',
   },
+]
+
+const previewDots = [
+  { label: 'origin', x: '21%', y: '58%', color: '#5E7B50' },
+  { label: 'process', x: '34%', y: '48%', color: '#A96535' },
+  { label: 'hub', x: '56%', y: '54%', color: '#3E7891' },
+  { label: 'market', x: '76%', y: '38%', color: '#C63D42' },
 ]
 let rafId = null
 let cleanupHomeCanvas = () => {}
 
 const pathDefs = [
-  { pts: [[0.1,0.5],[0.3,0.3],[0.5,0.4],[0.7,0.35],[0.9,0.5]], col: '#C8960F' },
-  { pts: [[0.0,0.3],[0.2,0.45],[0.4,0.5],[0.6,0.4],[0.85,0.55]], col: '#2BB89C' },
-  { pts: [[0.15,0.7],[0.35,0.55],[0.55,0.6],[0.75,0.5],[0.95,0.65]], col: '#C84B4B' },
-  { pts: [[0.05,0.2],[0.25,0.35],[0.5,0.25],[0.75,0.4],[0.9,0.3]], col: '#C8960F' },
-  { pts: [[0.2,0.8],[0.4,0.65],[0.6,0.7],[0.8,0.6],[1.0,0.75]], col: '#7B9E5A' },
+  { pts: [[0.1,0.5],[0.3,0.3],[0.5,0.4],[0.7,0.35],[0.9,0.5]], col: '#E8A917' },
+  { pts: [[0.0,0.3],[0.2,0.45],[0.4,0.5],[0.6,0.4],[0.85,0.55]], col: '#0FB89A' },
+  { pts: [[0.15,0.7],[0.35,0.55],[0.55,0.6],[0.75,0.5],[0.95,0.65]], col: '#E5394E' },
+  { pts: [[0.05,0.2],[0.25,0.35],[0.5,0.25],[0.75,0.4],[0.9,0.3]], col: '#3D6F87' },
+  { pts: [[0.2,0.8],[0.4,0.65],[0.6,0.7],[0.8,0.6],[1.0,0.75]], col: '#7FA961' },
 ]
 
 function catmull(pts, t, W, H) {
@@ -171,8 +198,9 @@ onUnmounted(() => {
   inset: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 42%, rgba(255,252,248,0.94) 0, rgba(248,244,239,0.72) 36%, transparent 62%),
-    linear-gradient(135deg, #f8f4ef 0%, #f1e8dc 48%, #f8f4ef 100%);
+    radial-gradient(circle at 18% 18%, rgba(94,123,80,0.18), transparent 32%),
+    radial-gradient(circle at 82% 28%, rgba(62,120,145,0.14), transparent 30%),
+    linear-gradient(135deg, #fbf7ef 0%, #eef3ed 48%, #f7efe3 100%);
 }
 .home-page::before {
   content: '';
@@ -206,6 +234,9 @@ onUnmounted(() => {
   stroke: rgba(92,75,57,0.72);
   stroke-width: 2;
 }
+.specimen-chili path { stroke: rgba(177, 47, 58, 0.62); }
+.specimen-star path { stroke: rgba(156, 112, 22, 0.58); }
+.specimen-rice path { stroke: rgba(78, 119, 80, 0.62); }
 .specimen-chili {
   left: clamp(22px, 7vw, 104px);
   top: 20vh;
@@ -234,16 +265,27 @@ onUnmounted(() => {
   mix-blend-mode: multiply;
 }
 
+.hero-section {
+  position: relative;
+  z-index: 2;
+  width: min(1180px, calc(100% - 72px));
+  min-height: calc(100vh - 230px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 56px;
+  align-items: center;
+  padding: 86px 0 36px;
+}
+
 .content {
-  position: absolute;
-  inset: 0;
+  position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   pointer-events: none;
-  padding: 86px 24px 190px;
+  padding: 0;
 }
 .eyebrow {
   font-size: 11px;
@@ -256,10 +298,10 @@ onUnmounted(() => {
 }
 .tagline {
   font-family: var(--font-serif);
-  font-size: clamp(52px, 8vw, 104px);
+  font-size: clamp(54px, 7vw, 92px);
   font-weight: 500;
   color: var(--text);
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   line-height: 1.05;
   text-align: center;
   max-width: 860px;
@@ -276,7 +318,7 @@ onUnmounted(() => {
   animation: fadeUp 1.1s ease 0.68s both;
 }
 .subtitle {
-  max-width: 680px;
+  max-width: 720px;
   margin-top: 18px;
   font-size: clamp(14px, 1.45vw, 17px);
   font-weight: 300;
@@ -296,17 +338,16 @@ onUnmounted(() => {
   animation: fadeUp 1.1s ease 0.86s both;
 }
 .cta-btn {
-  margin-top: 34px;
   pointer-events: all;
-  padding: 14px 38px;
+  padding: 13px 28px;
   background: rgba(255,252,248,0.88);
-  border: 1px solid rgba(200,150,15,0.42);
+  border: 1px solid rgba(232,169,23,0.42);
   border-radius: 999px;
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 400;
   letter-spacing: 0.16em;
-  color: #b77b08;
+  color: #724b2e;
   cursor: pointer;
   backdrop-filter: var(--blur-sm); -webkit-backdrop-filter: var(--blur-sm);
   box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.70);
@@ -315,9 +356,27 @@ onUnmounted(() => {
 }
 .cta-btn:hover {
   background: rgba(255,252,248,0.98);
-  box-shadow: var(--shadow-md), 0 0 24px rgba(200,150,15,0.15);
+  box-shadow: var(--shadow-md), 0 0 24px rgba(232,169,23,0.15);
   transform: translateY(-1px);
-  border-color: rgba(200,150,15,0.55);
+  border-color: rgba(232,169,23,0.55);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 34px;
+  pointer-events: all;
+}
+
+.cta-btn.primary {
+  background: linear-gradient(135deg, var(--earth), var(--leaf));
+  color: #fffaf2;
+  border-color: transparent;
+  box-shadow: 0 14px 34px rgba(67, 92, 60, 0.18);
+}
+
+.cta-btn.secondary {
+  background: rgba(255,252,248,0.68);
 }
 .sample-strip {
   position: fixed;
@@ -334,20 +393,110 @@ onUnmounted(() => {
   min-height: 108px;
   padding: 15px 17px 16px;
   border: 1px solid rgba(180,165,140,0.22);
-  border-radius: 18px;
+  border-radius: 8px;
   background: rgba(255,252,248,0.68);
   box-shadow: 0 12px 38px rgba(83,62,36,0.07), inset 0 1px 0 rgba(255,255,255,0.64);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   animation: fadeUp 1s ease both;
 }
+
+.product-preview {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(116, 92, 62, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 252, 247, 0.72);
+  box-shadow: 0 24px 70px rgba(58, 42, 24, 0.12), inset 0 1px 0 rgba(255,255,255,0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  pointer-events: none;
+  animation: fadeUp 1.2s ease 0.92s both;
+}
+
+.preview-map {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  background:
+    linear-gradient(120deg, rgba(94,123,80,0.14), transparent 38%),
+    linear-gradient(35deg, transparent 48%, rgba(62,120,145,0.18) 49%, transparent 52%),
+    linear-gradient(160deg, transparent 44%, rgba(169,101,53,0.18) 45%, transparent 48%),
+    #e6eee5;
+}
+
+.preview-map::before {
+  content: '';
+  position: absolute;
+  inset: 24px 28px;
+  border-top: 2px solid rgba(169,101,53,0.46);
+  border-right: 2px solid rgba(62,120,145,0.44);
+  border-radius: 60% 42% 54% 46%;
+  transform: rotate(-9deg);
+}
+
+.preview-map span {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(255,252,248,0.82), 0 10px 22px rgba(58,42,24,0.18);
+}
+
+.preview-body {
+  padding: 16px 18px 12px;
+}
+
+.preview-label {
+  color: rgba(92,75,57,0.56);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.preview-body strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.preview-body p {
+  margin-top: 8px;
+  color: rgba(87,83,78,0.72);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.preview-output {
+  display: flex;
+  gap: 6px;
+  padding: 0 18px 16px;
+}
+
+.preview-output span {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(94,123,80,0.1);
+  color: #5e7b50;
+  font-size: 10px;
+  font-weight: 700;
+}
 .sample-card:nth-child(1) { animation-delay: 1.05s; }
 .sample-card:nth-child(2) { animation-delay: 1.15s; }
 .sample-card:nth-child(3) { animation-delay: 1.25s; }
+.sample-card:nth-child(1) { border-top-color: rgba(229,57,78,0.34); }
+.sample-card:nth-child(2) { border-top-color: rgba(15,184,154,0.34); }
+.sample-card:nth-child(3) { border-top-color: rgba(127,169,97,0.34); }
 .sample-type {
   display: block;
   margin-bottom: 9px;
-  color: rgba(200,150,15,0.78);
+  color: rgba(148,106,18,0.82);
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.16em;
@@ -369,8 +518,14 @@ onUnmounted(() => {
 }
 
 @media (max-width: 900px) {
+  .hero-section {
+    min-height: calc(100vh - 250px);
+    width: min(560px, calc(100% - 40px));
+    grid-template-columns: 1fr;
+    padding-top: 76px;
+  }
   .content {
-    padding-bottom: 238px;
+    padding-bottom: 0;
   }
   .sample-strip {
     grid-template-columns: 1fr;
@@ -378,11 +533,24 @@ onUnmounted(() => {
     bottom: 22px;
     gap: 8px;
   }
+  .product-preview {
+    display: none;
+  }
   .sample-card {
     min-height: auto;
     padding: 11px 14px 12px;
   }
   .sample-card:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 1200px) {
+  .hero-section {
+    grid-template-columns: 1fr;
+    min-height: calc(100vh - 220px);
+  }
+  .product-preview {
     display: none;
   }
 }
@@ -403,7 +571,11 @@ onUnmounted(() => {
     display: none;
   }
   .content {
-    padding: 76px 20px 250px;
+    padding: 0;
+  }
+  .hero-actions {
+    flex-direction: column;
+    width: min(280px, 100%);
   }
   .eyebrow {
     letter-spacing: 0.20em;

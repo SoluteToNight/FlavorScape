@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 550" width="100%" height="100%">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#94A3B8" flood-opacity="0.3"/>
+    </filter>
+    <style>
+      .sys-font { font-family: 'Arial', 'Microsoft YaHei', sans-serif; }
+      .title { font-size: 22px; font-weight: bold; fill: #1E293B; }
+      .sec-title { font-size: 16px; font-weight: bold; }
+      .box-title { font-size: 14px; font-weight: bold; }
+      .box-desc { font-size: 12px; fill: #64748B; }
+      .line { fill: none; stroke-width: 2; }
+    </style>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#F59E0B"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="550" fill="#FFFFFF"/>
+  <text x="500" y="40" text-anchor="middle" class="sys-font title">图 1-1 “寻味地理”系统定位与边界图</text>
+
+  <!-- Left Zone: Not doing -->
+  <rect x="50" y="90" width="260" height="400" fill="#FEF2F2" stroke="#FCA5A5" stroke-dasharray="6,4" rx="8" class="line"/>
+  <rect x="50" y="90" width="260" height="40" fill="#FCA5A5" rx="8"/>
+  <rect x="50" y="110" width="260" height="20" fill="#FCA5A5"/>
+  <text x="180" y="116" text-anchor="middle" class="sys-font sec-title" fill="#7F1D1D">非本系统业务边界</text>
+
+  <!-- Left Boxes -->
+  <g transform="translate(80, 160)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#FECACA" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#DC2626">生活服务与交易</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">餐馆检索 / 消费推荐 / 外卖</text>
+  </g>
+  <g transform="translate(80, 260)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#FECACA" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#DC2626">实时商业供应链</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">食材交易平台 / 商家后台</text>
+  </g>
+  <g transform="translate(80, 360)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#FECACA" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#DC2626">单纯打点式地图</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">缺乏生态解释的孤立信息</text>
+  </g>
+
+  <!-- Transition Arrows -->
+  <path d="M 310 290 L 360 290" class="line" stroke="#94A3B8" marker-end="url(#arrow-blue)"/>
+  <text x="335" y="280" text-anchor="middle" class="sys-font box-desc" fill="#94A3B8">范式转变</text>
+
+  <!-- Middle Zone: Core System -->
+  <rect x="370" y="90" width="260" height="400" fill="#EFF6FF" stroke="#93C5FD" rx="8" class="line"/>
+  <rect x="370" y="90" width="260" height="40" fill="#3B82F6" rx="8"/>
+  <rect x="370" y="110" width="260" height="20" fill="#3B82F6"/>
+  <text x="500" y="116" text-anchor="middle" class="sys-font sec-title" fill="#FFFFFF">WebGIS核心定位</text>
+
+  <g transform="translate(400, 160)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#BFDBFE" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#2563EB">风味形成地理解释</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">自然生态容器 / 气候地形影响</text>
+  </g>
+  <g transform="translate(400, 260)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#BFDBFE" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#2563EB">食材历史传播叙事</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">传播路径验证 / 时空动态演化</text>
+  </g>
+  <g transform="translate(400, 360)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#BFDBFE" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#2563EB">风味可计算模型</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">六维基因型记录 / 定量化比较</text>
+  </g>
+
+  <!-- Transition Arrows -->
+  <path d="M 630 290 L 680 290" class="line" stroke="#F59E0B" marker-end="url(#arrow-orange)"/>
+  <text x="655" y="280" text-anchor="middle" class="sys-font box-desc" fill="#D97706">赋能产业</text>
+
+  <!-- Right Zone: Future -->
+  <rect x="690" y="90" width="260" height="400" fill="#FFFBEB" stroke="#FCD34D" stroke-dasharray="6,4" rx="8" class="line"/>
+  <rect x="690" y="90" width="260" height="40" fill="#F59E0B" rx="8"/>
+  <rect x="690" y="110" width="260" height="20" fill="#F59E0B"/>
+  <text x="820" y="116" text-anchor="middle" class="sys-font sec-title" fill="#FFFFFF">后续产业扩展输出</text>
+
+  <g transform="translate(720, 160)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#FDE68A" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#D97706">文旅展陈与品牌</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">博物馆大屏 / 地方饮食文化名片</text>
+  </g>
+  <g transform="translate(720, 260)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#FDE68A" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#D97706">结构化知识API</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">风味数字资产 / 稳定接口授权</text>
+  </g>
+  <g transform="translate(720, 360)">
+    <rect width="200" height="70" fill="#FFFFFF" stroke="#FDE68A" rx="6" filter="url(#shadow)"/>
+    <text x="100" y="30" text-anchor="middle" class="sys-font box-title" fill="#D97706">教育与研学课程</text>
+    <text x="100" y="50" text-anchor="middle" class="sys-font box-desc">地理课堂辅助 / 专题出版物料</text>
+  </g>
+</svg>
