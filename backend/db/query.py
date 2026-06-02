@@ -80,28 +80,29 @@ def _build_flavor_image(db_obj: dict) -> str:
 def fetch_flavors() -> list[dict]:
     """返回风味节点，shape 与原 FLAVORS 兼容。"""
     sql = """
-        SELECT g.node_key,
-               g.city_name,
-               g.dish_name,
-               g.dish_family,
-               g.region_label,
-               g.eco_label,
-               g.eco_name AS eco_name_ref,
-               g.category,
-               g.primary_labels,
-               g.primary_values,
-               g.color_hex,
-               ST_X(g.coordinates) AS lon,
-               ST_Y(g.coordinates) AS lat,
-               g.genome_vector,
+        SELECT dish_id,
+               node_key,
+               city_name,
+               dish_name,
+               dish_family,
+               region_label,
+               eco_label,
+               eco_name AS eco_name_ref,
+               category,
+               primary_labels,
+               primary_values,
+               color_hex,
+               ST_X(coordinates) AS lon,
+               ST_Y(coordinates) AS lat,
+               flavor_genotype,
                (
-                   SELECT array_agg(i.name ORDER BY i.name)
-                   FROM recipe_link rl
-                   JOIN ingredient i ON i.ingredient_id = rl.ingredient_id
-                   WHERE rl.genotype_id = g.genotype_id
+                    SELECT array_agg(i.name ORDER BY i.name)
+                    FROM recipe_link rl
+                    JOIN ingredient i ON i.ingredient_id = rl.ingredient_id
+                    WHERE rl.dish_id = dish.dish_id
                ) AS ingredients
-        FROM flavor_genotype g
-        ORDER BY g.genotype_id
+         FROM dish
+         ORDER BY dish_id
     """
     results = []
     with get_conn() as conn:
@@ -110,7 +111,7 @@ def fetch_flavors() -> list[dict]:
             cols = [d.name for d in cur.description]
             for row in cur.fetchall():
                 db_obj = dict(zip(cols, row))
-                scores = _scores_from_genome_vector(db_obj["genome_vector"])
+                scores = _scores_from_genome_vector(db_obj["flavor_genotype"])
                 media = FLAVOR_MEDIA.get(db_obj["node_key"], {})
                 results.append({
                     "id": db_obj["node_key"],
@@ -127,7 +128,7 @@ def fetch_flavors() -> list[dict]:
                     "cat": db_obj["category"],
                     "ingredients": list(db_obj["ingredients"] or []),
                     "coordinates": [float(db_obj["lon"]), float(db_obj["lat"])],
-                    "genome_vector": db_obj["genome_vector"],
+                    "genome_vector": db_obj["flavor_genotype"],
                     "description": _build_flavor_description(db_obj, scores),
                     "bubbleImage": media.get("bubbleImage") or _build_flavor_image(db_obj),
                     "bubbleImageSource": media.get("bubbleImageSource"),
@@ -224,16 +225,16 @@ def search(q: str) -> list[dict]:
             with conn.cursor() as cur:
                 try:
                     cur.execute(
-                        """SELECT DISTINCT g.node_key
-                           FROM flavor_genotype g
+                        """SELECT DISTINCT node_key
+                           FROM dish
                            WHERE to_tsvector(
                                    'simple',
-                                   COALESCE(g.dish_name,'') || ' ' ||
-                                   COALESCE(g.category,'') || ' ' ||
-                                   COALESCE(g.city_name,'') || ' ' ||
-                                   COALESCE(g.region_label,'') || ' ' ||
-                                   COALESCE(g.eco_label,'') || ' ' ||
-                                   COALESCE(g.dish_family,'')
+                                   COALESCE(dish_name,'') || ' ' ||
+                                   COALESCE(category,'') || ' ' ||
+                                   COALESCE(city_name,'') || ' ' ||
+                                   COALESCE(region_label,'') || ' ' ||
+                                   COALESCE(eco_label,'') || ' ' ||
+                                   COALESCE(dish_family,'')
                                  )
                               @@ plainto_tsquery('simple', %s)
                            LIMIT 8""",

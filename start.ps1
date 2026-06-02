@@ -1,6 +1,6 @@
-# FlavorScape one-shot startup script for Windows PowerShell.
+# FlavorScape one-shot startup script for PowerShell 7+ (pwsh).
 # Run from the repository root:
-#   .\start.ps1
+#   pwsh -File .\start.ps1
 
 $ErrorActionPreference = "Continue"
 $Root = $PSScriptRoot
@@ -118,7 +118,7 @@ $backendArgs = @(
     "-ExecutionPolicy", "Bypass",
     "-Command", $backendCommand
 )
-Start-Process powershell.exe -ArgumentList $backendArgs
+Start-Process pwsh.exe -ArgumentList $backendArgs
 
 # 7. Wait for backend readiness.
 Write-Step "Waiting for backend /health..."
@@ -132,7 +132,7 @@ while ($waited -lt $maxWait) {
     $waited += 3
 
     try {
-        $resp = Invoke-WebRequest -Uri "http://localhost:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
         $json = $resp.Content | ConvertFrom-Json
         if ($json.status -eq "ok") {
             $ready = $true
@@ -168,7 +168,7 @@ $frontendArgs = @(
     "-ExecutionPolicy", "Bypass",
     "-Command", $frontendCommand
 )
-Start-Process powershell.exe -ArgumentList $frontendArgs
+Start-Process pwsh.exe -ArgumentList $frontendArgs
 
 # 9. Done.
 Write-Host ""

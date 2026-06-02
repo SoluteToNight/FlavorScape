@@ -57,8 +57,8 @@ waited=0
 max=300
 while [ $waited -lt $max ]; do
     sleep 3; waited=$((waited+3))
-    if curl -sf http://localhost:8001/health >/dev/null 2>&1; then
-        layers=$(curl -s http://localhost:8001/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(', '.join(d['vector_layers']))" 2>/dev/null || echo "?")
+    if curl -sf http://127.0.0.1:8001/health >/dev/null 2>&1; then
+        layers=$(curl -s http://127.0.0.1:8001/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(', '.join(d['vector_layers']))" 2>/dev/null || echo "?")
         ok "后端已就绪  (图层: $layers)"
         break
     fi

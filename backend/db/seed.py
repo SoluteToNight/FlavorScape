@@ -157,10 +157,10 @@ def reset_business_tables(conn) -> None:
             TRUNCATE TABLE
                 data_source,
                 chapter,
-                genotype_lineage,
+                dish_lineage,
                 recipe_link,
                 dispersal_event,
-                flavor_genotype,
+                dish,
                 ingredient_origin,
                 ingredient
             RESTART IDENTITY CASCADE
@@ -274,19 +274,19 @@ def _seed_ingredient_origin(conn, eco_map, ing_map, flavors: list[dict]) -> int:
     return len(rows)
 
 
-def _seed_flavor_genotype(conn, eco_map, flavors: list[dict]) -> dict:
-    """返回 {flavor.id (来自 app_data): genotype_id}。"""
+def _seed_dish(conn, eco_map, flavors: list[dict]) -> dict:
+    """返回 {flavor.id (来自 app_data): dish_id}。"""
     SCORE_KEYS = ["spicy", "numbing", "salty", "sour", "sweet", "umami"]
-    flavor_id_to_gid: dict = {}
+    flavor_id_to_did: dict = {}
     rows = []
     for i, f in enumerate(flavors, start=1):
-        gid = make_id("GEN", 12, i)
-        flavor_id_to_gid[f["id"]] = gid
+        did = make_id("DSH", 12, i)
+        flavor_id_to_did[f["id"]] = did
         genome = {k: v for k, v in zip(SCORE_KEYS, f["scores"])}
         lon, lat = f["coordinates"]
         eco_name = f.get("eco_name") or f.get("ecoName") or eco_map.get(f["eco"])
         rows.append((
-            gid,
+            did,
             f["id"],
             f["city"],
             f["dish"],
@@ -304,31 +304,31 @@ def _seed_flavor_genotype(conn, eco_map, flavors: list[dict]) -> dict:
     with conn.cursor() as cur:
         psycopg2.extras.execute_batch(
             cur,
-            "INSERT INTO flavor_genotype "
-            "(genotype_id, node_key, city_name, dish_name, dish_family, region_label, eco_label, "
-            " category, eco_name, genome_vector, primary_labels, primary_values, color_hex, coordinates) "
+            "INSERT INTO dish "
+            "(dish_id, node_key, city_name, dish_name, dish_family, region_label, eco_label, "
+            " category, eco_name, flavor_genotype, primary_labels, primary_values, color_hex, coordinates) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, "
             "        ST_SetSRID(ST_MakePoint(%s, %s), 4326)) "
             "ON CONFLICT DO NOTHING",
             rows,
         )
-    return flavor_id_to_gid
+    return flavor_id_to_did
 
 
-def _seed_recipe_link(conn, gid_map, ing_map, flavors: list[dict]) -> int:
+def _seed_recipe_link(conn, did_map, ing_map, flavors: list[dict]) -> int:
     rows = []
     for f in flavors:
-        gid = gid_map[f["id"]]
+        did = did_map[f["id"]]
         n = len(f["ingredients"])
         importance = round(1.0 / n, 2) if n else 0.0
         for ing_name in f["ingredients"]:
             ing_id = ing_map[ing_name]
-            rows.append((gid, ing_id, "主料", importance, True))
+            rows.append((did, ing_id, "主料", importance, True))
     with conn.cursor() as cur:
         psycopg2.extras.execute_batch(
             cur,
             "INSERT INTO recipe_link "
-            "(genotype_id, ingredient_id, role, importance, is_native) "
+            "(dish_id, ingredient_id, role, importance, is_native) "
             "VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
             rows,
         )
@@ -426,8 +426,8 @@ def seed_all(conn, bundle: DataBundle | None = None) -> dict:
     eco_map = _seed_eco_geo_unit(conn)
     ing_map = _seed_ingredient(conn, flavors, routes)
     n_ing_origin = _seed_ingredient_origin(conn, eco_map, ing_map, flavors)
-    gid_map = _seed_flavor_genotype(conn, eco_map, flavors)
-    n_recipe = _seed_recipe_link(conn, gid_map, ing_map, flavors)
+    did_map = _seed_dish(conn, eco_map, flavors)
+    n_recipe = _seed_recipe_link(conn, did_map, ing_map, flavors)
     n_disp = _seed_dispersal_event(conn, ing_map, eco_map, routes, flavors)
     n_chap = _seed_chapter(conn, chapters)
     n_sources = _seed_data_source(conn, data_sources)
@@ -436,10 +436,10 @@ def seed_all(conn, bundle: DataBundle | None = None) -> dict:
         "eco_geo_unit": _count(conn, "eco_geo_unit"),
         "ingredient": len(ing_map),
         "ingredient_origin": n_ing_origin,
-        "flavor_genotype": len(gid_map),
+        "dish": len(did_map),
         "recipe_link": n_recipe,
         "dispersal_event": n_disp,
-        "genotype_lineage": 0,
+        "dish_lineage": 0,
         "chapter": n_chap,
         "data_source": n_sources,
     }

@@ -23,10 +23,10 @@ EXPECTED_COUNTS = {
     "eco_geo_unit":      (820, 850),
     "ingredient":        (45, 80),
     "ingredient_origin": (50, 120),
-    "flavor_genotype":   (17, 17),
+    "dish":              (17, 17),
     "recipe_link":       (50, 100),
     "dispersal_event":   (5, 5),
-    "genotype_lineage":  (0, 0),
+    "dish_lineage":      (0, 0),
     "chapter":           (5, 5),
     "data_source":       (4, 4),
 }
@@ -61,7 +61,7 @@ def verify(conn):
             mark = "[OK]" if lo <= n <= hi else "[!!]"
             print(f"  {mark} {table}: {n} (expect {lo}-{hi})")
         cur.execute(
-            "SELECT ST_AsText(coordinates) FROM flavor_genotype "
+            "SELECT ST_AsText(coordinates) FROM dish "
             "WHERE coordinates IS NOT NULL LIMIT 1"
         )
         row = cur.fetchone()
