@@ -10,7 +10,7 @@
 
       <div>
         <div class="text-[11px] uppercase text-[#8a8077] font-bold mb-2 tracking-[0.05em]">1. 选择核心作物资产</div>
-        <div>
+        <div class="radio-cards">
           <button
             v-for="item in products" :key="item.id" type="button"
             class="w-full p-3 border border-[#dfdbd2] bg-white rounded-md text-left mb-2 cursor-pointer transition-all duration-200"
@@ -38,7 +38,7 @@
 
       <div>
         <div class="text-[11px] uppercase text-[#8a8077] font-bold mb-2 tracking-[0.05em]">3. 切换高级视觉风格</div>
-        <div>
+        <div class="radio-cards">
           <button
             v-for="theme in themes" :key="theme.id" type="button"
             class="w-full p-3 border border-[#dfdbd2] bg-white rounded-md text-left mb-2 cursor-pointer transition-all duration-200"
@@ -66,14 +66,14 @@
         :style="cssVariables"
       >
         <div class="canvas-hairline-frame" />
-        <div class="relative z-[5] flex flex-col min-h-full px-8 py-10 gap-8">
+        <div class="poster-layout-container relative z-[5] flex flex-col min-h-full px-8 py-10 gap-8">
           <!-- 主图区域 -->
-          <header>
+          <header class="poster-section-hero">
             <div class="hero-image-frame relative bg-[var(--t-paper)] overflow-hidden">
               <img
                 :src="customImage || product.image"
                 :alt="product.name"
-                class="w-full h-full object-cover block"
+                class="visual-core-img w-full h-full object-cover block"
                 :style="{ objectPosition: 'center ' + imagePosY + '%' }"
               />
               <div class="image-overlay" v-if="activeTheme.id === 'indigo'" />
@@ -85,13 +85,13 @@
                 <span v-if="activeTheme.id === 'heritage'" class="badge-tag seal">印</span>
                 <h1 class="brand-title">{{ product.name }}</h1>
               </div>
-              <p class="text-[13px] opacity-80 m-0 leading-[1.5]">{{ product.desc }}</p>
-              <div class="text-[12px] italic opacity-70">{{ product.poeticLine }}</div>
+              <p class="product-summary-desc text-[13px] opacity-80 m-0 leading-[1.5]">{{ product.desc }}</p>
+              <div class="poetic-bar text-[12px] italic opacity-70">{{ product.poeticLine }}</div>
             </div>
           </header>
 
           <!-- 叙事与地图区域 -->
-          <section>
+          <section class="poster-section-narrative">
             <div class="narrative-text">
               <span class="text-[10px] uppercase tracking-[0.1em] opacity-50 font-sans block mb-1">{{ activeTheme.kickerText }}</span>
               <h3>{{ activeTheme.subTitle }}</h3>
@@ -103,7 +103,7 @@
           </section>
 
           <!-- 核心指标 -->
-          <section>
+          <section class="poster-section-metrics">
             <div v-for="item in product.evidence" :key="item.label" class="metric-block">
               <span class="m-label">{{ item.label }}</span>
               <strong class="m-value">{{ item.value }}</strong>
