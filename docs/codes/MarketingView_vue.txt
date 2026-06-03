@@ -1,0 +1,362 @@
+<template>
+  <main class="marketing-studio">
+    <aside class="studio-sidebar">
+      <div class="sidebar-header">
+        <span class="eyebrow">Visual Workspace</span>
+        <h2>风物海报工作室</h2>
+        <p>规整高级色系矩阵，将空间地理数据转化为品牌价值资产。</p>
+      </div>
+
+      <div class="control-group">
+        <div class="group-title">1. 选择核心作物资产</div>
+        <div class="radio-cards">
+          <button 
+            v-for="item in products" :key="item.id" type="button"
+            :class="{ active: activeProductId === item.id }" @click="handleProductChange(item)"
+          >
+            {{ item.name }}
+          </button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="group-title">2. 意象主图视觉资产</div>
+        <div class="image-uploader-box">
+          <label class="upload-stub-btn">
+            {{ customImage ? '已应用本地实景 (点击更换)' : '上传自定义高清封面' }}
+            <input type="file" accept="image/*" @change="onUserImageUpload" style="display:none;" />
+          </label>
+          <div v-if="customImage" class="slider-control">
+            <span>垂直焦点位移调整</span>
+            <input type="range" v-model="imagePosY" min="0" max="100" class="fine-tune-slider" />
+          </div>
+          <button v-if="customImage" class="reset-img-btn" @click="customImage = null; imagePosY = 50">恢复默认产品图</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="group-title">3. 切换高级视觉风格</div>
+        <div class="radio-cards template-selector">
+          <button 
+            v-for="theme in themes" :key="theme.id" type="button"
+            :class="{ active: activeThemeId === theme.id }" @click="activeThemeId = theme.id"
+          >
+            <strong>{{ theme.name }}</strong>
+            <small>{{ theme.desc }}</small>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="export-btn" :disabled="isExporting" @click="exportPoster">
+          {{ isExporting ? '矩阵压制中...' : '输出海报资产 (PNG)' }}
+        </button>
+      </div>
+    </aside>
+
+    <section class="studio-stage">
+      <article 
+        id="poster-capture-zone" 
+        class="marketing-poster"
+        :class="[activeTheme.layout, activeTheme.typography]"
+        :style="cssVariables"
+      >
+        <div class="canvas-hairline-frame"></div>
+        <div class="figma-crosshair cross-tl"></div>
+        <div class="figma-crosshair cross-tr"></div>
+        <div class="figma-axis-line"></div>
+
+        <div v-if="activeTheme.id === 'blueprint'" class="indigo-full-map-layer">
+          <StaticGeoMap :target-province="product.province" :nodes="product.nodes" />
+        </div>
+
+        <div class="poster-layout-container">
+          
+          <header class="poster-section-hero">
+            <div class="hero-image-frame">
+              <img 
+                :src="customImage || product.image" 
+                :alt="product.name" 
+                class="visual-core-img"
+                :style="{ objectPosition: 'center ' + imagePosY + '%' }" 
+              />
+            </div>
+            
+            <div class="hero-text-cluster">
+              <span class="badge-tag">国家地理标志保护产品</span>
+              <h1 class="brand-title">{{ product.name }}</h1>
+              <p class="product-summary-desc">{{ product.desc }}</p>
+              <div class="poetic-bar">“{{ product.poeticLine }}”</div>
+            </div>
+          </header>
+
+          <section v-if="activeTheme.id !== 'blueprint'" class="poster-section-map-narrative">
+            <div class="map-component-inner">
+              <StaticGeoMap :target-province="product.province" :nodes="product.nodes" />
+            </div>
+            <div class="map-text-indicator">
+              <span class="geo-kicker">GEO-SPACE EVIDENCE</span>
+              <h3>山河风土空间志</h3>
+              <p>风味生命周期严格锁存于中国 <span>{{ product.province }}</span> 黄金生产圈。经由 <span>{{ product.nodes.map(n => n.short).join(' → ') }}</span> 形成全链路空间漫游轨迹。</p>
+            </div>
+          </section>
+
+          <section class="indigo-floating-narrative" v-else>
+            <span class="geo-kicker">INDIGO BLUEPRINT</span>
+            <h3>全链路空间轨迹拓扑</h3>
+            <p>物产精准沿 <span>{{ product.nodes.map(n => n.short).join(' → ') }}</span> 轨迹演进，深度存证于 <span>{{ product.province }}</span> 原始地带。</p>
+          </section>
+
+          <section class="poster-section-metrics">
+            <div v-for="item in product.evidence" :key="item.label" class="metric-block">
+              <span class="m-label">{{ item.label }}</span>
+              <strong class="m-value">{{ item.value }}</strong>
+            </div>
+          </section>
+
+          <footer class="poster-section-footer">
+            <div class="vector-seal-stub"></div>
+            <div class="copyright-info">
+              <strong>FlavorScape風物研究所数字中心验证</strong>
+              <span>DATA SOURCE: STATE GEOGRAPHIC INDICATIONS LAB & SGS CERTIFIED</span>
+            </div>
+          </footer>
+
+        </div>
+      </article>
+    </section>
+  </main>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import html2canvas from 'html2canvas'
+import StaticGeoMap from '@/components/StaticGeoMap.vue'
+
+const products = [
+  {
+    id: 'pepper',
+    name: '漢源花椒',
+    province: '四川省',
+    image: '/ingredients/pepper-realistic.png',
+    desc: '大渡河干热河谷微气候 · 海拔1600米正路贡椒',
+    poeticLine: '独特干热河谷，高挥发油胞的空间沉淀证据',
+    nodes: [ 
+      { short: '汉源产区', coord: [102.6342, 29.5621] },
+      { short: '冷链分拨', coord: [104.1623, 30.8241] },
+      { short: '终端主销', coord: [121.3821, 31.1123] }
+    ],
+    evidence: [
+      { label: '芳香挥发油', value: '≥ 5.5%' },
+      { label: '羟基山椒素', value: '≥ 35 mg/g' },
+      { label: '实验室安全抽检', value: '农残0检出' }
+    ]
+  },
+  {
+    id: 'rice',
+    name: '五常大米',
+    province: '黑龙江省',
+    image: '/ingredients/rice-realistic.png',
+    desc: '拉林河流域寒地黑土 · 140天超长单季熟成期',
+    poeticLine: '寒地黑土与清洌拉林河水共同驯化出的原生稻香',
+    nodes: [
+      { short: '五常黑土区', coord: [127.1676, 44.9192] },
+      { short: '恒温去壳仓', coord: [126.6331, 45.7422] },
+      { short: '长三角直达', coord: [121.4737, 31.2304] }
+    ],
+    evidence: [
+      { label: '产地有效积温', value: '2700 ℃' },
+      { label: '天然直链淀粉', value: '17.2 %' },
+      { label: '胶稠度检测指标', value: '≥ 70 mm' }
+    ]
+  }
+]
+
+const themes = [
+  {
+    id: 'nature',
+    layout: 'layout-nature', 
+    name: '绿色系 · 大地风土',
+    desc: '植物原绿。大面积干净留白与高对比绿色块破格咬合。',
+    typography: 'font-sans',
+    colors: { primary: '#223c20', accent: '#ca8a04', bg: '#fdfcfb', paper: '#f4f6f0', text: '#3d4a3a' }
+  },
+  {
+    id: 'heritage',
+    layout: 'layout-heritage', 
+    name: '米色系 · 山河人文',
+    desc: '古典宣纸色。大号衬线字，产地高亮以朱砂红饱和点睛。',
+    typography: 'font-serif',
+    colors: { primary: '#443228', accent: '#b91c1c', bg: '#f3ebd9', paper: '#fbf8ef', text: '#5c4b3e' }
+  },
+  {
+    id: 'blueprint',
+    layout: 'layout-blueprint', 
+    name: '蓝色系 · 蓝印青图',
+    desc: '深邃草木靛蓝。全屏大尺度高对比线框地图，极客资产图纸感。',
+    typography: 'font-sans',
+    colors: { primary: '#38bdf8', accent: '#22d3ee', bg: '#080d16', paper: '#111827', text: '#94a3b8' }
+  }
+]
+
+const activeProductId = ref('pepper')
+const activeThemeId = ref('heritage')
+const isExporting = ref(false)
+const imagePosY = ref(42) 
+const customImage = ref(null) // 🌟 修复：补全了之前遗漏的响应式状态定义
+// 🌟 补全漏掉的核心计算属性
+const product = computed(() => {
+  return products.find(p => p.id === activeProductId.value) || products[0]
+})
+
+const activeTheme = computed(() => {
+  return themes.find(t => t.id === activeThemeId.value) || themes[0]
+})
+
+function handleProductChange(item) { 
+  activeProductId.value = item.id 
+  customImage.value = null
+  imagePosY.value = 42
+}
+
+function onUserImageUpload(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (event) => { customImage.value = event.target.result }
+  reader.readAsDataURL(file)
+}
+
+const cssVariables = computed(() => {
+  const isBlue = activeTheme.value.id === 'blueprint'
+  const isGreen = activeTheme.value.id === 'nature'
+  
+  return {
+    '--t-primary': activeTheme.value.colors.primary,
+    '--t-accent': activeTheme.value.colors.accent,
+    '--t-bg': activeTheme.value.colors.bg,
+    '--t-paper': activeTheme.value.colors.paper,
+    '--t-text': activeTheme.value.colors.text,
+    
+    '--map-base-fill': isBlue ? '#101726' : isGreen ? '#f4f6f0' : '#eae1cd',
+    '--map-base-stroke': isBlue ? 'rgba(56, 189, 248, 0.25)' : 'rgba(0, 0, 0, 0.14)',
+    '--map-active-fill': isBlue ? '#1e3e66' : isGreen ? '#223c20' : '#b91c1c', 
+    '--map-active-stroke': '#ffffff'
+  }
+})
+
+async function exportPoster() {
+  const target = document.querySelector('#poster-capture-zone')
+  if (!target || isExporting.value) return
+  isExporting.value = true
+  try {
+    const canvas = await html2canvas(target, { scale: 3, useCORS: true, backgroundColor: activeTheme.value.colors.bg })
+    const link = document.createElement('a')
+    link.download = 'flavorscape-studio-' + activeTheme.value.id + '.png'
+    link.href = canvas.toDataURL('image/png', 1.0)
+    link.click()
+  } catch (err) { console.error(err) } finally { isExporting.value = false }
+}
+</script>
+
+<style scoped>
+/* ================= 工作台基础布局 ================= */
+.marketing-studio { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - var(--navbar-h)); margin-top: var(--navbar-h); background: #dcd9d2; }
+.studio-sidebar { background: #faf9f6; border-right: 1px solid rgba(0,0,0,0.08); padding: 32px 24px; display: flex; flex-direction: column; gap: 28px; overflow-y: auto; }
+.sidebar-header h2 { font-size: 19px; color: #1a1715; font-weight: 700; margin: 4px 0; }
+.sidebar-header p { font-size: 12px; color: #6e6660; }
+.group-title { font-size: 11px; text-transform: uppercase; color: #8a8077; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.05em; }
+.radio-cards button { width: 100%; padding: 12px; border: 1px solid #dfdbd2; background: #fff; border-radius: 6px; text-align: left; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+.radio-cards button.active { border-color: #b85433; background: rgba(184, 84, 51, 0.05); }
+
+.template-selector button strong { display: block; font-size: 13px; color: #2a2320; }
+.template-selector button.active strong { color: #b85433; }
+.template-selector button small { font-size: 11px; color: #6e6660; display: block; margin-top: 3px; }
+
+.image-uploader-box { background: #f4eee3; padding: 16px; border-radius: 6px; text-align: center; }
+.fine-tune-slider { width: 100%; margin-bottom: 6px; }
+.slider-hint { font-size: 11px; color: #8a8077; font-family: monospace; }
+.export-btn { width: 100%; padding: 14px; background: #201a17; color: #faf9f6; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: auto; }
+.studio-stage { padding: 40px; overflow-y: auto; display: grid; place-items: start center; }
+
+/* ================= 海报核心：Figma 自由叠装舞台 ================= */
+.marketing-poster {
+  width: 440px; min-height: 860px; background-color: var(--t-bg); color: var(--t-text);
+  box-shadow: 0 50px 100px rgba(32,26,23,0.18); position: relative; overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Figma 矢量框线 */
+.canvas-hairline-frame { position: absolute; inset: 16px; border: 1px solid var(--t-primary); opacity: 0.12; pointer-events: none; z-index: 10; }
+.figma-crosshair { position: absolute; width: 8px; height: 8px; border: 1px solid var(--t-primary); opacity: 0.2; z-index: 10; }
+.figma-crosshair.cross-tl { top: 24px; left: 24px; border-right: 0; border-bottom: 0; }
+.figma-crosshair.cross-tr { top: 24px; right: 24px; border-left: 0; border-bottom: 0; }
+.figma-axis-line { position: absolute; left: 24px; right: 24px; top: 350px; height: 1px; background: var(--t-primary); opacity: 0.1; z-index: 10; }
+
+/* 流式独立容器 */
+.poster-layout-container { position: relative; z-index: 5; display: flex; flex-direction: column; min-height: 100%; padding: 48px 36px 36px; gap: 28px; }
+
+.font-sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.font-serif { font-family: "Songti SC", "Noto Serif CJK SC", STSong, serif; }
+
+.hero-image-frame { position: relative; background: #eee; overflow: hidden; }
+.visual-core-img { width: 100%; height: 100%; object-fit: cover; }
+.brand-title { font-weight: 700; color: var(--t-primary); line-height: 1.1; margin: 0; }
+.product-summary-desc { font-size: 13px; opacity: 0.8; margin: 0; }
+.poetic-bar { font-size: 11px; opacity: 0.6; font-style: italic; }
+
+/* ================= 🌟 风格一：大地的留白 (绿色系) ================= */
+.layout-nature { background: linear-gradient(to bottom, #ecf3eb 34%, var(--t-bg) 34%); }
+.layout-nature .hero-image-frame { width: 100%; height: 240px; border-radius: 4px; box-shadow: 0 16px 36px rgba(42,68,39,0.14); }
+.layout-nature .hero-text-cluster { margin-top: 10px; }
+.layout-nature .brand-title { font-size: 42px; color: var(--t-primary); letter-spacing: -0.5px; }
+.layout-nature .badge-tag { font-size: 9px; padding: 2px 8px; border: 1px solid var(--t-primary); border-radius: 20px; color: var(--t-primary); font-weight: 700; display: inline-block; margin-bottom: 6px; }
+
+.layout-nature .poster-section-map-narrative { display: grid; grid-template-columns: 155px 1fr; gap: 18px; align-items: center; background: var(--t-paper); padding: 16px; border-radius: 6px; }
+.layout-nature .map-component-inner { height: 145px; }
+.layout-nature .map-text-indicator h3 { font-size: 15px; color: var(--t-primary); margin: 0 0 4px 0; font-weight: 700; }
+.layout-nature .map-text-indicator p { font-size: 11.5px; opacity: 0.9; line-height: 1.5; margin: 0; color: var(--t-text); }
+.layout-nature .map-text-indicator span { font-weight: 700; color: var(--t-primary); text-decoration: underline; }
+
+/* ================= 🌟 风格二：山河的人文 (米色系) ================= */
+.layout-heritage .poster-hero { display: grid; grid-template-columns: 1fr 140px; gap: 24px; align-items: start; }
+.layout-heritage .hero-image-frame { height: 240px; border-radius: 120px 120px 0 0; border: 1.5px solid var(--t-primary); padding: 4px; background: transparent; }
+.layout-heritage .visual-core-img { border-radius: 116px 116px 0 0; }
+.layout-heritage .hero-text-cluster { writing-mode: vertical-rl; text-align: left; height: 240px; display: flex; align-items: flex-start; }
+.layout-heritage .brand-title { font-size: 46px; font-weight: 500; letter-spacing: 0.12em; }
+.layout-heritage .product-summary-desc { font-size: 13px; letter-spacing: 0.05em; margin: 10px 6px 0 0; }
+.layout-heritage .poetic-bar { font-size: 11px; margin: 10px 6px 0 0; border-right: 1.5px solid var(--t-accent); padding-right: 4px; }
+.layout-heritage .badge-tag { display: none; }
+
+.layout-heritage .poster-section-map-narrative { display: flex; flex-direction: column; gap: 14px; border-top: 1px dashed rgba(68,52,42,0.15); border-bottom: 1px dashed rgba(68,52,42,0.15); padding: 20px 0; }
+.layout-heritage .map-component-inner { width: 100%; height: 200px; }
+.layout-heritage .map-text-indicator h3 { font-size: 16px; color: var(--t-primary); margin: 0 0 4px 0; }
+.layout-heritage .map-text-indicator p { font-size: 12px; opacity: 0.85; line-height: 1.55; margin: 0; }
+.layout-heritage .map-text-indicator span { font-weight: 700; color: var(--t-accent); }
+
+/* ================= 🌟 风格三：蓝印的青图 (蓝色系) ================= */
+.layout-blueprint .indigo-full-map-layer { position: absolute; left: -10%; top: 15%; width: 120%; height: 65%; opacity: 0.95; z-index: 1; pointer-events: none; }
+.layout-blueprint .hero-image-frame { height: 160px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+.layout-blueprint .brand-title { font-size: 38px; color: var(--t-primary); margin: 6px 0; }
+.layout-blueprint .badge-tag { font-size: 8px; font-family: monospace; color: var(--t-accent); }
+
+.layout-blueprint .indigo-floating-narrative { margin-top: 170px; background: var(--t-paper); border: 1px solid rgba(56, 189, 248, 0.15); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 18px; border-radius: 4px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+.layout-blueprint .indigo-floating-narrative h3 { font-size: 16px; color: #fff; margin: 0 0 6px 0; font-family: monospace; }
+.layout-blueprint .indigo-floating-narrative p { font-size: 12px; color: var(--t-text); line-height: 1.6; margin: 0; }
+.layout-blueprint .indigo-floating-narrative p span { color: #fff; font-weight: 700; }
+
+/* ================= 通用高级分栏数据栏 ================= */
+.poster-section-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: auto; }
+.metric-block { background: var(--t-paper); padding: 14px 10px; text-align: center; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.01); }
+.layout-blueprint .metric-block { background: var(--t-paper); border: 1px solid rgba(255,255,255,0.05); }
+.layout-heritage .metric-block { background: transparent; border-radius: 0; border-right: 1px dashed rgba(68,52,42,0.15); box-shadow: none; padding: 6px; }
+.layout-heritage .metric-block:last-child { border-right: none; }
+
+.m-label { display: block; font-size: 9px; opacity: 0.5; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.02em; }
+.m-value { font-size: 13px; font-weight: 700; color: var(--t-primary); }
+
+.poster-section-footer { display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid rgba(128,128,128,0.15); }
+.vector-seal-stub { width: 32px; height: 32px; border: 1px solid var(--t-primary); opacity: 0.25; }
+.copyright-info strong { display: block; font-size: 11px; color: var(--t-primary); }
+.copyright-info span { font-size: 8px; opacity: 0.4; display: block; margin-top: 2px; font-family: monospace; }
+</style>

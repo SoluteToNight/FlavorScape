@@ -1,0 +1,1364 @@
+<template>
+  <main class="product-page">
+    <section class="studio-toolbar">
+      <div class="toolbar-copy">
+        <span>FlavorScape Atlas</span>
+        <strong>智慧大屏 · 地理志</strong>
+        <p>用真实底图、证据节点和叙事时间线呈现地方食材的空间故事。</p>
+      </div>
+
+      <div class="product-switcher" aria-label="示例产品切换">
+        <button
+          v-for="item in products"
+          :key="item.id"
+          type="button"
+          :class="{ active: activeProductId === item.id }"
+          @click="activeProductId = item.id"
+        >
+          <img :src="item.image" :alt="item.name" />
+          <span>{{ item.name }}</span>
+        </button>
+      </div>
+
+      <div class="toolbar-actions" aria-label="导出智慧大屏">
+        <button
+          type="button"
+          class="download-btn"
+          :disabled="isExporting"
+          @click="downloadCapture('png')"
+        >
+          {{ isExporting ? '正在生成...' : 'PNG' }}
+        </button>
+        <button
+          type="button"
+          class="download-btn secondary"
+          :disabled="isExporting"
+          @click="downloadCapture('jpeg')"
+        >
+          JPG
+        </button>
+        <button type="button" class="download-btn secondary" @click="printCapture">
+          PDF
+        </button>
+      </div>
+    </section>
+
+    <section class="story-stage">
+      <article id="capture-zone" class="storymap-canvas" aria-label="地理志智慧大屏画布">
+        <aside class="atlas-panel atlas-left">
+          <span class="eyebrow">Product Identity</span>
+          <h2>{{ product.name }}</h2>
+          <p>{{ product.species }}</p>
+          <div class="product-photo">
+            <img :src="product.image" :alt="product.name" />
+          </div>
+          <dl>
+            <div v-for="item in identityItems" :key="item.label">
+              <dt>{{ item.label }}</dt>
+              <dd>{{ item.value }}</dd>
+            </div>
+          </dl>
+        </aside>
+
+        <section class="atlas-map-card">
+          <div class="map-heading">
+            <div>
+              <span class="eyebrow">StoryMap Evidence Layer</span>
+              <h1>从产地到餐桌的空间叙事</h1>
+            </div>
+            <div class="atlas-index-stamp" aria-hidden="true">
+              <span>{{ nodes.length }}</span>
+              <small>Nodes</small>
+            </div>
+            <button type="button" @click="selectedNodeId = nextNodeId">下一节点</button>
+          </div>
+
+          <div class="map-metric-strip" aria-label="地图摘要指标">
+            <article v-for="metric in mapMetrics" :key="metric.label">
+              <span>{{ metric.label }}</span>
+              <strong>{{ metric.value }}</strong>
+            </article>
+          </div>
+
+          <div class="large-map-wrap">
+            <div ref="atlasMapContainer" class="atlas-real-map" aria-label="真实地理底图">
+              <div v-if="!mapReady" class="map-loading">正在加载地理底图...</div>
+            </div>
+
+            <div class="atlas-map-overlay" aria-label="溯源节点覆盖层">
+              <svg class="projected-route-svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="projectedRouteGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#6f8b63" />
+                    <stop offset="52%" stop-color="#c39b44" />
+                    <stop offset="100%" stop-color="#c4503d" />
+                  </linearGradient>
+                </defs>
+                <path
+                  v-for="route in projectedRoutePaths"
+                  :key="`${route.id}-halo`"
+                  :d="route.d"
+                  class="projected-route-halo"
+                />
+                <path
+                  v-for="route in projectedRoutePaths"
+                  :key="route.id"
+                  :d="route.d"
+                  class="projected-route-line"
+                />
+                <polyline
+                  v-for="node in projectedNodes"
+                  :key="`${node.id}-leader`"
+                  :points="node.leader"
+                  class="leader-line"
+                />
+              </svg>
+
+              <button
+                v-for="node in projectedNodes"
+                :key="`${node.id}-dot`"
+                type="button"
+                class="real-map-dot"
+                :class="{ selected: selectedNode.id === node.id }"
+                :style="{
+                  left: `${node.x}px`,
+                  top: `${node.y}px`,
+                  '--node-color': node.color,
+                }"
+                @mouseenter="selectedNodeId = node.id"
+                @click="selectMapNode(node.id)"
+              >
+                <span class="sr-only">{{ node.short }}</span>
+              </button>
+
+              <button
+                v-for="node in projectedNodes"
+                :key="`${node.id}-label`"
+                type="button"
+                class="real-map-label"
+                :class="{ selected: selectedNode.id === node.id }"
+                :style="{
+                  left: `${node.labelX}px`,
+                  top: `${node.labelY}px`,
+                  '--node-color': node.color,
+                }"
+                @mouseenter="selectedNodeId = node.id"
+                @click="selectMapNode(node.id)"
+              >
+                <span>{{ node.type }}</span>
+                <strong>{{ node.short }}</strong>
+                <em>{{ node.meta }}</em>
+              </button>
+            </div>
+
+            <article class="selected-card">
+              <span :style="{ color: selectedNode.color }">{{ selectedNode.type }}</span>
+              <strong>{{ selectedNode.name }}</strong>
+              <p>{{ selectedNode.story }}</p>
+            </article>
+          </div>
+        </section>
+
+        <aside class="atlas-panel atlas-right">
+          <span class="eyebrow">Narrative Timeline</span>
+          <h2>溯源叙事线</h2>
+          <div class="story-timeline">
+            <article
+              v-for="node in nodes"
+              :key="node.id"
+              :class="{ active: selectedNode.id === node.id }"
+              @mouseenter="selectedNodeId = node.id"
+              @click="selectMapNode(node.id)"
+            >
+              <i :style="{ '--node-color': node.color }" />
+              <span>{{ node.type }}</span>
+              <strong>{{ node.name }}</strong>
+            </article>
+          </div>
+        </aside>
+      </article>
+    </section>
+  </main>
+</template>
+
+<script setup>
+import html2canvas from 'html2canvas'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
+
+const selectedNodeId = ref('origin')
+const isExporting = ref(false)
+const atlasMapContainer = ref(null)
+const mapReady = ref(false)
+const projectedNodes = ref([])
+const projectedRoutePaths = ref([])
+
+const MAP_STYLE = {
+  version: 8,
+  sources: {
+    'hyp-tiles': {
+      type: 'raster',
+      tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: 8,
+      attribution: 'Natural Earth',
+    },
+  },
+  layers: [
+    { id: 'trace-bg', type: 'background', paint: { 'background-color': '#dce8e4' } },
+    {
+      id: 'hyp',
+      type: 'raster',
+      source: 'hyp-tiles',
+      paint: {
+        'raster-saturation': -0.28,
+        'raster-contrast': 0.06,
+        'raster-brightness-min': 0.08,
+        'raster-opacity': 0.92,
+      },
+    },
+  ],
+}
+
+let atlasMap = null
+
+const activeProductId = ref('pepper')
+const products = [
+  {
+    id: 'pepper',
+    name: '汉源花椒',
+    image: '/ingredients/pepper-realistic.png',
+    species: '花椒 Zanthoxylum bungeanum',
+    category: '香辛料',
+    summary: '贡椒千年传承，独享大渡河干热河谷微气候。从海拔1600米坡地到城市餐桌，每一粒汉源花椒都是高山河谷的空间证据。',
+  },
+  {
+    id: 'rice',
+    name: '五常大米',
+    image: '/ingredients/rice-realistic.png',
+    species: '稻米 Oryza sativa',
+    category: '谷物主食',
+    summary: '寒地黑土、河湖灌溉与长周期成熟共同塑造稻米香气。该样例用于展示智慧大屏可从香辛料扩展到主粮类地理品牌。',
+  },
+]
+
+const product = computed(() => products.find(item => item.id === activeProductId.value) || products[0])
+
+const pepperIdentity = [
+  { label: '核心产区', value: '四川雅安汉源 · 大渡河干热河谷' },
+  { label: '海拔与气候', value: '海拔1600m，极端昼夜温差促油胞浓缩' },
+  { label: '地理标志', value: '中华人民共和国地理标志保护产品' },
+  { label: '输出场景', value: '展厅大屏 · 地理长图 · 电商详情页' },
+]
+
+const riceIdentity = [
+  { label: '核心产区', value: '黑龙江哈尔滨五常 · 拉林河流域' },
+  { label: '土壤与气候', value: '寒地黑土，昼夜温差大，生长期长' },
+  { label: '地理标志', value: '五常大米地理标志保护产品' },
+  { label: '输出场景', value: '产区展厅 · 礼盒内页 · 电商详情页' },
+]
+
+const pepperStages = [
+  {
+    id: 'origin',
+    coord: [102.6342, 29.5621],
+    short: '产地',
+    type: '核心产区',
+    name: '大渡河干热河谷贡椒核心产区（清溪镇）',
+    color: '#6f8b63',
+    story: '独享大渡河干热河谷微气候，海拔1600米坡地。极端昼夜温差促使植物油胞浓缩，红油饱满，是流传千年的正路贡椒原产地。',
+    evidence: '国家地理标志保护产品 · 汉源花椒',
+    meta: '海拔1600m · 干热河谷微气候',
+  },
+  {
+    id: 'process',
+    coord: [102.6511, 29.3512],
+    short: '加工',
+    type: '加工节点',
+    name: '贡椒初加工与智能化分级中心',
+    color: '#b8793d',
+    story: '伏天清晨手工采摘以保护果皮油包，经过智能化筛分与低温太阳能模拟曝晒，自然开裂脱籽，锁住山地麻香。',
+    evidence: '非遗工艺 · 智能分级 · 低温太阳能曝晒',
+    meta: '手工采摘 · 筛分>4.5mm',
+  },
+  {
+    id: 'storage',
+    coord: [104.1623, 30.8241],
+    short: '仓储',
+    type: '冷链仓储',
+    name: '西南冷链气调仓储中心（成都基地）',
+    color: '#3e7891',
+    story: '采用高阻隔充氮真空包装，全程0-4℃恒温冷链锁鲜，隔绝光照与氧气，减少花椒挥发油与芳香成分流失。',
+    evidence: '充氮真空 · 0-4℃恒温 · 气调锁鲜',
+    meta: '成都新都 · 冷链枢纽',
+  },
+  {
+    id: 'market',
+    coord: [121.3821, 31.1123],
+    short: '市场',
+    type: '外部市场',
+    name: '长三角精品调味品渠道枢纽',
+    color: '#8a6fb3',
+    story: '辐射华东的主销区枢纽。每一批次绑定数字化追溯二维码，进入精品零售、有机商超及地理标志风物展销渠道。',
+    evidence: '数字化追溯二维码 · 精品零售 · 有机商超',
+    meta: '上海闵行 · 长三角渠道',
+  },
+  {
+    id: 'dining',
+    coord: [106.5512, 29.5631],
+    short: '餐桌',
+    type: '餐饮应用',
+    name: '经典川味与重度麻辣美学体验空间',
+    color: '#c64240',
+    story: '在沸腾的牛油火锅与麻婆豆腐中，高纯度羟基山椒素瞬间爆发，完成从高山河谷到城市餐桌的空间证据闭环。',
+    evidence: '牛油火锅 · 麻婆豆腐 · 川菜24味型麻味基底',
+    meta: '重庆渝中 · 麻辣美学',
+  },
+]
+
+const riceStages = [
+  {
+    id: 'origin',
+    coord: [127.1676, 44.9192],
+    short: '产地',
+    type: '产地',
+    name: '牤牛河与拉林河流域核心稻作区',
+    color: '#5e7b50',
+    story: '依托长白山余脉的洁净水源与寒地黑土。昼夜温差促使稻米中干物质与游离双糖持续积累，形成清晰稻花香。',
+    evidence: '寒地黑土 · 积温2700℃ · 140天生长期',
+    meta: '寒地黑土 · 河流灌溉',
+  },
+  {
+    id: 'process',
+    coord: [127.0679, 44.9322],
+    short: '加工',
+    type: '加工',
+    name: '质检与智能化精密碾磨中心',
+    color: '#8f7b48',
+    story: '开镰后进行低温烘干与光学粒选，控制水分、碎米率与抛光度。轻度碾磨保留米粒天然芳香成分。',
+    evidence: '水分≤14.5% · 碎米率<5% · 轻度留胚',
+    meta: '低温烘干 · 光学粒选',
+  },
+  {
+    id: 'storage',
+    coord: [126.6331, 45.7422],
+    short: '仓储',
+    type: '仓储',
+    name: '低温绿色充氮稻谷气调保鲜库',
+    color: '#3e7891',
+    story: '采用原粮带壳仓储方式，全程维持低温与高纯度充氮环境，抑制大米呼吸作用与脂肪酸劣变。',
+    evidence: '15℃恒温 · 高阻隔充氮 · 锁鲜周期365天',
+    meta: '恒温保鲜 · 原粮仓储',
+  },
+  {
+    id: 'market',
+    coord: [121.3821, 31.1123],
+    short: '市场',
+    type: '市场',
+    name: '华东精品主粮与地理标志风物直销枢纽',
+    color: '#7c6fb1',
+    story: '辐射长三角高端主销区。每袋出库大米绑定地标溯源二维码，直供城市有机商超、精品零售和高端膳食渠道。',
+    evidence: '精品零售 · 一袋一码 · 长三角渠道',
+    meta: '上海枢纽 · 精品主粮',
+  },
+  {
+    id: 'dining',
+    coord: [121.4737, 31.2304],
+    short: '餐桌',
+    type: '餐饮',
+    name: '东方米食美学与高端膳食体验空间',
+    color: '#c64240',
+    story: '五常大米进入现代膳食空间后，淀粉与蛋白质比例在烹调中形成稳定口感。饭粒油亮、香气外溢。',
+    evidence: '高端日料 · 柴火米饭 · 饭粒油亮',
+    meta: '米食美学 · 城市餐桌',
+  },
+]
+
+const routePairs = [
+  ['origin', 'process'],
+  ['process', 'storage'],
+  ['storage', 'market'],
+  ['storage', 'dining'],
+]
+
+const identityItems = computed(() => activeProductId.value === 'rice' ? riceIdentity : pepperIdentity)
+const nodes = computed(() => activeProductId.value === 'rice' ? riceStages : pepperStages)
+const coverageRegions = computed(() => {
+  const regions = new Set(nodes.value.map(node => {
+    if (node.coord[0] > 124) return '东北'
+    if (node.coord[0] > 110) return '沪'
+    if (node.coord[0] > 106) return '渝'
+    return '川'
+  }))
+  return ['川', '渝', '东北', '沪'].filter(region => regions.has(region)).join(' · ')
+})
+const selectedNode = computed(() => nodes.value.find(item => item.id === selectedNodeId.value) || nodes.value[0])
+const nextNodeId = computed(() => {
+  const index = nodes.value.findIndex(item => item.id === selectedNodeId.value)
+  return nodes.value[(index + 1) % nodes.value.length].id
+})
+const mapMetrics = computed(() => [
+  { label: '空间证据', value: `${nodes.value.length} 个节点` },
+  { label: '地理范围', value: coverageRegions.value },
+  { label: '输出用途', value: '大屏 / 长图 / 展板' },
+])
+
+function getTraceBounds() {
+  const bounds = new maplibregl.LngLatBounds()
+  nodes.value.forEach(node => bounds.extend(node.coord))
+  return bounds
+}
+
+function fitTraceView() {
+  if (!atlasMap || !nodes.value.length) return
+  atlasMap.resize()
+  atlasMap.fitBounds(getTraceBounds(), {
+    padding: { top: 120, right: 440, bottom: 170, left: 120 },
+    maxZoom: 5.1,
+    duration: 0,
+  })
+  atlasMap.setPitch(38)
+  atlasMap.setBearing(-10)
+}
+
+function buildCurve(start, end, bend = 0.18) {
+  const [lng1, lat1] = start
+  const [lng2, lat2] = end
+  const dx = lng2 - lng1
+  const dy = lat2 - lat1
+  const control = [
+    (lng1 + lng2) / 2 - dy * bend,
+    (lat1 + lat2) / 2 + dx * bend * 0.42,
+  ]
+
+  return Array.from({ length: 34 }, (_, index) => {
+    const t = index / 33
+    const mt = 1 - t
+    return [
+      mt * mt * lng1 + 2 * mt * t * control[0] + t * t * lng2,
+      mt * mt * lat1 + 2 * mt * t * control[1] + t * t * lat2,
+    ]
+  })
+}
+
+function buildRouteGeoJson() {
+  return {
+    type: 'FeatureCollection',
+    features: routePairs.map(([fromId, toId], index) => {
+      const from = nodes.value.find(node => node.id === fromId)
+      const to = nodes.value.find(node => node.id === toId)
+      return {
+        type: 'Feature',
+        properties: {
+          id: `trace-route-${index + 1}`,
+          from: from.name,
+          to: to.name,
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: buildCurve(from.coord, to.coord, index === 3 ? -0.16 : 0.2),
+        },
+      }
+    }),
+  }
+}
+
+function buildNodeGeoJson() {
+  return {
+    type: 'FeatureCollection',
+    features: nodes.value.map(node => ({
+      type: 'Feature',
+      properties: {
+        id: node.id,
+        name: node.name,
+        type: node.type,
+        color: node.color,
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: node.coord,
+      },
+    })),
+  }
+}
+
+async function addContextLayers(map) {
+  const contextLayers = [
+    { id: 'trace-coastline', url: '/tiles/vector/coastline', color: '#8a7560', width: 0.55, opacity: 0.48 },
+    { id: 'trace-rivers', url: '/tiles/vector/rivers', color: '#4f95ad', width: 0.55, opacity: 0.58 },
+    { id: 'trace-ecoregions', url: '/tiles/vector/ecoregions', color: '#6f8b63', width: 0.8, opacity: 0.22 },
+  ]
+
+  for (const layer of contextLayers) {
+    try {
+      if (!map.getSource(layer.id)) {
+        map.addSource(layer.id, { type: 'geojson', data: layer.url })
+      }
+      if (!map.getLayer(layer.id)) {
+        map.addLayer({
+          id: layer.id,
+          type: 'line',
+          source: layer.id,
+          paint: {
+            'line-color': layer.color,
+            'line-width': layer.width,
+            'line-opacity': layer.opacity,
+          },
+        })
+      }
+    } catch (error) {
+      console.warn(`${layer.id} skipped`, error)
+    }
+  }
+}
+
+function addTraceLayers(map) {
+  if (!map.getSource('trace-routes')) {
+    map.addSource('trace-routes', {
+      type: 'geojson',
+      lineMetrics: true,
+      data: buildRouteGeoJson(),
+    })
+  }
+
+  if (!map.getLayer('trace-route-glow')) {
+    map.addLayer({
+      id: 'trace-route-glow',
+      type: 'line',
+      source: 'trace-routes',
+      paint: {
+        'line-color': '#b8793d',
+        'line-width': 15,
+        'line-opacity': 0.18,
+        'line-blur': 6,
+      },
+    })
+  }
+
+  if (!map.getLayer('trace-route-main')) {
+    map.addLayer({
+      id: 'trace-route-main',
+      type: 'line',
+      source: 'trace-routes',
+      paint: {
+        'line-width': 4.2,
+        'line-opacity': 0.95,
+        'line-color': [
+          'interpolate',
+          ['linear'],
+          ['line-progress'],
+          0,
+          '#6f8b63',
+          0.52,
+          '#c39b44',
+          1,
+          '#c4503d',
+        ],
+      },
+    })
+  }
+
+  if (!map.getSource('trace-nodes')) {
+    map.addSource('trace-nodes', { type: 'geojson', data: buildNodeGeoJson() })
+  }
+
+  if (!map.getLayer('trace-node-halo')) {
+    map.addLayer({
+      id: 'trace-node-halo',
+      type: 'circle',
+      source: 'trace-nodes',
+      paint: {
+        'circle-radius': 20,
+        'circle-color': '#fff6e4',
+        'circle-opacity': 0.62,
+        'circle-stroke-color': ['get', 'color'],
+        'circle-stroke-width': 2,
+      },
+    })
+  }
+}
+
+function updateProjectedNodes() {
+  if (!atlasMap || !atlasMapContainer.value) return
+  const labelOffsets = {
+    origin: [18, -128],
+    process: [92, -96],
+    storage: [96, 38],
+    market: [-142, -92],
+    dining: [82, 78],
+  }
+
+  projectedNodes.value = nodes.value.map(node => {
+    const point = atlasMap.project(node.coord)
+    const [offsetX, offsetY] = labelOffsets[node.id] || [76, -76]
+    const labelX = point.x + offsetX
+    const labelY = point.y + offsetY
+    const elbowX = point.x + offsetX * 0.48
+    const elbowY = point.y + offsetY * 0.42
+    return {
+      ...node,
+      x: point.x,
+      y: point.y,
+      labelX,
+      labelY,
+      leader: `${point.x.toFixed(1)},${point.y.toFixed(1)} ${elbowX.toFixed(1)},${elbowY.toFixed(1)} ${labelX.toFixed(1)},${labelY.toFixed(1)}`,
+    }
+  })
+
+  projectedRoutePaths.value = routePairs.map(([fromId, toId], index) => {
+    const from = nodes.value.find(node => node.id === fromId)
+    const to = nodes.value.find(node => node.id === toId)
+    const points = buildCurve(from.coord, to.coord, index === 3 ? -0.16 : 0.2)
+      .map(coord => atlasMap.project(coord))
+    const d = points.map((point, pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ')
+    return { id: `projected-route-${index + 1}`, d }
+  })
+}
+
+function selectMapNode(id) {
+  selectedNodeId.value = id
+  const node = nodes.value.find(item => item.id === id)
+  if (!node || !atlasMap) return
+  atlasMap.easeTo({
+    center: node.coord,
+    zoom: Math.max(atlasMap.getZoom(), node.id === 'market' ? 4.2 : 5.6),
+    pitch: 42,
+    bearing: node.id === 'market' ? -16 : -8,
+    duration: 900,
+  })
+}
+
+async function initAtlasMap() {
+  if (atlasMap || !atlasMapContainer.value) return
+
+  mapReady.value = false
+  atlasMap = new maplibregl.Map({
+    container: atlasMapContainer.value,
+    style: MAP_STYLE,
+    center: [106.6, 30.4],
+    zoom: 4.45,
+    pitch: 38,
+    bearing: -10,
+    antialias: true,
+    attributionControl: false,
+    preserveDrawingBuffer: true,
+  })
+
+  atlasMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+  atlasMap.on('load', async () => {
+    await addContextLayers(atlasMap)
+    addTraceLayers(atlasMap)
+    fitTraceView()
+    mapReady.value = true
+    updateProjectedNodes()
+    atlasMap.once('idle', updateProjectedNodes)
+  })
+  atlasMap.on('move', updateProjectedNodes)
+  atlasMap.on('resize', updateProjectedNodes)
+  atlasMap.on('click', 'trace-node-halo', event => {
+    const id = event.features?.[0]?.properties?.id
+    if (id) selectMapNode(id)
+  })
+  atlasMap.on('mouseenter', 'trace-node-halo', () => {
+    atlasMap.getCanvas().style.cursor = 'pointer'
+  })
+  atlasMap.on('mouseleave', 'trace-node-halo', () => {
+    atlasMap.getCanvas().style.cursor = ''
+  })
+}
+
+function destroyAtlasMap() {
+  if (!atlasMap) return
+  atlasMap.remove()
+  atlasMap = null
+  mapReady.value = false
+  projectedNodes.value = []
+  projectedRoutePaths.value = []
+}
+
+onMounted(() => {
+  nextTick(initAtlasMap)
+})
+
+onUnmounted(() => {
+  destroyAtlasMap()
+})
+
+watch(activeProductId, () => {
+  selectedNodeId.value = 'origin'
+  if (!atlasMap) return
+  atlasMap.getSource('trace-routes')?.setData(buildRouteGeoJson())
+  atlasMap.getSource('trace-nodes')?.setData(buildNodeGeoJson())
+  fitTraceView()
+  updateProjectedNodes()
+})
+
+function waitForMapIdle() {
+  if (!atlasMap) return Promise.resolve()
+  atlasMap.resize()
+  return new Promise(resolve => {
+    const done = () => resolve()
+    atlasMap.once('idle', done)
+    window.setTimeout(done, atlasMap.loaded() ? 900 : 1200)
+  })
+}
+
+async function downloadCapture(format = 'png') {
+  const target = document.querySelector('#capture-zone')
+  if (!target || isExporting.value) return
+
+  isExporting.value = true
+  try {
+    await nextTick()
+    await waitForMapIdle()
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#0f1419',
+      logging: false,
+      imageTimeout: 15000,
+    })
+    const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png'
+    const ext = format === 'jpeg' ? 'jpg' : 'png'
+    const link = document.createElement('a')
+    link.download = `flavorscape-atlas-${activeProductId.value}-${Date.now()}.${ext}`
+    link.href = canvas.toDataURL(mime, 0.92)
+    link.click()
+  } catch (error) {
+    console.error('导出地理志画布失败', error)
+    window.alert('导出失败，请稍后重试；如果地图仍在加载，请等待底图出现后再导出。')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+function printCapture() {
+  window.print()
+}
+</script>
+
+<style scoped>
+.product-page {
+  position: fixed;
+  inset: var(--navbar-h) 0 0;
+  overflow: auto;
+  --ink: #241d17;
+  --paper-strong: #fff9ec;
+  --accent: #8b5e34;
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(116, 92, 62, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(116, 92, 62, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 18% 12%, rgba(111, 139, 99, 0.16), transparent 26%),
+    radial-gradient(circle at 82% 16%, rgba(62, 120, 145, 0.12), transparent 28%),
+    linear-gradient(135deg, #f3e8d5, #eef2e4 52%, #eadcc6);
+  background-size: 42px 42px, 42px 42px, auto, auto, auto;
+}
+
+.studio-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 12px 28px;
+  border-bottom: 1px solid rgba(107, 84, 55, 0.14);
+  background: rgba(250, 245, 236, 0.82);
+  backdrop-filter: blur(18px);
+}
+
+.toolbar-copy span,
+.eyebrow {
+  display: block;
+  color: rgba(104, 88, 70, 0.74);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.toolbar-copy strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.toolbar-copy p {
+  margin-top: 3px;
+  color: rgba(73, 61, 49, 0.68);
+  font-size: 12px;
+}
+
+.product-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.product-switcher button {
+  min-width: 116px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(107, 84, 55, 0.14);
+  border-radius: 999px;
+  padding: 5px 11px 5px 6px;
+  background: rgba(255, 249, 236, 0.55);
+  color: rgba(51, 42, 34, 0.72);
+  cursor: pointer;
+}
+
+.product-switcher button.active {
+  border-color: rgba(139, 94, 52, 0.42);
+  background: rgba(255, 249, 236, 0.86);
+  color: var(--accent);
+}
+
+.product-switcher img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.product-switcher span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.toolbar-actions button,
+.map-heading button {
+  border: 1px solid rgba(107, 84, 55, 0.18);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(255, 249, 236, 0.72);
+  color: rgba(51, 42, 34, 0.74);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.toolbar-actions button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(139, 94, 52, 0.42);
+  background: rgba(139, 94, 52, 0.1);
+  color: var(--accent);
+}
+
+.toolbar-actions .download-btn {
+  border-color: rgba(36, 29, 23, 0.16);
+  background: #2a241e;
+  color: #fff5e3;
+}
+
+.toolbar-actions .download-btn.secondary {
+  background: rgba(36, 29, 23, 0.08);
+  color: rgba(36, 29, 23, 0.78);
+}
+
+.toolbar-actions .download-btn:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.story-stage {
+  min-height: calc(100% - 72px);
+  padding: 0;
+  background: #0f1419;
+}
+
+.storymap-canvas {
+  position: relative;
+  min-height: calc(100vh - var(--navbar-h) - 72px);
+  overflow: hidden;
+  background: #0f1419;
+  color: rgba(255, 249, 236, 0.92);
+}
+
+.atlas-map-card,
+.large-map-wrap,
+.atlas-real-map {
+  position: absolute;
+  inset: 0;
+}
+
+.atlas-real-map {
+  background: #0f171b;
+  box-shadow:
+    inset 0 0 220px rgba(0, 0, 0, 0.44),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.map-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 249, 236, 0.74);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.map-heading {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  right: 28px;
+  z-index: 8;
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  pointer-events: none;
+}
+
+.map-heading h1 {
+  margin-top: 5px;
+  color: rgba(255, 249, 236, 0.95);
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 4vw, 54px);
+  font-weight: 500;
+  line-height: 1.02;
+}
+
+.map-heading .eyebrow {
+  color: rgba(255, 249, 236, 0.58);
+}
+
+.map-heading button {
+  margin-left: auto;
+  border-color: rgba(255, 249, 236, 0.16);
+  background: rgba(15, 20, 25, 0.58);
+  color: rgba(255, 249, 236, 0.86);
+  pointer-events: auto;
+}
+
+.atlas-index-stamp {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 249, 236, 0.16);
+  border-radius: 50%;
+  background: rgba(15, 20, 25, 0.46);
+  color: rgba(255, 249, 236, 0.92);
+  backdrop-filter: blur(12px);
+}
+
+.atlas-index-stamp span {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  line-height: 0.85;
+}
+
+.atlas-index-stamp small {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.map-metric-strip {
+  position: absolute;
+  top: 138px;
+  left: 28px;
+  z-index: 8;
+  width: 238px;
+  display: grid;
+  gap: 4px;
+}
+
+.map-metric-strip article {
+  padding: 8px 9px 8px 12px;
+  border-left: 1px solid rgba(255, 249, 236, 0.28);
+  background: linear-gradient(90deg, rgba(15, 20, 25, 0.58), rgba(15, 20, 25, 0));
+  backdrop-filter: blur(10px);
+}
+
+.map-metric-strip span {
+  display: block;
+  color: rgba(255, 249, 236, 0.48);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.map-metric-strip strong {
+  display: block;
+  margin-top: 3px;
+  color: rgba(255, 249, 236, 0.9);
+  font-size: 14px;
+}
+
+.atlas-map-overlay,
+.projected-route-svg {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.projected-route-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.projected-route-halo,
+.projected-route-line,
+.leader-line {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.projected-route-halo {
+  stroke: rgba(255, 226, 176, 0.18);
+  stroke-width: 16;
+  filter: blur(4px);
+}
+
+.projected-route-line {
+  stroke: url(#projectedRouteGradient);
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.leader-line {
+  stroke: rgba(255, 249, 236, 0.72);
+  stroke-width: 0.9;
+}
+
+.real-map-dot,
+.real-map-label {
+  position: absolute;
+  z-index: 6;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.real-map-dot {
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 249, 236, 0.88);
+  border-radius: 50%;
+  background: var(--node-color);
+  box-shadow: 0 0 0 8px rgba(255, 249, 236, 0.08), 0 12px 24px rgba(0, 0, 0, 0.34);
+}
+
+.real-map-dot.selected {
+  box-shadow: 0 0 0 10px rgba(255, 249, 236, 0.16), 0 0 28px var(--node-color);
+}
+
+.real-map-label {
+  width: 156px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 249, 236, 0.88);
+  text-align: left;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.46);
+}
+
+.real-map-label span {
+  display: block;
+  color: var(--node-color);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.real-map-label strong {
+  display: inline-block;
+  margin-top: 2px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(255, 249, 236, 0.42);
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.real-map-label em {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 249, 236, 0.7);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.real-map-label:not(.selected) {
+  opacity: 0.62;
+}
+
+.real-map-label.selected {
+  color: rgba(255, 249, 236, 0.96);
+  opacity: 1;
+}
+
+.atlas-panel,
+.selected-card {
+  position: absolute;
+  z-index: 8;
+  border: 1px solid rgba(255, 249, 236, 0.1);
+  background: linear-gradient(90deg, rgba(15, 20, 25, 0.8) 0%, rgba(15, 20, 25, 0) 100%);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 249, 236, 0.92);
+}
+
+.atlas-left {
+  left: 28px;
+  bottom: 26px;
+  width: 410px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 8px 14px;
+  padding: 14px 16px;
+  background: linear-gradient(90deg, rgba(15, 20, 25, 0.7), rgba(15, 20, 25, 0.16) 74%, rgba(15, 20, 25, 0));
+}
+
+.atlas-left h2,
+.atlas-right h2 {
+  margin-top: 4px;
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.atlas-left p {
+  margin-top: 6px;
+  color: rgba(255, 249, 236, 0.68);
+  font-size: 11px;
+}
+
+.product-photo {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  height: 92px;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 249, 236, 0.12);
+}
+
+.product-photo img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.24));
+}
+
+.atlas-left dl {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+  margin: 4px 0 0;
+}
+
+.atlas-left dl div {
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 249, 236, 0.12);
+}
+
+.atlas-left dt {
+  color: rgba(255, 249, 236, 0.48);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.atlas-left dd {
+  margin: 3px 0 0;
+  color: rgba(255, 249, 236, 0.86);
+  font-size: 11px;
+  line-height: 1.38;
+}
+
+.atlas-right {
+  top: 154px;
+  right: 28px;
+  width: 280px;
+  max-height: min(500px, calc(100vh - var(--navbar-h) - 220px));
+  overflow: hidden;
+  padding: 18px 16px;
+  background: linear-gradient(90deg, rgba(15, 20, 25, 0.74), rgba(15, 20, 25, 0.12) 76%, rgba(15, 20, 25, 0));
+}
+
+.atlas-right h2 {
+  font-size: 22px;
+}
+
+.story-timeline {
+  position: relative;
+  display: grid;
+  gap: 9px;
+  margin-top: 18px;
+  padding-left: 18px;
+}
+
+.story-timeline::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-left: 1px solid rgba(255, 249, 236, 0.24);
+}
+
+.story-timeline article {
+  position: relative;
+  padding-left: 14px;
+  cursor: pointer;
+}
+
+.story-timeline i {
+  position: absolute;
+  left: -24px;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--node-color);
+  box-shadow: 0 0 0 4px rgba(15, 20, 25, 0.72);
+}
+
+.story-timeline span {
+  display: block;
+  color: rgba(255, 249, 236, 0.48);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.story-timeline strong {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 249, 236, 0.78);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.story-timeline article.active strong {
+  color: rgba(255, 222, 155, 0.96);
+}
+
+.selected-card {
+  left: 50%;
+  bottom: 24px;
+  width: min(560px, 38vw);
+  min-width: 430px;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 5px 14px;
+  padding: 9px 12px;
+  background: linear-gradient(90deg, rgba(15, 20, 25, 0.76), rgba(15, 20, 25, 0.18) 78%, rgba(15, 20, 25, 0));
+}
+
+.selected-card span {
+  grid-row: 1 / span 2;
+  align-self: start;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.selected-card strong {
+  color: rgba(255, 249, 236, 0.92);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.selected-card p {
+  grid-column: 2;
+  display: -webkit-box;
+  overflow: hidden;
+  color: rgba(255, 249, 236, 0.66);
+  font-size: 11px;
+  line-height: 1.5;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 980px) {
+  .studio-toolbar {
+    position: static;
+    flex-wrap: wrap;
+  }
+
+  .storymap-canvas {
+    min-height: 940px;
+  }
+
+  .map-heading {
+    flex-wrap: wrap;
+  }
+
+  .atlas-left,
+  .atlas-right,
+  .selected-card {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    min-width: 0;
+    transform: none;
+  }
+
+  .atlas-left {
+    bottom: 160px;
+  }
+
+  .atlas-right {
+    top: auto;
+    bottom: 330px;
+    max-height: 260px;
+  }
+
+  .selected-card {
+    bottom: 24px;
+  }
+}
+
+@media print {
+  .product-page {
+    position: static;
+    overflow: visible;
+  }
+
+  .studio-toolbar {
+    display: none;
+  }
+}
+</style>

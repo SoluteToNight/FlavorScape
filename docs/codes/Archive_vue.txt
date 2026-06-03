@@ -1,0 +1,850 @@
+<template>
+  <main class="archive-page">
+    <header class="archive-hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Provenance Dashboard</span>
+        <h1>科学溯源白皮书</h1>
+        <p>把产区气候、关键品质指标、第三方检测与采样点位置压缩成一张可核验的数据看板。</p>
+      </div>
+
+      <div class="product-switch" aria-label="切换溯源样本">
+        <button
+          v-for="item in dossiers"
+          :key="item.id"
+          type="button"
+          :class="{ active: activeId === item.id }"
+          @click="activeId = item.id"
+        >
+          <span>{{ item.name }}</span>
+          <small>{{ item.origin }}</small>
+        </button>
+      </div>
+    </header>
+
+    <section class="metric-strip">
+      <article v-for="metric in dossier.metrics" :key="metric.label" class="metric-card">
+        <span>{{ metric.label }}</span>
+        <strong>{{ metric.value }}</strong>
+        <small>{{ metric.note }}</small>
+      </article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel panel-wide">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Climate Terroir</span>
+            <h2>月均降水量 vs 均温</h2>
+          </div>
+          <span class="data-badge">{{ dossier.stationCode }}</span>
+        </div>
+        <div ref="climateChartEl" class="chart chart-large" />
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Growing Degree Days</span>
+            <h2>生长期有效积温</h2>
+          </div>
+        </div>
+        <div ref="heatChartEl" class="chart" />
+      </article>
+
+      <article class="panel map-panel" :style="mapCssVars">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Sampling Map</span>
+            <h2>产地省级静态底图</h2>
+          </div>
+        </div>
+        <div class="map-box">
+          <div ref="terrainMapEl" class="terrain-map" />
+        </div>
+        <div class="origin-summary">
+          <strong>{{ dossier.originPoint.name }}</strong>
+          <span>{{ dossier.originPoint.precision }} · {{ formatCoord(dossier.originPoint.coord) }}</span>
+        </div>
+        <div class="station-list">
+          <div v-for="node in dossier.nodes" :key="node.short" class="station-row">
+            <span class="station-dot" />
+            <div>
+              <strong>{{ node.short }}</strong>
+              <small>{{ node.desc }}</small>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel evidence-panel">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Quality Benchmark</span>
+            <h2>关键成分对标国标</h2>
+          </div>
+        </div>
+        <div ref="standardRadarEl" class="chart" />
+      </article>
+
+      <article class="panel radar-panel">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Flavor Fingerprint</span>
+            <h2>风味指纹摘要</h2>
+          </div>
+        </div>
+        <div class="radar-wrap">
+          <FlavorRadar :scores="dossier.flavorScores" :color="dossier.color" :size="150" animated />
+          <div class="radar-copy">
+            <strong>{{ dossier.flavorSummary }}</strong>
+            <span>用于和地图节点、批次质检结果建立同屏核验关系。</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel report-panel">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Food Safety Evidence</span>
+            <h2>第三方检测报告</h2>
+          </div>
+          <span class="pass-badge">农残 0 检出</span>
+        </div>
+        <div class="report-grid">
+          <div v-for="report in dossier.reports" :key="report.org" class="report-card">
+            <strong>{{ report.org }}</strong>
+            <span>{{ report.result }}</span>
+            <small>{{ report.code }}</small>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</template>
+
+<script setup>
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import * as echarts from 'echarts'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
+import chinaGeoJson from '../assets/china.json'
+import FlavorRadar from '../components/FlavorRadar.vue'
+
+const RASTER_MAX_ZOOM = 8
+const MAP_STYLE = {
+  version: 8,
+  sources: {
+    'hyp-tiles': {
+      type: 'raster',
+      tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: RASTER_MAX_ZOOM,
+      attribution: '© Natural Earth',
+    },
+  },
+  layers: [
+    { id: 'bg', type: 'background', paint: { 'background-color': '#C8DDE8' } },
+    {
+      id: 'hyp',
+      type: 'raster',
+      source: 'hyp-tiles',
+      paint: {
+        'raster-saturation': -0.18,
+        'raster-contrast': 0.08,
+        'raster-brightness-min': 0.05,
+        'raster-opacity': 1,
+      },
+    },
+  ],
+}
+
+const dossiers = [
+  {
+    id: 'pepper',
+    name: '汉源花椒',
+    origin: '四川汉源 · 干热河谷',
+    province: '四川省',
+    color: '#C63D42',
+    accent: '#3E7891',
+    stationCode: 'HY-MET-2026-A01',
+    metrics: [
+      { label: '挥发油', value: '5.8%', note: '高于企业验收线' },
+      { label: '羟基山椒素', value: '38 mg/g', note: '麻感核心指标' },
+      { label: '安全检测', value: '0 检出', note: '农残专项筛查' },
+      { label: '采样批次', value: '18 组', note: '产区/仓储/到货' },
+    ],
+    nodes: [
+      { short: '汉源采样点', desc: '核心产区批次样本', coord: [102.6342, 29.5621] },
+      { short: '雅安气象站', desc: '月均温与降水校验', coord: [103.001, 29.987] },
+      { short: '成都复检仓', desc: '到仓复检留样', coord: [104.1623, 30.8241] },
+    ],
+    originPoint: {
+      name: '四川省雅安市汉源县行政中心',
+      coord: [102.6506, 29.3443],
+      precision: '县级行政中心近似坐标',
+    },
+    climate: {
+      rain: [7, 12, 24, 55, 82, 118, 176, 143, 96, 46, 18, 8],
+      temp: [6.2, 8.8, 13.1, 17.4, 20.6, 23.2, 24.8, 24.1, 20.5, 16.4, 11.1, 7.2],
+    },
+    heat: [
+      { stage: '萌芽', value: 240 },
+      { stage: '展叶', value: 510 },
+      { stage: '开花', value: 760 },
+      { stage: '坐果', value: 1030 },
+      { stage: '成熟', value: 1290 },
+    ],
+    benchmark: [132, 128, 116, 141, 125],
+    benchmarkLabels: ['挥发油', '麻味物质', '净含水率', '洁净度', '香气保留'],
+    flavorScores: [0.92, 0.58, 0.18, 0.12, 0.06, 0.36],
+    flavorSummary: '麻感高、辛香清晰，适合做原产地风味指纹。',
+    reports: [
+      { org: 'SGS 批次筛查', result: '农残专项：未检出', code: 'SGS-HY-2605-018' },
+      { org: '谱尼测试', result: '重金属/黄曲霉毒素：合格', code: 'PONY-HY-2605-022' },
+    ],
+  },
+  {
+    id: 'rice',
+    name: '五常大米',
+    origin: '黑龙江五常 · 寒地黑土',
+    province: '黑龙江省',
+    color: '#5E7B50',
+    accent: '#A96535',
+    stationCode: 'WC-MET-2026-B02',
+    metrics: [
+      { label: '直链淀粉', value: '17.2%', note: '口感适宜区间' },
+      { label: '胶稠度', value: '72 mm', note: '高于优质米线' },
+      { label: '安全检测', value: '0 检出', note: '农残专项筛查' },
+      { label: '采样批次', value: '12 组', note: '田块/仓储/到货' },
+    ],
+    nodes: [
+      { short: '五常田块', desc: '核心黑土种植样本', coord: [127.1676, 44.9192] },
+      { short: '哈尔滨气象站', desc: '寒地积温校验', coord: [126.6331, 45.7422] },
+      { short: '长三角到货仓', desc: '终端复检留样', coord: [121.4737, 31.2304] },
+    ],
+    originPoint: {
+      name: '黑龙江省哈尔滨市五常市行政中心',
+      coord: [127.1676, 44.9318],
+      precision: '县级市行政中心近似坐标',
+    },
+    climate: {
+      rain: [4, 6, 13, 28, 49, 86, 142, 118, 62, 31, 12, 5],
+      temp: [-18.4, -12.6, -3.1, 8.6, 16.4, 21.1, 23.5, 21.2, 15.3, 6.7, -5.2, -15.7],
+    },
+    heat: [
+      { stage: '育秧', value: 180 },
+      { stage: '返青', value: 420 },
+      { stage: '分蘖', value: 870 },
+      { stage: '抽穗', value: 1560 },
+      { stage: '成熟', value: 2380 },
+    ],
+    benchmark: [118, 136, 126, 112, 129],
+    benchmarkLabels: ['直链淀粉', '胶稠度', '垩白率', '整精米率', '食味值'],
+    flavorScores: [0.08, 0.04, 0.18, 0.06, 0.54, 0.46],
+    flavorSummary: '甜香和鲜感更突出，适合做批次稳定性比较。',
+    reports: [
+      { org: 'SGS 批次筛查', result: '农残专项：未检出', code: 'SGS-WC-2605-011' },
+      { org: '谱尼测试', result: '重金属/真菌毒素：合格', code: 'PONY-WC-2605-016' },
+    ],
+  },
+]
+
+const activeId = ref('pepper')
+const climateChartEl = ref(null)
+const heatChartEl = ref(null)
+const standardRadarEl = ref(null)
+const terrainMapEl = ref(null)
+let climateChart = null
+let heatChart = null
+let standardRadar = null
+let terrainMap = null
+let originMarker = null
+let mapLoaded = false
+
+const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+const dossier = computed(() => dossiers.find(item => item.id === activeId.value) || dossiers[0])
+const provinceFeature = computed(() => chinaGeoJson.features.find(feature => feature.properties?.name === dossier.value.province))
+const mapCssVars = computed(() => ({
+  '--t-primary': dossier.value.color,
+  '--t-accent': dossier.value.accent,
+  '--t-text': '#2b2520',
+  '--map-base-fill': 'rgba(62, 120, 145, 0.08)',
+  '--map-base-stroke': 'rgba(62, 120, 145, 0.22)',
+  '--map-active-fill': `${dossier.value.color}33`,
+  '--map-active-stroke': dossier.value.color,
+}))
+
+function formatCoord(coord) {
+  return `${coord[0].toFixed(4)}E, ${coord[1].toFixed(4)}N`
+}
+
+function ensureCharts() {
+  if (climateChartEl.value && !climateChart) climateChart = echarts.init(climateChartEl.value, null, { renderer: 'canvas' })
+  if (heatChartEl.value && !heatChart) heatChart = echarts.init(heatChartEl.value, null, { renderer: 'canvas' })
+  if (standardRadarEl.value && !standardRadar) standardRadar = echarts.init(standardRadarEl.value, null, { renderer: 'canvas' })
+}
+
+function renderCharts() {
+  ensureCharts()
+  climateChart?.setOption(climateOption(), true)
+  heatChart?.setOption(heatOption(), true)
+  standardRadar?.setOption(benchmarkOption(), true)
+  resizeCharts()
+}
+
+function resizeCharts() {
+  climateChart?.resize()
+  heatChart?.resize()
+  standardRadar?.resize()
+}
+
+function climateOption() {
+  return {
+    color: [dossier.value.accent, dossier.value.color],
+    grid: { top: 34, right: 52, bottom: 30, left: 44 },
+    tooltip: { trigger: 'axis' },
+    legend: { top: 0, right: 0, textStyle: { color: '#6a5f55', fontSize: 11 } },
+    xAxis: { type: 'category', data: months, axisTick: { show: false }, axisLine: { lineStyle: { color: '#d8cec0' } } },
+    yAxis: [
+      { type: 'value', name: '降水 mm', splitLine: { lineStyle: { color: 'rgba(118,96,68,0.12)' } } },
+      { type: 'value', name: '均温 ℃', splitLine: { show: false } },
+    ],
+    series: [
+      { name: '月均降水量', type: 'line', smooth: true, symbolSize: 6, data: dossier.value.climate.rain },
+      { name: '月均温', type: 'line', smooth: true, yAxisIndex: 1, symbolSize: 6, data: dossier.value.climate.temp },
+    ],
+  }
+}
+
+function heatOption() {
+  return {
+    color: [dossier.value.color],
+    grid: { top: 20, right: 18, bottom: 30, left: 42 },
+    tooltip: { trigger: 'axis', valueFormatter: value => `${value} ℃·d` },
+    xAxis: { type: 'category', data: dossier.value.heat.map(item => item.stage), axisTick: { show: false } },
+    yAxis: { type: 'value', name: '℃·d', splitLine: { lineStyle: { color: 'rgba(118,96,68,0.12)' } } },
+    series: [{
+      type: 'bar',
+      data: dossier.value.heat.map(item => item.value),
+      barWidth: 26,
+      itemStyle: { borderRadius: [6, 6, 0, 0] },
+    }],
+  }
+}
+
+function benchmarkOption() {
+  return {
+    color: [dossier.value.color, '#9F968B'],
+    tooltip: { trigger: 'item' },
+    radar: {
+      radius: '62%',
+      indicator: dossier.value.benchmarkLabels.map(name => ({ name, max: 160 })),
+      axisName: { color: '#5C5147', fontSize: 11 },
+      splitLine: { lineStyle: { color: 'rgba(118,96,68,0.15)' } },
+      splitArea: { areaStyle: { color: ['rgba(255,255,255,0.58)', 'rgba(255,255,255,0.24)'] } },
+      axisLine: { lineStyle: { color: 'rgba(118,96,68,0.15)' } },
+    },
+    series: [{
+      type: 'radar',
+      data: [
+        { value: dossier.value.benchmark, name: '本批次实测' },
+        { value: [100, 100, 100, 100, 100], name: '国标/验收线' },
+      ],
+      areaStyle: { opacity: 0.12 },
+    }],
+  }
+}
+
+function initTerrainMap() {
+  if (!terrainMapEl.value || terrainMap) return
+
+  terrainMap = new maplibregl.Map({
+    container: terrainMapEl.value,
+    style: MAP_STYLE,
+    center: dossier.value.originPoint.coord,
+    zoom: 6.2,
+    pitch: 0,
+    bearing: 0,
+    antialias: true,
+    attributionControl: false,
+    interactive: false,
+  })
+
+  terrainMap.on('load', () => {
+    mapLoaded = true
+    terrainMap.addSource('active-province', {
+      type: 'geojson',
+      data: buildProvinceFeatureCollection(),
+    })
+    terrainMap.addLayer({
+      id: 'active-province-fill',
+      type: 'fill',
+      source: 'active-province',
+      paint: {
+        'fill-color': dossier.value.color,
+        'fill-opacity': 0.16,
+      },
+    })
+    terrainMap.addLayer({
+      id: 'active-province-line',
+      type: 'line',
+      source: 'active-province',
+      paint: {
+        'line-color': dossier.value.color,
+        'line-width': 2,
+        'line-opacity': 0.9,
+      },
+    })
+    updateTerrainMap()
+  })
+}
+
+function buildProvinceFeatureCollection() {
+  return {
+    type: 'FeatureCollection',
+    features: provinceFeature.value ? [provinceFeature.value] : [],
+  }
+}
+
+function updateTerrainMap() {
+  if (!terrainMap || !mapLoaded) return
+
+  const source = terrainMap.getSource('active-province')
+  source?.setData(buildProvinceFeatureCollection())
+
+  if (terrainMap.getLayer('active-province-fill')) {
+    terrainMap.setPaintProperty('active-province-fill', 'fill-color', dossier.value.color)
+    terrainMap.setPaintProperty('active-province-line', 'line-color', dossier.value.color)
+  }
+
+  syncOriginMarker()
+  fitProvinceBounds()
+}
+
+function syncOriginMarker() {
+  if (!terrainMap) return
+  const markerEl = document.createElement('div')
+  markerEl.className = 'origin-marker'
+  markerEl.innerHTML = `<span></span><strong>${dossier.value.name}</strong>`
+
+  originMarker?.remove()
+  originMarker = new maplibregl.Marker({ element: markerEl, anchor: 'bottom' })
+    .setLngLat(dossier.value.originPoint.coord)
+    .addTo(terrainMap)
+}
+
+function fitProvinceBounds() {
+  const bounds = getFeatureBounds(provinceFeature.value)
+  if (!bounds) {
+    terrainMap.jumpTo({ center: dossier.value.originPoint.coord, zoom: 6.2 })
+    return
+  }
+  terrainMap.fitBounds(bounds, { padding: 28, duration: 0, maxZoom: 6.6 })
+}
+
+function getFeatureBounds(feature) {
+  if (!feature?.geometry?.coordinates) return null
+  const bounds = new maplibregl.LngLatBounds()
+  walkCoordinates(feature.geometry.coordinates, point => bounds.extend(point))
+  return bounds.isEmpty() ? null : bounds
+}
+
+function walkCoordinates(value, visit) {
+  if (!Array.isArray(value)) return
+  if (typeof value[0] === 'number' && typeof value[1] === 'number') {
+    visit(value)
+    return
+  }
+  value.forEach(item => walkCoordinates(item, visit))
+}
+
+onMounted(async () => {
+  await nextTick()
+  renderCharts()
+  initTerrainMap()
+  window.addEventListener('resize', resizeCharts)
+})
+
+watch(activeId, async () => {
+  await nextTick()
+  renderCharts()
+  updateTerrainMap()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', resizeCharts)
+  climateChart?.dispose()
+  heatChart?.dispose()
+  standardRadar?.dispose()
+  originMarker?.remove()
+  terrainMap?.remove()
+})
+</script>
+
+<style scoped>
+.archive-page {
+  position: fixed;
+  top: var(--navbar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  padding: 32px clamp(20px, 4vw, 56px) 56px;
+  background:
+    linear-gradient(135deg, rgba(32, 27, 22, 0.03), transparent 36%),
+    var(--bg);
+}
+
+.archive-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+  gap: 28px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+.eyebrow,
+.panel-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--water);
+}
+
+.hero-copy h1 {
+  margin: 8px 0 10px;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4vw, 54px);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.hero-copy p {
+  max-width: 720px;
+  color: var(--text-mid);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.product-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 252, 247, 0.68);
+}
+
+.product-switch button {
+  min-height: 58px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-mid);
+  cursor: pointer;
+  text-align: left;
+  padding: 10px 12px;
+  transition: all var(--transition);
+}
+
+.product-switch button.active {
+  background: #fffaf2;
+  border-color: var(--glass-border);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+}
+
+.product-switch span,
+.product-switch small {
+  display: block;
+}
+
+.product-switch span {
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.product-switch small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.metric-strip,
+.dashboard-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.metric-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.metric-card,
+.panel {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 252, 247, 0.82);
+  box-shadow: var(--shadow-sm);
+}
+
+.metric-card {
+  padding: 16px;
+}
+
+.metric-card span,
+.metric-card small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.metric-card strong {
+  display: block;
+  margin: 6px 0 3px;
+  font-size: 24px;
+  color: var(--text);
+}
+
+.dashboard-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
+}
+
+.panel {
+  padding: 18px;
+  min-width: 0;
+}
+
+.panel-wide {
+  grid-column: span 1;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-head h2 {
+  margin-top: 4px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.data-badge,
+.pass-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--turq-soft);
+  color: var(--water);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pass-badge {
+  background: rgba(95, 143, 90, 0.14);
+  color: var(--sage);
+}
+
+.chart {
+  width: 100%;
+  height: 280px;
+}
+
+.chart-large {
+  height: 330px;
+}
+
+.map-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.map-box {
+  min-height: 260px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(62, 120, 145, 0.08), rgba(255, 252, 247, 0.2));
+  border: 1px solid rgba(62, 120, 145, 0.12);
+  overflow: hidden;
+}
+
+.terrain-map {
+  width: 100%;
+  min-height: 260px;
+  height: 100%;
+}
+
+.origin-summary {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 250, 242, 0.72);
+  border: 1px solid rgba(118, 96, 68, 0.14);
+}
+
+.origin-summary strong {
+  font-size: 13px;
+}
+
+.origin-summary span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.station-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.station-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.station-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  background: var(--t-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--t-accent), transparent 78%);
+}
+
+.station-row strong,
+.station-row small {
+  display: block;
+}
+
+.station-row strong {
+  font-size: 13px;
+}
+
+.station-row small {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+:deep(.origin-marker) {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  transform: translateY(-2px);
+}
+
+:deep(.origin-marker span) {
+  width: 14px;
+  height: 14px;
+  border: 3px solid #fffaf2;
+  border-radius: 50%;
+  background: var(--t-accent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--t-accent), transparent 72%), 0 6px 18px rgba(32, 27, 22, 0.24);
+}
+
+:deep(.origin-marker strong) {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.92);
+  color: var(--text);
+  border: 1px solid rgba(118, 96, 68, 0.18);
+  box-shadow: var(--shadow-sm);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+:deep(.maplibregl-canvas) {
+  outline: none;
+}
+
+.radar-wrap {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.radar-copy strong,
+.radar-copy span {
+  display: block;
+}
+
+.radar-copy strong {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.radar-copy span {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.report-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.report-card {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid rgba(95, 143, 90, 0.18);
+  border-radius: 8px;
+  background: rgba(95, 143, 90, 0.07);
+}
+
+.report-card strong {
+  font-size: 14px;
+}
+
+.report-card span {
+  color: var(--sage);
+  font-weight: 700;
+}
+
+.report-card small {
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+@media (max-width: 1100px) {
+  .archive-hero,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .archive-page {
+    padding: 22px 16px 44px;
+  }
+
+  .product-switch,
+  .metric-strip,
+  .radar-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .chart,
+  .chart-large {
+    height: 260px;
+  }
+}
+</style>
