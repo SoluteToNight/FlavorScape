@@ -1,4 +1,10 @@
 /** @type {import('tailwindcss').Config} */
+
+/*
+ * DESIGN TOKENS — Synced with src/styles/global.css :root.
+ * Update BOTH files when changing a token value.
+ */
+
 export default {
   content: [
     './index.html',
@@ -23,6 +29,7 @@ export default {
         text:        '#201B16',
         'text-mid':  '#5C5147',
         'text-muted':'#9F968B',
+        'glass-border': 'rgba(118, 96, 68, 0.18)',
       },
       backgroundColor: {
         glass:       'rgba(255, 252, 247, 0.86)',

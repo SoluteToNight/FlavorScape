@@ -1,17 +1,17 @@
 <template>
-  <main class="archive-atlas-page" :style="cssVars">
+  <main class="archive-atlas-page fixed top-navbar inset-x-0 bottom-0 grid grid-cols-[320px_1fr_300px] overflow-hidden" :style="cssVars">
     <!-- 左侧：环境与气候基因 -->
-    <aside class="atlas-sidebar left-sidebar">
-      <header class="atlas-header">
-        <span class="kicker">Provenance Dashboard</span>
-        <h1>科学溯源白皮书</h1>
-        <p>基于原产地遥感与第三方实验室实证的品质看板</p>
+    <aside class="atlas-sidebar left-sidebar py-8 px-6 overflow-y-auto z-10 flex flex-col gap-10">
+      <header>
+        <span class="kicker text-[10px] uppercase tracking-[0.1em] font-bold">Provenance Dashboard</span>
+        <h1 class="font-serif text-[28px] my-1 mb-2 text-[#1A1815] font-semibold tracking-[2px]">科学溯源白皮书</h1>
+        <p class="text-[12px] text-[#666] leading-[1.6]">基于原产地遥感与第三方实验室实证的品质看板</p>
       </header>
 
-      <!-- 样本切换：无框极简标签 -->
-      <nav class="product-tabs">
+      <nav class="flex gap-4 border-b border-[rgba(0,0,0,0.1)] pb-2">
         <button
           v-for="item in dossiers" :key="item.id"
+          class="product-tab bg-transparent border-none px-0 pb-1.5 text-[15px] cursor-pointer text-[#888] relative font-serif transition-all duration-300"
           :class="{ active: activeId === item.id }"
           @click="activeId = item.id"
         >
@@ -19,51 +19,48 @@
         </button>
       </nav>
 
-      <div class="data-section">
-        <div class="section-title">
-          <h3>气候风土因子</h3>
-          <span class="badge">{{ dossier.stationCode }}</span>
+      <div class="flex flex-col">
+        <div class="flex justify-between items-baseline mb-1">
+          <h3 class="text-base font-semibold tracking-[1px] text-[#222] m-0">气候风土因子</h3>
+          <span class="text-[9px] font-mono border border-[rgba(0,0,0,0.15)] py-0.5 px-1.5 rounded-sm text-[#555]">{{ dossier.stationCode }}</span>
         </div>
-        <p class="section-desc">关键生长期月均降水量与气温曲线</p>
-        <div ref="climateChartEl" class="chart-box"></div>
+        <p class="text-[11px] text-[#777] m-0 mb-3">关键生长期月均降水量与气温曲线</p>
+        <div ref="climateChartEl" class="w-full h-[200px]" />
       </div>
 
-      <div class="data-section">
-        <div class="section-title">
-          <h3>生长期有效积温</h3>
-          <span class="badge">GDD Data</span>
+      <div class="flex flex-col">
+        <div class="flex justify-between items-baseline mb-1">
+          <h3 class="text-base font-semibold tracking-[1px] text-[#222] m-0">生长期有效积温</h3>
+          <span class="text-[9px] font-mono border border-[rgba(0,0,0,0.15)] py-0.5 px-1.5 rounded-sm text-[#555]">GDD Data</span>
         </div>
-        <p class="section-desc">作物生命周期内的热量累积证据</p>
-        <div ref="heatChartEl" class="chart-box"></div>
+        <p class="text-[11px] text-[#777] m-0 mb-3">作物生命周期内的热量累积证据</p>
+        <div ref="heatChartEl" class="w-full h-[200px]" />
       </div>
     </aside>
 
-    <!-- 中间：核心空间地图 (绝对视觉焦点) -->
-    <section class="atlas-center-map">
-      <!-- 地图容器 -->
-      <div ref="terrainMapEl" class="terrain-map-layer"></div>
-      
-      <!-- 悬浮在地图上方的统计条 -->
-      <div class="floating-metrics-strip">
-        <div v-for="metric in dossier.metrics" :key="metric.label" class="f-metric">
-          <span class="fm-label">{{ metric.label }}</span>
-          <strong class="fm-value">{{ metric.value }}</strong>
-          <span class="fm-note">{{ metric.note }}</span>
+    <!-- 中间：核心空间地图 -->
+    <section class="relative w-full h-full">
+      <div ref="terrainMapEl" class="absolute inset-0 w-full h-full" />
+
+      <div class="floating-metrics-strip absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-8 bg-[rgba(255,255,255,0.9)] px-8 py-5 rounded z-[5] border border-[rgba(0,0,0,0.05)]">
+        <div v-for="metric in dossier.metrics" :key="metric.label" class="flex flex-col items-center text-center">
+          <span class="text-[10px] text-[#888] uppercase tracking-[1px] mb-1">{{ metric.label }}</span>
+          <strong class="fm-value font-serif text-[20px] font-bold mb-0.5">{{ metric.value }}</strong>
+          <span class="text-[10px] text-[#999]">{{ metric.note }}</span>
         </div>
       </div>
 
-      <!-- 地图悬浮图例/节点摘要 -->
-      <div class="floating-map-legend">
+      <div class="floating-map-legend absolute top-8 left-8 z-[5] bg-[rgba(255,255,255,0.85)] p-4 rounded-sm border border-[rgba(0,0,0,0.08)]">
         <div class="origin-pin-info">
-          <strong>◉ {{ dossier.originPoint.name }}</strong>
-          <span>{{ dossier.originPoint.precision }} | {{ formatCoord(dossier.originPoint.coord) }}</span>
+          <strong class="block text-[13px]">◉ {{ dossier.originPoint.name }}</strong>
+          <span class="text-[10px] text-[#666] font-mono">{{ dossier.originPoint.precision }} | {{ formatCoord(dossier.originPoint.coord) }}</span>
         </div>
-        <div class="node-timeline">
-          <div v-for="node in dossier.nodes" :key="node.short" class="node-item">
-            <span class="node-dot"></span>
+        <div class="mt-4 pt-4 border-t border-dashed border-[rgba(0,0,0,0.1)] flex flex-col gap-3">
+          <div v-for="node in dossier.nodes" :key="node.short" class="flex gap-2 items-start">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#ccc] mt-1" />
             <div>
-              <strong>{{ node.short }}</strong>
-              <span>{{ node.desc }}</span>
+              <strong class="block text-[12px] text-[#333]">{{ node.short }}</strong>
+              <span class="text-[10px] text-[#888]">{{ node.desc }}</span>
             </div>
           </div>
         </div>
@@ -71,36 +68,36 @@
     </section>
 
     <!-- 右侧：理化指标与食品安全 -->
-    <aside class="atlas-sidebar right-sidebar">
-      <div class="data-section">
-        <div class="section-title">
-          <h3>品质对标国标</h3>
-          <span class="badge">Benchmark</span>
+    <aside class="atlas-sidebar right-sidebar py-8 px-6 overflow-y-auto z-10 flex flex-col gap-10 border-r-0 border-l border-[rgba(0,0,0,0.06)]">
+      <div class="flex flex-col">
+        <div class="flex justify-between items-baseline mb-1">
+          <h3 class="text-base font-semibold tracking-[1px] text-[#222] m-0">品质对标国标</h3>
+          <span class="text-[9px] font-mono border border-[rgba(0,0,0,0.15)] py-0.5 px-1.5 rounded-sm text-[#555]">Benchmark</span>
         </div>
-        <p class="section-desc">关键理化指标实测值与收购验收线对比</p>
-        <div ref="standardRadarEl" class="chart-box"></div>
+        <p class="text-[11px] text-[#777] m-0 mb-3">关键理化指标实测值与收购验收线对比</p>
+        <div ref="standardRadarEl" class="w-full h-[200px]" />
       </div>
 
-      <div class="data-section flavor-section">
-        <div class="section-title">
-          <h3>原产地风味指纹</h3>
+      <div class="flex flex-col">
+        <div class="flex justify-between items-baseline mb-1">
+          <h3 class="text-base font-semibold tracking-[1px] text-[#222] m-0">原产地风味指纹</h3>
         </div>
-        <div class="flavor-integration">
+        <div class="flex flex-col items-center gap-4">
           <FlavorRadar :scores="dossier.flavorScores" :color="dossier.color" :size="140" animated />
-          <p class="flavor-summary">“{{ dossier.flavorSummary }}”</p>
+          <p class="text-[12px] text-[#555] leading-[1.6] italic text-center bg-[rgba(0,0,0,0.03)] p-3 rounded-sm">"{{ dossier.flavorSummary }}"</p>
         </div>
       </div>
 
-      <div class="data-section safety-section">
-        <div class="section-title">
-          <h3>实验室级安全凭证</h3>
-          <span class="badge pass">已通过检验</span>
+      <div class="flex flex-col">
+        <div class="flex justify-between items-baseline mb-1">
+          <h3 class="text-base font-semibold tracking-[1px] text-[#222] m-0">实验室级安全凭证</h3>
+          <span class="badge-pass text-[9px] font-mono border py-0.5 px-1.5 rounded-sm font-bold">已通过检验</span>
         </div>
-        <div class="cert-grid">
-          <div v-for="report in dossier.reports" :key="report.org" class="cert-ticket">
-            <div class="cert-org">{{ report.org }}</div>
-            <div class="cert-result">{{ report.result }}</div>
-            <div class="cert-code">REP: {{ report.code }}</div>
+        <div class="flex flex-col gap-3">
+          <div v-for="report in dossier.reports" :key="report.org" class="cert-ticket border border-[rgba(0,0,0,0.1)] p-3 rounded-sm">
+            <div class="text-[10px] text-[#777] mb-1">{{ report.org }}</div>
+            <div class="text-[13px] font-bold text-[#222] mb-1.5">{{ report.result }}</div>
+            <div class="text-[10px] font-mono text-[#aaa]">REP: {{ report.code }}</div>
           </div>
         </div>
       </div>
@@ -116,14 +113,13 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import chinaGeoJson from '../assets/china.json'
 import FlavorRadar from '../components/FlavorRadar.vue'
 
-// 【数据部分保持不变，直接复用您提供的 dossiers，仅为精简代码未重复贴出所有内容】
 const dossiers = [
   {
     id: 'pepper',
     name: '汉源花椒',
     origin: '四川汉源 · 干热河谷',
     province: '四川省',
-    color: '#9C3131', // 调优为更沉稳的高级红
+    color: '#9C3131',
     accent: '#516E58',
     stationCode: 'HY-MET-2605',
     metrics: [
@@ -151,7 +147,7 @@ const dossiers = [
     name: '五常大米',
     origin: '黑龙江五常 · 寒地黑土',
     province: '黑龙江省',
-    color: '#4B6342', // 调优为高级苔藓绿
+    color: '#4B6342',
     accent: '#B57A3C',
     stationCode: 'WC-MET-2605',
     metrics: [
@@ -176,12 +172,10 @@ const dossiers = [
   }
 ]
 
-// 基础变量
 const activeId = ref('pepper')
 const dossier = computed(() => dossiers.find(item => item.id === activeId.value))
 const provinceFeature = computed(() => chinaGeoJson.features.find(f => f.properties?.name === dossier.value.province))
 
-// Refs
 const climateChartEl = ref(null), heatChartEl = ref(null), standardRadarEl = ref(null), terrainMapEl = ref(null)
 let climateChart, heatChart, standardRadar, terrainMap, originMarker
 
@@ -194,8 +188,6 @@ const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', 
 
 function formatCoord(coord) { return `${coord[0].toFixed(4)}°E, ${coord[1].toFixed(4)}°N` }
 
-// ================= ECharts 矢量化风格配置 =================
-// 风格核心：细线、无背景、高通透感
 const commonEchartsOptions = {
   textStyle: { fontFamily: '-apple-system, "PingFang SC", sans-serif' },
   backgroundColor: 'transparent',
@@ -241,7 +233,7 @@ function renderCharts() {
       indicator: dossier.value.benchmarkLabels.map(name => ({ name, max: 160 })),
       axisName: { color: '#555', fontSize: 10, fontFamily: 'serif' },
       splitLine: { lineStyle: { color: '#e0e0e0', width: 1 } },
-      splitArea: { show: false }, // 去除雷达图默认的灰色填充
+      splitArea: { show: false },
       axisLine: { lineStyle: { color: '#e0e0e0' } },
     },
     series: [{
@@ -254,7 +246,6 @@ function renderCharts() {
   }, true)
 }
 
-// ================= 地图逻辑 (精简底色融合) =================
 function initTerrainMap() {
   if (terrainMap) return
   terrainMap = new maplibregl.Map({
@@ -263,12 +254,12 @@ function initTerrainMap() {
       version: 8,
       sources: { 'hyp-tiles': { type: 'raster', tiles: ['/tiles/raster/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 8 } },
       layers: [
-        { id: 'bg', type: 'background', paint: { 'background-color': '#F4F3ED' } }, // 纸张底色
-        { id: 'hyp', type: 'raster', source: 'hyp-tiles', paint: { 'raster-opacity': 0.6, 'raster-saturation': -0.8, 'raster-contrast': 0.1 } } // 降低底图干扰，呈现水墨/单色感
+        { id: 'bg', type: 'background', paint: { 'background-color': '#F4F3ED' } },
+        { id: 'hyp', type: 'raster', source: 'hyp-tiles', paint: { 'raster-opacity': 0.6, 'raster-saturation': -0.8, 'raster-contrast': 0.1 } }
       ]
     },
     center: dossier.value.originPoint.coord, zoom: 6,
-    interactive: true, dragRotate: false, pitchWithRotate: false // 允许平移缩放供B端查阅，但禁止旋转
+    interactive: true, dragRotate: false, pitchWithRotate: false
   })
 
   terrainMap.on('load', () => {
@@ -285,14 +276,12 @@ function updateMapData() {
   terrainMap.setPaintProperty('province-fill', 'fill-color', dossier.value.color)
   terrainMap.setPaintProperty('province-line', 'line-color', dossier.value.color)
 
-  // 更新 Origin Marker (矢量靶心风格)
   if (originMarker) originMarker.remove()
   const el = document.createElement('div')
   el.className = 'vector-pinpoint'
   el.style.borderColor = dossier.value.color
   originMarker = new maplibregl.Marker({ element: el }).setLngLat(dossier.value.originPoint.coord).addTo(terrainMap)
 
-  // 缩放至省份边界
   const bounds = new maplibregl.LngLatBounds()
   const coords = provinceFeature.value?.geometry?.coordinates
   if (coords) {
@@ -313,87 +302,60 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
 </script>
 
 <style scoped>
-/* ================= 核心架构 ================= */
+/* ═══════════════════════════════════════════════════════════════
+   KEPT — Tailwind cannot express these:
+   dynamic CSS variable theming (--theme-main),
+   semi-transparent backgrounds, backdrop-filter,
+   pseudo-elements, composite box-shadows,
+   :deep() MapLibre marker styles, responsive restructuring
+   ═══════════════════════════════════════════════════════════════ */
+
+/* KEPT: paper background + font — specific "canvas" aesthetic not in design system */
 .archive-atlas-page {
-  position: fixed; top: var(--navbar-h); left: 0; right: 0; bottom: 0;
-  background: #F4F3ED; /* 高级画册纸张底色 */
+  background: #F4F3ED;
   color: #332F2A;
-  display: grid;
-  grid-template-columns: 320px 1fr 300px; /* 三栏布局 */
-  overflow: hidden;
   font-family: -apple-system, "PingFang SC", sans-serif;
 }
 
-/* ================= 两侧信息列 ================= */
+/* KEPT: semi-transparent bg + backdrop-filter for fused-with-map sidebar */
 .atlas-sidebar {
-  padding: 32px 24px;
-  overflow-y: auto;
-  z-index: 10;
-  display: flex; flex-direction: column; gap: 40px;
-  background: rgba(244, 243, 237, 0.85); /* 半透明以融合地图边缘 */
+  background: rgba(244, 243, 237, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-right: 1px solid rgba(0,0,0,0.06);
 }
-.right-sidebar { border-right: none; border-left: 1px solid rgba(0,0,0,0.06); }
 
-/* ================= 排版与字体 ================= */
-.atlas-header h1 { font-family: "Noto Serif SC", "Songti SC", serif; font-size: 28px; margin: 4px 0 8px; color: #1A1815; font-weight: 600; letter-spacing: 2px; }
-.atlas-header p { font-size: 12px; color: #666; line-height: 1.6; }
-.kicker { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--theme-main); font-weight: bold; }
+/* KEPT: dynamic var(--theme-main) for brand accent color */
+.kicker { color: var(--theme-main); }
 
-/* ================= 标签页 (无框极简) ================= */
-.product-tabs { display: flex; gap: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 8px; }
-.product-tabs button {
-  background: none; border: none; padding: 0 0 6px 0; font-size: 15px; cursor: pointer;
-  color: #888; position: relative; font-family: "Noto Serif SC", serif; transition: 0.3s;
-}
-.product-tabs button.active { color: var(--theme-main); font-weight: bold; }
-.product-tabs button.active::after {
+/* KEPT: dynamic active color + pseudo-element underline */
+.product-tab.active { color: var(--theme-main); font-weight: bold; }
+.product-tab.active::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -9px;
   height: 2px; background: var(--theme-main);
 }
 
-/* ================= 数据区块 ================= */
-.data-section { display: flex; flex-direction: column; }
-.section-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-.section-title h3 { font-size: 14px; font-weight: 600; letter-spacing: 1px; color: #222; margin: 0; }
-.badge { font-size: 9px; font-family: monospace; border: 1px solid rgba(0,0,0,0.15); padding: 2px 6px; border-radius: 2px; color: #555; }
-.badge.pass { background: rgba(81, 110, 88, 0.1); color: #516E58; border-color: #516E58; font-weight: bold; }
-.section-desc { font-size: 11px; color: #777; margin: 0 0 12px 0; }
-.chart-box { width: 100%; height: 200px; } /* ECharts 容器 */
+/* KEPT: semi-transparent green pass badge */
+.badge-pass { background: rgba(81, 110, 88, 0.1); color: #516E58; border-color: #516E58; }
 
-/* ================= 中央地图舞台 ================= */
-.atlas-center-map { position: relative; width: 100%; height: 100%; }
-.terrain-map-layer { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* KEPT: floating panel — composite box-shadow + semi-transparent bg */
+.floating-metrics-strip { box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
 
-/* 地图上的悬浮统计条 */
-.floating-metrics-strip {
-  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 32px; background: rgba(255,255,255,0.9);
-  padding: 20px 32px; border-radius: 4px; box-shadow: 0 12px 32px rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.05); z-index: 5;
+/* KEPT: floating legend — semi-transparent bg + backdrop-filter + box-shadow */
+.floating-map-legend { backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+/* KEPT: dynamic var(--theme-main) for metric values */
+.fm-value { color: var(--theme-main); }
+
+/* KEPT: dynamic var(--theme-main) for origin pin label */
+.origin-pin-info strong { color: var(--theme-main); }
+
+/* KEPT: cert ticket — SVG data URI background texture */
+.cert-ticket {
+  background: url('data:image/svg+xml;utf8,<svg width="4" height="4" viewBox="0 0 4 4" xmlns="http://www.w3.org/2000/svg"><rect width="4" height="4" fill="none"/><circle cx="2" cy="2" r="0.5" fill="%23000" fill-opacity="0.05"/></svg>');
 }
-.f-metric { display: flex; flex-direction: column; align-items: center; text-align: center; }
-.fm-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-.fm-value { font-size: 20px; font-family: "Noto Serif SC", serif; font-weight: bold; color: var(--theme-main); margin-bottom: 2px; }
-.fm-note { font-size: 10px; color: #999; }
 
-/* 地图左上角节点摘要 */
-.floating-map-legend {
-  position: absolute; top: 32px; left: 32px; z-index: 5;
-  background: rgba(255,255,255,0.85); padding: 16px; border: 1px solid rgba(0,0,0,0.08);
-  backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 2px;
-}
-.origin-pin-info strong { display: block; font-size: 13px; color: var(--theme-main); }
-.origin-pin-info span { font-size: 10px; color: #666; font-family: monospace; }
-.node-timeline { margin-top: 16px; padding-top: 16px; border-top: 1px dashed rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 12px; }
-.node-item { display: flex; gap: 8px; align-items: flex-start; }
-.node-dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; margin-top: 4px; }
-.node-item strong { display: block; font-size: 12px; color: #333; }
-.node-item span { font-size: 10px; color: #888; }
-
-/* 自定义 MapLibre Marker (十字准星风格) */
+/* KEPT: MapLibre marker — :deep() + pseudo-element crosshair */
 :deep(.vector-pinpoint) {
   width: 14px; height: 14px; border: 2px solid; border-radius: 50%;
   background: rgba(255,255,255,0.8); box-shadow: 0 0 0 4px rgba(255,255,255,0.4);
@@ -404,20 +366,7 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
   width: 4px; height: 4px; background: currentColor; border-radius: 50%;
 }
 
-/* ================= 右侧特殊区块 ================= */
-.flavor-integration { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.flavor-summary { font-size: 12px; color: #555; line-height: 1.6; font-style: italic; text-align: center; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 2px;}
-
-.cert-grid { display: flex; flex-direction: column; gap: 12px; }
-.cert-ticket {
-  border: 1px solid rgba(0,0,0,0.1); padding: 12px; border-radius: 2px;
-  background: url('data:image/svg+xml;utf8,<svg width="4" height="4" viewBox="0 0 4 4" xmlns="http://www.w3.org/2000/svg"><rect width="4" height="4" fill="none"/><circle cx="2" cy="2" r="0.5" fill="%23000" fill-opacity="0.05"/></svg>');
-}
-.cert-org { font-size: 10px; color: #777; margin-bottom: 4px; }
-.cert-result { font-size: 13px; font-weight: bold; color: #222; margin-bottom: 6px; }
-.cert-code { font-size: 10px; font-family: monospace; color: #aaa; }
-
-/* ================= 响应式调整 ================= */
+/* KEPT: responsive — grid restructuring (3-col → 1-col + reorder) */
 @media (max-width: 1200px) {
   .archive-atlas-page { grid-template-columns: 280px 1fr 280px; }
   .floating-metrics-strip { flex-wrap: wrap; justify-content: center; width: 80%; padding: 16px; gap: 16px; bottom: 20px; }

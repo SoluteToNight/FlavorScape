@@ -1,10 +1,10 @@
 <template>
-  <div class="auth-page">
+  <div class="auth-page fixed top-navbar inset-x-0 bottom-0 flex items-center justify-center overflow-hidden">
     <div class="grid-overlay" aria-hidden="true" />
     <div class="deco-ring" aria-hidden="true" />
 
     <!-- 食材实物照片 -->
-    <div class="specimen-layer" aria-hidden="true">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
       <img
         src="/ingredients/rice.png"
         class="specimen specimen-a"
@@ -17,30 +17,30 @@
       />
     </div>
 
-    <div class="auth-panel glass-panel">
+    <div class="auth-panel glass-panel relative z-[4] w-[min(440px,92vw)] pt-[44px] px-12 pb-10 rounded-[20px]">
       <div class="accent-bar" aria-hidden="true" />
-      <h2 class="panel-title">注册账号</h2>
-      <p class="panel-subtitle">踏上寻味之旅，记录属于你的味觉版图</p>
+      <h2 class="text-center font-serif text-[24px] font-medium text-earth tracking-[0.10em] m-0 mb-0.5">注册账号</h2>
+      <p class="text-center text-[12px] text-text-muted m-0 mb-8 tracking-[0.06em]">踏上寻味之旅，记录属于你的味觉版图</p>
 
-      <form @submit.prevent="submit" class="auth-form">
-        <label class="field">
-          <span class="field-label">用户名</span>
+      <form @submit.prevent="submit" class="flex flex-col gap-[18px]">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-[12px] font-medium text-text-mid tracking-[0.05em]">用户名</span>
           <input
             v-model.trim="username"
             type="text"
-            class="field-input"
+            class="field-input h-11 rounded-[11px] border border-glass-border bg-[rgba(255,252,247,0.62)] px-4 font-sans text-base text-text outline-none transition-all duration-[220ms] ease"
             placeholder="2–32 位字符"
             autocomplete="username"
             required
           />
         </label>
 
-        <label class="field">
-          <span class="field-label">密码</span>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-[12px] font-medium text-text-mid tracking-[0.05em]">密码</span>
           <input
             v-model="password"
             type="password"
-            class="field-input"
+            class="field-input h-11 rounded-[11px] border border-glass-border bg-[rgba(255,252,247,0.62)] px-4 font-sans text-base text-text outline-none transition-all duration-[220ms] ease"
             placeholder="至少 4 位"
             autocomplete="new-password"
             required
@@ -48,11 +48,11 @@
         </label>
 
         <Transition name="msg">
-          <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
+          <p v-if="errorMsg" class="text-[12px] text-carmine bg-carmine-soft rounded-lg py-[9px] px-[14px] m-0">{{ errorMsg }}</p>
         </Transition>
 
-        <button type="submit" :disabled="busy" class="submit-btn" :class="{ busy }">
-          <span v-if="busy" class="spinner-wrap">
+        <button type="submit" :disabled="busy" class="submit-btn h-12 rounded-[13px] border border-[rgba(139,94,52,0.12)] text-[#fffaf2] cursor-pointer font-sans text-base font-semibold tracking-[0.12em] mt-1 transition-all" :class="{ busy }">
+          <span v-if="busy" class="inline-flex items-center gap-2.5">
             <span class="spinner" />
             注册中…
           </span>
@@ -60,10 +60,10 @@
         </button>
       </form>
 
-      <p class="switch-line">
-        <span class="switch-dot" />
+      <p class="flex items-center justify-center gap-2 mt-6 text-[12px] text-text-muted">
+        <span class="inline-block w-1 h-1 rounded-full bg-leaf opacity-60" />
         已有账号？
-        <RouterLink to="/login" class="switch-link">去登录</RouterLink>
+        <RouterLink to="/login" class="text-earth font-medium no-underline hover:underline hover:underline-offset-[2px]">去登录</RouterLink>
       </p>
     </div>
 
@@ -107,15 +107,15 @@ async function submit() {
 </script>
 
 <style scoped>
+/* ═══════════════════════════════════════════════════════════════
+   KEPT — Tailwind cannot express these:
+   multi-radial-gradient, mask-image, composite box-shadow rings,
+   pseudo-elements, multi-stop button gradients, animations,
+   clamp(), Vue transitions, responsive overrides
+   ═══════════════════════════════════════════════════════════════ */
+
+/* KEPT: multi-radial-gradient background */
 .auth-page {
-  position: fixed;
-  top: var(--navbar-h);
-  inset-inline: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
   background:
     radial-gradient(circle at 50% 44%, rgba(255, 252, 248, 0.68), transparent 34%),
     radial-gradient(circle at 86% 16%, rgba(94, 123, 80, 0.20), transparent 30%),
@@ -124,6 +124,7 @@ async function submit() {
     linear-gradient(155deg, #f7efe3 0%, #eef3ed 52%, #fbf7ef 100%);
 }
 
+/* KEPT: mask-image grid pattern */
 .grid-overlay {
   position: absolute;
   inset: -12%;
@@ -135,6 +136,7 @@ async function submit() {
   pointer-events: none;
 }
 
+/* KEPT: composite box-shadow ring effect */
 .deco-ring {
   position: absolute;
   left: 50%;
@@ -151,13 +153,7 @@ async function submit() {
   pointer-events: none;
 }
 
-/* ── 食材实拍 ─────────────────────────────────────────────── */
-.specimen-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
+/* KEPT: filter drop-shadow + clamp + fadeUp animation */
 .specimen {
   position: absolute;
   width: clamp(96px, 11vw, 180px);
@@ -166,13 +162,11 @@ async function submit() {
   opacity: 0.28;
   animation: fadeUp 1.3s ease 0.3s both;
 }
-
 .specimen-a {
   right: clamp(20px, 6vw, 90px);
   top: 8vh;
   transform: rotate(6deg);
 }
-
 .specimen-b {
   left: clamp(16px, 5vw, 68px);
   bottom: 12vh;
@@ -180,16 +174,12 @@ async function submit() {
   animation-delay: 0.45s;
 }
 
-/* ── Panel ─────────────────────────────────────────────── */
+/* KEPT: radarIn animation (keyframes defined in global.css) */
 .auth-panel {
-  position: relative;
-  z-index: 4;
-  width: min(440px, 92vw);
-  padding: 44px 48px 40px;
-  border-radius: 20px;
   animation: radarIn 0.55s ease 0.15s both;
 }
 
+/* KEPT: multi-stop linear-gradient accent bar (leaf + saffron) */
 .accent-bar {
   position: absolute;
   left: 50%;
@@ -202,46 +192,7 @@ async function submit() {
   opacity: 0.74;
 }
 
-.panel-title {
-  text-align: center;
-  font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 500;
-  color: var(--earth);
-  letter-spacing: 0.10em;
-  margin: 0 0 2px;
-}
-
-.panel-subtitle {
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0 0 32px;
-  letter-spacing: 0.06em;
-}
-
-/* ── Form ──────────────────────────────────────────────── */
-.auth-form { display: flex; flex-direction: column; gap: 18px; }
-
-.field { display: flex; flex-direction: column; gap: 6px; }
-
-.field-label {
-  font-size: 12px; font-weight: 500;
-  color: var(--text-mid); letter-spacing: 0.05em;
-}
-
-.field-input {
-  height: 44px;
-  border-radius: 11px;
-  border: 1px solid var(--glass-border);
-  background: rgba(255, 252, 247, 0.62);
-  padding: 0 16px;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  color: var(--text);
-  outline: none;
-  transition: all 220ms ease;
-}
+/* KEPT: pseudo-elements not reachable by Tailwind */
 .field-input::placeholder { color: var(--text-muted); }
 .field-input:focus {
   background: rgba(255, 252, 248, 0.96);
@@ -249,31 +200,12 @@ async function submit() {
   border-color: rgba(232, 169, 23, 0.38);
 }
 
-.error-msg {
-  font-size: 12px;
-  color: var(--carmine);
-  background: var(--carmine-soft);
-  border-radius: 8px;
-  padding: 9px 14px;
-  margin: 0;
-}
-
+/* KEPT: multi-stop gradient + composite box-shadow + hover/active/busy states */
 .submit-btn {
-  height: 48px;
-  border: 1px solid rgba(139, 94, 52, 0.12);
-  border-radius: 13px;
   background: linear-gradient(135deg, var(--leaf) 0%, #4a6e3e 40%, var(--earth) 100%);
   box-shadow:
     0 14px 34px rgba(67, 92, 60, 0.20),
     inset 0 1px 0 rgba(255, 255, 255, 0.20);
-  color: #fffaf2;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  margin-top: 4px;
-  transition: all var(--transition);
 }
 .submit-btn:hover:not(.busy) {
   transform: translateY(-2px);
@@ -290,7 +222,8 @@ async function submit() {
   box-shadow: none;
 }
 
-.spinner-wrap { display: inline-flex; align-items: center; gap: 10px; }
+/* KEPT: spinner animation — Tailwind has no animation definition system */
+@keyframes spin { to { transform: rotate(360deg); } }
 .spinner {
   width: 15px; height: 15px;
   border: 2px solid rgba(255,255,255,0.35);
@@ -298,32 +231,8 @@ async function submit() {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Switch ────────────────────────────────────────────── */
-.switch-line {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 24px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.switch-dot {
-  display: inline-block;
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: var(--leaf);
-  opacity: 0.6;
-}
-.switch-link {
-  color: var(--earth);
-  font-weight: 500;
-  text-decoration: none;
-}
-.switch-link:hover { text-decoration: underline; text-underline-offset: 2px; }
-
+/* KEPT: clamp() values + transform — not expressible as Tailwind utilities */
 .watermark {
   position: absolute;
   left: clamp(32px, 5vw, 80px);
@@ -337,9 +246,11 @@ async function submit() {
   pointer-events: none;
 }
 
+/* KEPT: Vue transition classes */
 .msg-enter-active, .msg-leave-active { transition: all 200ms ease; }
 .msg-enter-from, .msg-leave-to { opacity: 0; transform: translateY(-4px); }
 
+/* KEPT: responsive overrides */
 @media (max-width: 500px) {
   .auth-panel { padding: 36px 28px 32px; }
   .specimen { opacity: 0.18; width: clamp(64px, 18vw, 100px); }

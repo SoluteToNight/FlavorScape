@@ -285,6 +285,15 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ═══════════════════════════════════════════════════════════════
+   KEPT — Tailwind cannot express these:
+   multi-radial-gradient backgrounds, mask-image patterns,
+   pseudo-elements, composite box-shadows,
+   @keyframes animations, clamp() typography,
+   writing-mode, background-clip gradients,
+   conic-gradient decorations, responsive overrides
+   ═══════════════════════════════════════════════════════════════ */
+
 .home-page {
   position: fixed;
   inset: 0;

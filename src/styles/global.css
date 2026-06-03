@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * DESIGN TOKENS — Synced with tailwind.config.js.
+ * Update BOTH files when changing a token value.
+ */
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -67,13 +72,13 @@ html, body {
   transform: translateY(-6px);
 }
 
-/* Glass panel mixin */
-.glass-panel {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-  box-shadow: var(--shadow-md);
+/* Glass panel — Tailwind @apply with vendor-prefixed backdrop-filter */
+@layer components {
+  .glass-panel {
+    @apply bg-glass border border-glass-border shadow-app-md rounded-[14px];
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+  }
 }
 
 /* Scrollbar */

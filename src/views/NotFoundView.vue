@@ -14,7 +14,7 @@
 
     <section class="not-found-content relative z-[1] w-[min(860px,calc(100%-40px))] min-h-full mx-auto py-[clamp(44px,8vh,82px)] pb-[42px] flex flex-col items-center justify-center text-center">
       <p class="eyebrow mb-3 text-[rgba(87,83,78,0.58)] text-[11px] font-normal tracking-[0.24em] uppercase">Lost Coordinate</p>
-      <div class="code-mark flex items-center justify-center gap-[clamp(10px,2vw,18px)] text-[rgba(28,25,23,0.9)]" aria-hidden="true">
+      <div class="code-mark flex items-center justify-center gap-[clamp(10px,2vw,18px)] font-serif text-[clamp(86px,15vw,168px)] font-medium leading-[0.92] text-[rgba(28,25,23,0.9)]" aria-hidden="true">
         <span>4</span>
         <span class="compass relative w-[0.74em] h-[0.74em]" />
         <span>4</span>
@@ -80,7 +80,14 @@ function goBack() {
 </script>
 
 <style scoped>
-/* ── 装饰背景网格 ── */
+/* ═══════════════════════════════════════════════════════════════
+   KEPT — Tailwind cannot express these:
+   mask-image, SVG animations, conic-gradient,
+   pseudo-elements, text-shadow, complex button states,
+   backdrop-filter, @keyframes, responsive overrides
+   ═══════════════════════════════════════════════════════════════ */
+
+/* KEPT: mask-image grid pattern */
 .grid-bg {
   background:
     linear-gradient(rgba(92,75,57,0.04) 1px, transparent 1px),
@@ -88,7 +95,7 @@ function goBack() {
   mask-image: radial-gradient(circle at 52% 46%, rgba(0,0,0,0.56), transparent 73%);
 }
 
-/* ── 路线虚线动画 ── */
+/* KEPT: SVG stroke animations */
 .route {
   fill: none;
   stroke-width: 2;
@@ -96,12 +103,11 @@ function goBack() {
   stroke-dasharray: 9 15;
   animation: routeFlow 18s linear infinite;
 }
-
 .route-amber { stroke: rgba(200, 150, 15, 0.46); }
 .route-turq  { stroke: rgba(15, 184, 154, 0.34); animation-duration: 21s; }
 .route-red   { stroke: rgba(229, 57, 78, 0.30); animation-duration: 24s; }
 
-/* ── 装饰标本圆环 ── */
+/* KEPT: conic-gradient + pseudo-element decorative rings */
 .specimen {
   width: clamp(86px, 10vw, 148px);
   aspect-ratio: 1;
@@ -112,7 +118,6 @@ function goBack() {
     conic-gradient(from 30deg, rgba(232,169,23,0.24), rgba(15,184,154,0.20), rgba(229,57,78,0.18), rgba(232,169,23,0.24));
   box-shadow: 0 20px 60px rgba(83,62,36,0.08);
 }
-
 .specimen::before,
 .specimen::after {
   content: '';
@@ -121,13 +126,12 @@ function goBack() {
   border-radius: 50%;
   border: 1px solid rgba(92,75,57,0.18);
 }
-
 .specimen::after {
   inset: 37%;
   background: rgba(255,252,248,0.64);
 }
 
-/* ── 指南针 ── */
+/* KEPT: conic-gradient + inset shadow + pseudo-element compass needle */
 .compass {
   border: 1px solid rgba(200,150,15,0.45);
   border-radius: 50%;
@@ -138,7 +142,6 @@ function goBack() {
     inset 0 0 0 10px rgba(255,252,248,0.44),
     0 16px 42px rgba(83,62,36,0.12);
 }
-
 .compass::after {
   content: '';
   position: absolute;
@@ -153,23 +156,18 @@ function goBack() {
   animation: seek 3.8s ease-in-out infinite;
 }
 
-/* ── 大号 404 数字 ── */
+/* KEPT: text-shadow — no Tailwind utility equivalent */
 .code-mark {
-  font-family: var(--font-serif);
-  font-size: clamp(86px, 15vw, 168px);
-  font-weight: 500;
-  line-height: 0.92;
   text-shadow: 0 1px 0 rgba(255,255,255,0.82);
 }
 
-/* ── 按钮 / 链接样式 ── */
+/* KEPT: complex button colors + hover effects + SVG styles */
 .primary-action {
   border: 1px solid rgba(200,150,15,0.42);
   background: rgba(200,150,15,0.90);
   color: #fffaf1;
   box-shadow: 0 14px 36px rgba(200,150,15,0.20);
 }
-
 .primary-action svg {
   width: 16px;
   height: 16px;
@@ -179,7 +177,6 @@ function goBack() {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 .primary-action:hover {
   background: rgba(183,123,8,0.94);
   transform: translateY(-1px);
@@ -192,7 +189,6 @@ function goBack() {
   color: rgba(87,83,78,0.86);
   backdrop-filter: blur(12px);
 }
-
 .ghost-action svg {
   width: 16px;
   height: 16px;
@@ -202,7 +198,6 @@ function goBack() {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
 .ghost-action:hover {
   border-color: rgba(200,150,15,0.36);
   background: rgba(255,252,248,0.92);
@@ -210,7 +205,7 @@ function goBack() {
   box-shadow: 0 18px 42px rgba(83,62,36,0.12);
 }
 
-/* ── 快速入口 ── */
+/* KEPT: backdrop-filter + hover effects on quick-link cards */
 .quick-links a {
   border: 1px solid rgba(180,165,140,0.22);
   background: rgba(255,252,248,0.58);
@@ -219,7 +214,6 @@ function goBack() {
   backdrop-filter: blur(12px);
   transition: color var(--transition), border-color var(--transition), background var(--transition), transform var(--transition);
 }
-
 .quick-links a:hover {
   color: var(--text);
   border-color: rgba(200,150,15,0.34);
@@ -227,39 +221,32 @@ function goBack() {
   transform: translateY(-1px);
 }
 
-/* ── 动画 keyframes ── */
+/* KEPT: @keyframes — Tailwind has no animation definition system */
 @keyframes routeFlow {
   from { stroke-dashoffset: 0; }
   to { stroke-dashoffset: -240; }
 }
-
 @keyframes seek {
   0%, 100% { transform: translate(-50%, -88%) rotate(34deg); }
   45% { transform: translate(-50%, -88%) rotate(62deg); }
   72% { transform: translate(-50%, -88%) rotate(20deg); }
 }
 
-/* ── 响应式 ── */
+/* KEPT: responsive overrides with complex selectors */
 @media (max-width: 760px) {
   .not-found-content {
     width: min(520px, calc(100% - 32px));
     padding-top: 38px;
   }
-
   .specimen { opacity: 0.48; }
-
   .specimen-one { left: -28px; top: 16vh; }
   .specimen-two { right: -34px; top: 11vh; }
   .specimen-three { display: none; }
-
   h1 { letter-spacing: 0.04em; }
   .lead { line-height: 1.78; }
-
   .actions { width: 100%; }
-
   .primary-action,
   .ghost-action { flex: 1 1 180px; }
-
   .quick-links {
     grid-template-columns: 1fr;
     margin-top: 22px;
@@ -269,7 +256,6 @@ function goBack() {
 @media (max-width: 420px) {
   .code-mark { font-size: 78px; }
   .actions { gap: 9px; }
-
   .primary-action,
   .ghost-action { width: 100%; }
 }
