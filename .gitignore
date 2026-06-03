@@ -43,5 +43,8 @@ Thumbs.db
 .playwright-mcp/
 dev/backups/
 
-# Development captures
-dev/screenshots/
+# Dev workspace — track directory structure only
+dev/*
+!dev/**/.gitkeep
+!dev/.gitkeep
+.gemini/

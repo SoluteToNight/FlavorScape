@@ -1,5 +1,5 @@
 <template>
-  <div class="app-root">
+  <div class="w-full h-full relative overflow-hidden">
     <Navbar />
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
@@ -10,17 +10,15 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Navbar from './components/Navbar.vue'
+import { useAuthStore } from './stores/auth.js'
 
 const route = useRoute()
-</script>
+const authStore = useAuthStore()
 
-<style scoped>
-.app-root {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-}
-</style>
+onMounted(() => {
+  authStore.init()
+})
+</script>

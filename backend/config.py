@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR     = Path(__file__).parent
@@ -22,6 +23,11 @@ TEOW_MERGED  = EXTRACTED_DIR / "wwf_terr_ecos_merged.shp"
 
 # Tile cache
 TILE_CACHE_SIZE = 512
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
 # CORS origins (Vite dev + production)
 PORT = 8001

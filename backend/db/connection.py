@@ -10,6 +10,7 @@ from pathlib import Path
 
 import psycopg2
 from psycopg2 import pool as _pg_pool
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 
@@ -37,9 +38,31 @@ def close_pool() -> None:
 
 @contextmanager
 def get_conn():
+    """上下文管理器，用于同步脚本和 startup 中的手动查询。"""
     if _pool is None:
         init_pool()
     conn = _pool.getconn()
+    try:
+        yield conn
+    finally:
+        _pool.putconn(conn)
+
+
+async def get_db():
+    """FastAPI 依赖：从连接池获取连接，请求结束后自动归还。
+
+    连接设置为 autocommit 模式，每个 SQL 语句自动提交。
+    用法:
+        @app.get("/example")
+        async def example(db=Depends(get_db)):
+            with db.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT ...")
+                return cur.fetchall()
+    """
+    if _pool is None:
+        init_pool()
+    conn = _pool.getconn()
+    conn.autocommit = True
     try:
         yield conn
     finally:

@@ -1,44 +1,44 @@
 <template>
-  <div class="narrative-page">
-    <div class="left-nav">
-      <div class="spine" />
+  <div class="fixed top-navbar inset-x-0 bottom-0 bg-bg flex">
+    <div class="left-nav w-[200px] px-10 py-12 flex flex-col relative">
+      <div class="spine absolute left-[52px] top-[60px] bottom-[60px] w-px" />
       <div
         v-for="(ch, i) in chapters"
         :key="ch.id"
-        class="chapter-dot"
+        class="chapter-dot relative z-[2] flex items-center gap-4 mb-12 cursor-pointer"
         :class="{ active: i === appStore.currentChapter }"
         @click="appStore.setChapter(i)"
       >
-        <span class="dot-circle" />
-        <span class="dot-label">{{ ch.title }}</span>
+        <span class="dot-circle w-2 h-2 rounded-full bg-transparent border-[1.5px] border-text-muted shrink-0 transition-all" />
+        <span class="dot-label text-xs text-text-muted tracking-[0.06em] whitespace-nowrap transition-colors">{{ ch.title }}</span>
       </div>
     </div>
 
-    <div class="right-content">
-      <div class="mini-map-wrap">
-        <canvas ref="miniCanvas" class="mini-canvas" />
+    <div class="flex-1 flex flex-col py-10 pr-[60px] pl-5 overflow-hidden">
+      <div class="mini-map-wrap shrink-0 h-[260px] rounded-lg overflow-hidden bg-[#EDE5D8] mb-7 shadow-app-sm">
+        <canvas ref="miniCanvas" class="w-full h-[260px] block" />
       </div>
 
-      <div class="chapter-body" v-if="current">
+      <div class="flex-1 overflow-y-auto max-w-[680px]" v-if="current">
         <Transition name="chapter" mode="out-in">
           <div :key="appStore.currentChapter">
-            <div class="ch-title">{{ current.title }}</div>
-            <div class="ch-date">{{ current.date }}</div>
-            <p class="ch-body">{{ current.body }}</p>
-            <blockquote class="ch-cite">{{ current.cite }}</blockquote>
-            <div class="ch-source">—— {{ current.source }}</div>
-            <div class="ch-footer">
-              <div class="progress-dots">
+            <div class="font-serif text-3xl font-medium tracking-[0.05em] mb-1">{{ current.title }}</div>
+            <div class="text-xs text-amber tracking-[0.14em] mb-5">{{ current.date }}</div>
+            <p class="text-base font-light leading-[2.1] text-text-mid tracking-[0.04em]">{{ current.body }}</p>
+            <blockquote class="ch-cite mt-5 px-[18px] py-3.5 bg-[rgba(200,150,15,0.06)] border-l-2 border-[rgba(200,150,15,0.4)] rounded-r-sm text-xs text-text-mid italic leading-[1.8]">{{ current.cite }}</blockquote>
+            <div class="mt-2.5 text-2xs text-text-muted tracking-[0.08em]">—— {{ current.source }}</div>
+            <div class="flex items-center gap-5 mt-6">
+              <div class="flex gap-2">
                 <span
                   v-for="(_, i) in chapters"
                   :key="i"
-                  class="pdot"
+                  class="pdot w-1 h-1 rounded-full bg-glass-border transition-colors"
                   :class="{ active: i === appStore.currentChapter }"
                 />
               </div>
               <button
                 v-if="appStore.currentChapter === chapters.length - 1"
-                class="explore-btn"
+                class="explore-btn px-7 py-2.5 border border-[rgba(200,150,15,0.35)] rounded-[20px] bg-amber-soft text-amber font-sans text-xs tracking-[0.1em] cursor-pointer transition-all"
                 @click="router.push('/map')"
               >打开全地图自由探索</button>
             </div>
@@ -133,67 +133,21 @@ function drawMiniMap() {
 </script>
 
 <style scoped>
-.narrative-page {
-  position: fixed;
-  top: var(--navbar-h); left: 0; right: 0; bottom: 0;
-  background: var(--bg);
-  display: flex;
-}
-
-.left-nav {
-  width: 200px; padding: 48px 40px;
-  display: flex; flex-direction: column;
-  position: relative;
-}
+/* KEPT: gradient, hover cascades, active states, Vue transitions */
 .spine {
-  position: absolute; left: 52px; top: 60px; bottom: 60px;
-  width: 1px;
   background: linear-gradient(to bottom, transparent, var(--glass-border) 10%, var(--glass-border) 90%, transparent);
 }
-.chapter-dot {
-  position: relative; z-index: 2;
-  display: flex; align-items: center; gap: 16px;
-  margin-bottom: 48px; cursor: pointer;
-}
-.dot-circle {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: transparent; border: 1.5px solid var(--text-muted);
-  transition: all var(--transition); flex-shrink: 0;
-}
+
+.dot-circle { transition: all var(--transition); }
 .chapter-dot.active .dot-circle {
   background: var(--amber); border-color: var(--amber);
   box-shadow: 0 0 0 4px var(--amber-soft);
 }
-.dot-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; transition: color var(--transition); white-space: nowrap; }
 .chapter-dot.active .dot-label { color: var(--text); }
 .chapter-dot:hover .dot-label { color: var(--text-mid); }
 
-.right-content { flex: 1; display: flex; flex-direction: column; padding: 40px 60px 40px 20px; overflow: hidden; }
-.mini-map-wrap { flex: 0 0 260px; border-radius: var(--radius); overflow: hidden; background: #EDE5D8; margin-bottom: 28px; box-shadow: var(--shadow-sm); }
-.mini-canvas { width: 100%; height: 260px; display: block; }
-
-.chapter-body { flex: 1; overflow-y: auto; max-width: 680px; }
-.ch-title { font-family: var(--font-serif); font-size: 22px; font-weight: 500; letter-spacing: 0.05em; margin-bottom: 4px; }
-.ch-date { font-size: 11px; color: var(--amber); letter-spacing: 0.14em; margin-bottom: 20px; }
-.ch-body { font-size: 14px; line-height: 2.1; color: var(--text-mid); font-weight: 300; letter-spacing: 0.04em; }
-.ch-cite {
-  margin-top: 20px; padding: 14px 18px;
-  background: rgba(200,150,15,0.06);
-  border-left: 2px solid rgba(200,150,15,0.4);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  font-size: 12px; color: var(--text-mid); font-style: italic; line-height: 1.8;
-}
-.ch-source { margin-top: 10px; font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; }
-.ch-footer { display: flex; align-items: center; gap: 20px; margin-top: 24px; }
-.progress-dots { display: flex; gap: 8px; }
-.pdot { width: 4px; height: 4px; border-radius: 50%; background: var(--glass-border); transition: background var(--transition); }
 .pdot.active { background: var(--amber); }
-.explore-btn {
-  padding: 10px 28px; border: 1px solid rgba(200,150,15,0.35);
-  border-radius: 20px; background: var(--amber-soft); color: var(--amber);
-  font-family: var(--font-sans); font-size: 12px; letter-spacing: 0.1em;
-  cursor: pointer; transition: all var(--transition);
-}
+
 .explore-btn:hover { background: rgba(200,150,15,0.2); box-shadow: 0 4px 16px rgba(200,150,15,0.2); }
 
 .chapter-enter-active, .chapter-leave-active { transition: opacity 250ms ease, transform 250ms ease; }

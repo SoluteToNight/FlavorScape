@@ -1,6 +1,6 @@
 <template>
   <div class="home-page">
-    <div class="atlas-layer" aria-hidden="true">
+    <div class="atlas-layer absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
       <svg class="specimen specimen-chili" viewBox="0 0 90 170" aria-hidden="true">
         <path d="M47 15 C62 50 66 91 48 128 C41 143 30 153 18 159 C31 137 30 111 22 84 C14 57 24 31 47 15 Z" />
         <path d="M50 18 C55 10 62 7 72 9" />
@@ -17,7 +17,7 @@
       </svg>
     </div>
 
-    <canvas ref="canvasEl" class="bg-canvas" />
+    <canvas ref="canvasEl" class="bg-canvas absolute inset-0 z-[1] w-full h-full opacity-[0.82] mix-blend-multiply" />
 
     <section class="hero-section" aria-labelledby="home-title">
       <div class="hero-copy">

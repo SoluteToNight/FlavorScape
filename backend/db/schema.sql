@@ -138,6 +138,16 @@ CREATE TABLE data_source (
 );
 
 -- ============================================================================
+-- 用户认证（不参与 DROP-CREATE 循环，由 auth_queries.py 自动建表）
+-- ============================================================================
+-- CREATE TABLE IF NOT EXISTS app_user (
+--     id          SERIAL PRIMARY KEY,
+--     username    VARCHAR(64)  NOT NULL UNIQUE,
+--     password    VARCHAR(256) NOT NULL,
+--     created_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+-- );
+
+-- ============================================================================
 -- 索引
 -- ============================================================================
 

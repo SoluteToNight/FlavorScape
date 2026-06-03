@@ -1,11 +1,11 @@
 <template>
-  <div class="map-page" :class="{ transitioning: isSceneBusy }">
+  <div class="map-page fixed top-navbar inset-x-0 bottom-0" :class="{ transitioning: isSceneBusy }">
     <div
       class="map-scene flat-scene"
       :class="{ active: isSceneActive('flat'), visible: isSceneVisible('flat') }"
       :style="getSceneStyle('flat')"
     >
-      <div ref="flatMapContainer" class="map-container" />
+      <div ref="flatMapContainer" class="map-container absolute inset-0 w-full h-full" />
       <img
         v-if="sceneSnapshot.visible"
         class="scene-snapshot"
@@ -159,7 +159,6 @@
           </div>
         </div>
 
-        <div class="toggle-hint">L2 仍由上下文触发；这里仅决定该层是否允许进入画面。</div>
         <div v-if="!rasterReady" class="loading-hint">
           <span class="loading-dot" />底图加载中…
         </div>
@@ -174,7 +173,7 @@
       :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
     >{{ tooltip.text }}</div>
 
-    <div class="map-hint">悬浮节点与弧线展示风味迁徙 · 点击对象查看剖面</div>
+    <div class="map-hint">悬浮节点展示地方风味 · 点击对象查看剖面</div>
   </div>
 </template>
 
@@ -186,9 +185,8 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { AmbientLight, DirectionalLight, LightingEffect } from '@deck.gl/core'
 import { MapboxOverlay } from '@deck.gl/mapbox'
-import { PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
-import { computeClusters, getClusterOpacity, haversineDistance } from '../utils/clustering.js'
-import { TripsLayer } from '@deck.gl/geo-layers'
+import { ScatterplotLayer, TextLayer } from '@deck.gl/layers'
+import { computeClusters, getClusterOpacity } from '../utils/clustering.js'
 
 const flatMapContainer = ref(null)
 const globeMapContainer = ref(null)
@@ -209,18 +207,6 @@ const L1_OPACITY_WEAK = 0.42
 const L1_OPACITY_STRONG = 0.62
 const L1_BOUNDARY_COLOR = 'rgba(86, 125, 132, 0.42)'
 const L1_BOUNDARY_COLOR_STRONG = 'rgba(63, 104, 114, 0.62)'
-const ROUTE_VISUAL_TONES = {
-  '丝绸之路': { core: '#8C7A5D', glow: '#D8CFBB', pulse: '#A58D65' },
-  '海上香料之路': { core: '#5D8F9E', glow: '#C1DCE1', pulse: '#6FA9B7' },
-  '辣椒传播路线': { core: '#A66E65', glow: '#E2C4BD', pulse: '#BD8178' },
-  '大运河·茶叶北行': { core: '#6F907C', glow: '#C5D7CA', pulse: '#82A28E' },
-  '香料群岛东传': { core: '#788B68', glow: '#D1DAC4', pulse: '#8D9F77' },
-}
-const ROUTE_VISUAL_FALLBACKS = [
-  { core: '#7B8791', glow: '#D0D8DD', pulse: '#8FA0AB' },
-  { core: '#8B7F66', glow: '#D9D1BF', pulse: '#A09271' },
-  { core: '#6F8A86', glow: '#C8D9D5', pulse: '#82A19D' },
-]
 const INITIAL_MAP_CENTER = [100, 35]
 const ATMOSPHERE_LOW_ZOOM = 2.2
 const ATMOSPHERE_HIGH_ZOOM = 2.8
@@ -229,15 +215,7 @@ const SCENE_MORPH_ZOOM_SPAN = 0.18
 const SCENE_RENDER_WAIT_TIMEOUT = 140
 const SCENE_TILE_PREWARM_TIMEOUT = 1200
 const POLAR_TILE_LIMIT = 85.051129
-const LOOP_LENGTH = 2200
-const ANIMATION_SPEED = 1.2
-const GLOBE_ROUTE_SOURCE_ID = 'globe-routes'
-const GLOBE_ROUTE_PULSE_SOURCE_ID = 'globe-route-pulses'
 const GLOBE_NODE_SOURCE_ID = 'globe-nodes'
-const GLOBE_ROUTE_GLOW_LAYER_ID = 'globe-route-glow'
-const GLOBE_ROUTE_LAYER_ID = 'globe-route-lines'
-const GLOBE_ROUTE_PULSE_HALO_LAYER_ID = 'globe-route-pulse-halo'
-const GLOBE_ROUTE_PULSE_LAYER_ID = 'globe-route-pulses'
 const GLOBE_NODE_HALO_LAYER_ID = 'globe-node-halo'
 const GLOBE_NODE_GLOW_LAYER_ID = 'globe-node-glow'
 const GLOBE_NODE_DOT_LAYER_ID = 'globe-node-dot'
@@ -258,11 +236,9 @@ const layerEnabled = computed(() => appStore.layerEnabled)
 const layerVisibility = computed(() => ({
   L0: layerEnabled.value.L0 && contextLayerVisibility.value.L0,
   L1: layerEnabled.value.L1 && contextLayerVisibility.value.L1,
-  L2: layerEnabled.value.L2 && contextLayerVisibility.value.L2,
   L3: layerEnabled.value.L3 && contextLayerVisibility.value.L3,
 }))
 const selectedNodeId = computed(() => appStore.selectedNode?.id ?? null)
-const selectedRouteName = computed(() => appStore.selectedRoute?.name ?? null)
 const sceneToggleReady = computed(() => {
   mapDebugTick.value
   return Boolean(flatScene?.loaded && globeScene?.loaded)
@@ -286,10 +262,7 @@ const mapDebugRows = computed(() => {
 
 let flatScene = null
 let globeScene = null
-let animId = null
-let currentTime = 0
 let flavors = []
-let routes = []
 let clusterState = { clusters: [], clusterMap: new Map(), unclusteredFlavors: [] }
 let lastClusterZoom = -1
 let projectFrame = 0
@@ -410,6 +383,10 @@ const MAP_STYLE = {
   ],
 }
 
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max)
+}
+
 function hexToRgb(hex, a = 255) {
   return [
     parseInt(hex.slice(1, 3), 16),
@@ -419,10 +396,6 @@ function hexToRgb(hex, a = 255) {
   ]
 }
 
-function getRouteVisualTone(route, routeIndex) {
-  return ROUTE_VISUAL_TONES[route.name] ?? ROUTE_VISUAL_FALLBACKS[routeIndex % ROUTE_VISUAL_FALLBACKS.length]
-}
-
 function createFeatureCollection(features = []) {
   return {
     type: 'FeatureCollection',
@@ -430,265 +403,6 @@ function createFeatureCollection(features = []) {
   }
 }
 
-const DEG_TO_RAD = Math.PI / 180
-const RAD_TO_DEG = 180 / Math.PI
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max)
-}
-
-function positiveModulo(value, modulo) {
-  return ((value % modulo) + modulo) % modulo
-}
-
-function normalizeLng(lng) {
-  return ((((lng + 180) % 360) + 360) % 360) - 180
-}
-
-function lonLatToVector(point) {
-  const lon = point[0] * DEG_TO_RAD
-  const lat = point[1] * DEG_TO_RAD
-  const cosLat = Math.cos(lat)
-  return [
-    cosLat * Math.cos(lon),
-    cosLat * Math.sin(lon),
-    Math.sin(lat),
-  ]
-}
-
-function vectorToLonLat(vec) {
-  const length = Math.hypot(vec[0], vec[1], vec[2]) || 1
-  const x = vec[0] / length
-  const y = vec[1] / length
-  const z = vec[2] / length
-  return [
-    normalizeLng(Math.atan2(y, x) * RAD_TO_DEG),
-    Math.asin(clamp(z, -1, 1)) * RAD_TO_DEG,
-  ]
-}
-
-function angularDistance(from, to) {
-  const a = lonLatToVector(from)
-  const b = lonLatToVector(to)
-  return Math.acos(clamp((a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]), -1, 1))
-}
-
-function interpolateGreatCircle(from, to, t) {
-  const a = lonLatToVector(from)
-  const b = lonLatToVector(to)
-  const omega = angularDistance(from, to)
-  if (omega < 0.000001) return [from[0], from[1]]
-
-  const sinOmega = Math.sin(omega)
-  const startScale = Math.sin((1 - t) * omega) / sinOmega
-  const endScale = Math.sin(t * omega) / sinOmega
-  return vectorToLonLat([
-    (a[0] * startScale) + (b[0] * endScale),
-    (a[1] * startScale) + (b[1] * endScale),
-    (a[2] * startScale) + (b[2] * endScale),
-  ])
-}
-
-function getRouteAngularDistance(path = []) {
-  let total = 0
-  for (let i = 0; i < path.length - 1; i++) {
-    total += angularDistance(path[i], path[i + 1]) * RAD_TO_DEG
-  }
-  return total
-}
-
-function getRouteArcHeight(route) {
-  const distance = getRouteAngularDistance(route.path)
-  const isSea = route.type === 'sea'
-  const base = isSea ? 720000 : 280000
-  const shortRouteScale = clamp(distance / 34, 0.28, 1)
-  return base * shortRouteScale
-}
-
-function sampleRouteGreatCircle(route, { elevated = false } = {}) {
-  if (!route.path?.length) return []
-  if (route.path.length === 1) return [route.path[0]]
-
-  const height = getRouteArcHeight(route)
-  const sampled = []
-
-  for (let segmentIndex = 0; segmentIndex < route.path.length - 1; segmentIndex++) {
-    const from = route.path[segmentIndex]
-    const to = route.path[segmentIndex + 1]
-    const distance = angularDistance(from, to) * RAD_TO_DEG
-    const steps = Math.max(8, Math.ceil(distance / 3.5))
-
-    for (let step = 0; step <= steps; step++) {
-      if (segmentIndex > 0 && step === 0) continue
-      const t = step / steps
-      const point = interpolateGreatCircle(from, to, t)
-      if (!elevated) {
-        sampled.push(point)
-        continue
-      }
-
-      const routeT = (segmentIndex + t) / (route.path.length - 1)
-      const ridge = Math.sin(Math.PI * t)
-      const breath = 0.72 + Math.sin(routeT * Math.PI) * 0.28
-      sampled.push([point[0], point[1], height * ridge * breath])
-    }
-  }
-
-  return sampled
-}
-
-function buildRouteVisuals(routeList, activeRouteName) {
-  return routeList
-    .filter(route => route.path?.length > 1)
-    .map((route, routeIndex) => {
-      const active = activeRouteName === route.name
-      const emphasis = !activeRouteName ? 0.86 : (active ? 1 : 0.16)
-      const isSea = route.type === 'sea'
-      const surfacePath = sampleRouteGreatCircle(route)
-      const arcPath = sampleRouteGreatCircle(route, { elevated: true })
-      const tone = getRouteVisualTone(route, routeIndex)
-      const width = (isSea ? 3.2 : 2.45) * emphasis
-      const haloWidth = (isSea ? 13 : 9) * emphasis
-      const shadowWidth = (isSea ? 20 : 14) * emphasis
-      const opacity = (isSea ? 230 : 218) * emphasis
-      const glowOpacity = (isSea ? 92 : 72) * emphasis
-
-      return {
-        ...route,
-        route,
-        routeIndex,
-        active,
-        emphasis,
-        surfacePath,
-        arcPath,
-        color: tone.core,
-        originalColor: route.color,
-        glowColor: tone.glow,
-        pulseHex: tone.pulse,
-        shadowColor: hexToRgb(tone.glow, Math.round(glowOpacity * 0.38)),
-        haloColor: hexToRgb(tone.glow, Math.round(glowOpacity)),
-        coreColor: hexToRgb(tone.core, Math.round(opacity)),
-        pulseColor: hexToRgb(tone.pulse, Math.round(235 * emphasis)),
-        shadowWidth,
-        haloWidth,
-        width,
-        pulseWidth: (isSea ? 5.8 : 4.6) * (active ? 1.16 : 0.92) * emphasis,
-        trailLength: isSea ? 320 : 230,
-      }
-    })
-}
-
-function buildRouteTrips(routeVisuals) {
-  const trips = []
-
-  routeVisuals.forEach(visual => {
-    const pulseCount = visual.active ? 5 : 3
-    for (let pulse = 0; pulse < pulseCount; pulse++) {
-      const start = positiveModulo((visual.routeIndex * 330) + (pulse * (LOOP_LENGTH / pulseCount)), LOOP_LENGTH)
-      trips.push({
-        ...visual,
-        id: `${visual.name}-${pulse}`,
-        timestamps: visual.arcPath.map((_, pointIndex) => (
-          start + (pointIndex / Math.max(visual.arcPath.length - 1, 1)) * 1180
-        )),
-      })
-    }
-  })
-
-  return trips
-}
-
-function buildGlobeRouteData(routeList, activeRouteName, clusterData = null) {
-  const effectiveRoutes = clusterData?.clusters?.length
-    ? routeList.map(route => ({ ...route, path: remapRoutePath(route.path, clusterData) }))
-    : routeList
-  return createFeatureCollection(buildRouteVisuals(effectiveRoutes, activeRouteName).map(visual => ({
-    type: 'Feature',
-    properties: {
-      name: visual.name,
-      color: visual.color,
-      glowColor: visual.glowColor,
-      width: visual.width,
-      haloWidth: visual.haloWidth,
-      opacity: 0.9 * visual.emphasis,
-      glowOpacity: 0.46 * visual.emphasis,
-    },
-    geometry: {
-      type: 'LineString',
-      coordinates: visual.surfacePath,
-    },
-  })))
-}
-
-function getPathPosition(path, progress) {
-  if (!path?.length) return null
-  if (path.length === 1) return path[0]
-
-  const segments = []
-  let total = 0
-  for (let i = 0; i < path.length - 1; i++) {
-    const from = path[i]
-    const to = path[i + 1]
-    const length = Math.hypot(to[0] - from[0], to[1] - from[1])
-    segments.push({ from, to, length })
-    total += length
-  }
-
-  if (!total) return path[0]
-  let target = Math.min(Math.max(progress, 0), 1) * total
-  for (const segment of segments) {
-    if (target > segment.length) {
-      target -= segment.length
-      continue
-    }
-
-    const t = segment.length ? target / segment.length : 0
-    return [
-      segment.from[0] + ((segment.to[0] - segment.from[0]) * t),
-      segment.from[1] + ((segment.to[1] - segment.from[1]) * t),
-    ]
-  }
-
-  return path[path.length - 1]
-}
-
-function buildGlobeRoutePulseData(time, routeList, activeRouteName) {
-  const features = []
-
-  buildRouteVisuals(routeList, activeRouteName).forEach(visual => {
-    const pulseCount = visual.active ? 5 : 3
-    const tailCount = visual.active ? 4 : 3
-
-    for (let pulse = 0; pulse < pulseCount; pulse++) {
-      for (let tail = 0; tail < tailCount; tail++) {
-        const phase = positiveModulo(
-          time + (visual.routeIndex * 210) + (pulse * LOOP_LENGTH / pulseCount) - (tail * 54),
-          LOOP_LENGTH,
-        )
-        const coordinates = getPathPosition(visual.surfacePath, phase / LOOP_LENGTH)
-        if (!coordinates) continue
-        const tailFade = 1 - (tail / tailCount)
-
-        features.push({
-          type: 'Feature',
-          properties: {
-            route: visual.name,
-            color: visual.pulseHex,
-            opacity: 0.88 * visual.emphasis * tailFade,
-            radius: (visual.active ? 6.2 : 4.4) * (0.58 + tailFade * 0.42),
-            haloRadius: (visual.active ? 14 : 10) * (0.58 + tailFade * 0.42),
-          },
-          geometry: {
-            type: 'Point',
-            coordinates,
-          },
-        })
-      }
-    }
-  })
-
-  return createFeatureCollection(features)
-}
 
 function buildGlobeNodeData(flavorList, activeNodeId, clusterData = null) {
   const features = []
@@ -757,38 +471,8 @@ function handleClusterClick(cluster) {
   })
 }
 
-function remapRoutePath(path, clusterState) {
-  const { clusters, clusterMap } = clusterState
-  if (!clusters.length || path.length < 2) return path
 
-  const remapped = []
-  for (let i = 0; i < path.length; i++) {
-    const wp = path[i]
-    let mapped = wp
-
-    for (const flavor of flavors) {
-      const cid = clusterMap.get(flavor.id)
-      if (!cid) continue
-      const dist = haversineDistance(wp, flavor.coordinates)
-      if (dist < 80) {
-        const cluster = clusters.find(c => c.id === cid)
-        if (cluster) {
-          mapped = cluster.center
-          break
-        }
-      }
-    }
-
-    const last = remapped[remapped.length - 1]
-    if (!last || haversineDistance(last, mapped) > 5) {
-      remapped.push(mapped)
-    }
-  }
-
-  return remapped.length >= 2 ? remapped : path
-}
-
-function buildLayers(time, flavorList, routeList, vis, activeNodeId, activeRouteName, sceneKind = 'flat') {
+function buildLayers(flavorList, vis, activeNodeId, sceneKind = 'flat') {
   const layers = []
   if (sceneKind === 'globe') return layers
 
@@ -796,83 +480,6 @@ function buildLayers(time, flavorList, routeList, vis, activeNodeId, activeRoute
   const zoom = map ? map.getZoom() : 3.5
   updateClusterState(zoom)
   const cOpacity = getClusterOpacity(zoom)
-
-  if (vis.L2) {
-    const effectiveRoutes = cOpacity > 0.3
-      ? routeList.map(route => ({ ...route, path: remapRoutePath(route.path, clusterState) }))
-      : routeList
-    const routeVisuals = buildRouteVisuals(effectiveRoutes, activeRouteName)
-    layers.push(
-      new PathLayer({
-        id: 'route-surface-shadow-layer',
-        data: routeVisuals,
-        getPath: d => d.surfacePath,
-        getColor: d => d.shadowColor,
-        getWidth: d => d.shadowWidth,
-        widthUnits: 'pixels',
-        widthMinPixels: 2,
-        rounded: true,
-        jointRounded: true,
-        capRounded: true,
-        pickable: false,
-        parameters: ARC_BLEND_PARAMETERS,
-      }),
-      new PathLayer({
-        id: 'route-arc-halo-layer',
-        data: routeVisuals,
-        getPath: d => d.arcPath,
-        getColor: d => d.haloColor,
-        getWidth: d => d.haloWidth,
-        widthUnits: 'pixels',
-        widthMinPixels: 2,
-        rounded: true,
-        jointRounded: true,
-        capRounded: true,
-        pickable: false,
-        parameters: ARC_BLEND_PARAMETERS,
-      }),
-      new PathLayer({
-        id: 'route-arc-core-layer',
-        data: routeVisuals,
-        getPath: d => d.arcPath,
-        getColor: d => d.coreColor,
-        getWidth: d => d.width,
-        widthUnits: 'pixels',
-        widthMinPixels: 2,
-        rounded: true,
-        jointRounded: true,
-        capRounded: true,
-        pickable: true,
-        parameters: ARC_BLEND_PARAMETERS,
-        onHover: ({ object, x, y }) => {
-          tooltip.value = object
-            ? { visible: true, x: x + 14, y: y - 10, text: object.name }
-            : { ...tooltip.value, visible: false }
-        },
-        onClick: ({ object }) => {
-          if (!object) return
-          consumeMapClick()
-          appStore.selectRoute(object.route)
-        },
-      }),
-      new TripsLayer({
-        id: 'route-trips-layer',
-        data: buildRouteTrips(routeVisuals),
-        getPath: d => d.arcPath,
-        getTimestamps: d => d.timestamps,
-        getColor: d => d.pulseColor,
-        opacity: 1,
-        widthMinPixels: 3,
-        getWidth: d => d.pulseWidth,
-        widthUnits: 'pixels',
-        rounded: true,
-        fadeTrail: true,
-        trailLength: 300,
-        currentTime: time,
-        parameters: ARC_BLEND_PARAMETERS,
-      }),
-    )
-  }
 
   if (vis.L3) {
     layers.push(
@@ -985,7 +592,7 @@ function buildLayers(time, flavorList, routeList, vis, activeNodeId, activeRoute
 }
 
 function sceneList() {
-  return [flatScene, globeScene].filter(Boolean)
+  return [flatScene, globeScene].filter(s => s?.loaded)
 }
 
 function getScene(kind) {
@@ -1468,11 +1075,6 @@ function handleSceneCameraChange(scene) {
   }
 }
 
-function getClusterDistance(zoom) {
-  if (zoom < 3.4) return 118
-  if (zoom < 4.15) return 84
-  return 0
-}
 
 function updateClusterState(zoom) {
   if (Math.abs(zoom - lastClusterZoom) < 0.05) return
@@ -1615,7 +1217,7 @@ function consumeMapClick() {
 }
 
 function clearMapSelection() {
-  if (!appStore.selectedNode && !appStore.selectedRoute && !appStore.selectedEcozone) return
+  if (!appStore.selectedNode && !appStore.selectedEcozone) return
   appStore.clearSelection()
 }
 
@@ -1663,12 +1265,9 @@ function redrawDeck() {
   sceneList().forEach(scene => {
     scene.deckOverlay?.setProps({
       layers: buildLayers(
-        currentTime,
         flavors,
-        routes,
         layerVisibility.value,
         selectedNodeId.value,
-        selectedRouteName.value,
         scene.kind,
       ),
     })
@@ -1677,10 +1276,10 @@ function redrawDeck() {
 }
 
 function syncPolarCapsState() {
-  if (flatScene) {
+  if (flatScene?.loaded) {
     setMapLayerVisibility('polar-caps', isSceneTransitioning.value && layerVisibility.value.L0, flatScene)
   }
-  if (globeScene) {
+  if (globeScene?.loaded) {
     setMapLayerVisibility('polar-caps', activeScene.value === 'globe' && layerVisibility.value.L0, globeScene)
   }
 }
@@ -1699,84 +1298,6 @@ function setGeoJsonSourceData(scene, sourceId, data) {
 function addGlobeNativeOverlayLayers(scene) {
   if (scene.kind !== 'globe') return
   const sceneMap = scene.map
-
-  try {
-    sceneMap.addSource(GLOBE_ROUTE_SOURCE_ID, {
-      type: 'geojson',
-      lineMetrics: true,
-      data: buildGlobeRouteData(routes, selectedRouteName.value),
-    })
-    sceneMap.addLayer({
-      id: GLOBE_ROUTE_GLOW_LAYER_ID,
-      type: 'line',
-      source: GLOBE_ROUTE_SOURCE_ID,
-      layout: {
-        visibility: 'none',
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-      paint: {
-        'line-color': ['get', 'glowColor'],
-        'line-width': ['get', 'haloWidth'],
-        'line-opacity': ['get', 'glowOpacity'],
-        'line-blur': 1.4,
-      },
-    })
-    sceneMap.addLayer({
-      id: GLOBE_ROUTE_LAYER_ID,
-      type: 'line',
-      source: GLOBE_ROUTE_SOURCE_ID,
-      layout: {
-        visibility: 'none',
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-      paint: {
-        'line-color': ['get', 'color'],
-        'line-width': ['get', 'width'],
-        'line-opacity': ['get', 'opacity'],
-        'line-blur': 0.12,
-      },
-    })
-  } catch (err) {
-    console.warn('globe route layer skipped:', err.message)
-  }
-
-  try {
-    sceneMap.addSource(GLOBE_ROUTE_PULSE_SOURCE_ID, {
-      type: 'geojson',
-      data: buildGlobeRoutePulseData(currentTime, routes, selectedRouteName.value),
-    })
-    sceneMap.addLayer({
-      id: GLOBE_ROUTE_PULSE_HALO_LAYER_ID,
-      type: 'circle',
-      source: GLOBE_ROUTE_PULSE_SOURCE_ID,
-      layout: { visibility: 'none' },
-      paint: {
-        'circle-color': ['get', 'color'],
-        'circle-radius': ['get', 'haloRadius'],
-        'circle-blur': 0.78,
-        'circle-opacity': ['*', ['get', 'opacity'], 0.46],
-      },
-    })
-    sceneMap.addLayer({
-      id: GLOBE_ROUTE_PULSE_LAYER_ID,
-      type: 'circle',
-      source: GLOBE_ROUTE_PULSE_SOURCE_ID,
-      layout: { visibility: 'none' },
-      paint: {
-        'circle-color': ['get', 'color'],
-        'circle-radius': ['get', 'radius'],
-        'circle-blur': 0.18,
-        'circle-opacity': ['get', 'opacity'],
-        'circle-stroke-color': 'rgba(255, 252, 246, 0.92)',
-        'circle-stroke-width': 0.75,
-        'circle-stroke-opacity': ['get', 'opacity'],
-      },
-    })
-  } catch (err) {
-    console.warn('globe route pulse layer skipped:', err.message)
-  }
 
   try {
     sceneMap.addSource(GLOBE_NODE_SOURCE_ID, {
@@ -1848,27 +1369,6 @@ function addGlobeNativeOverlayLayers(scene) {
     })
   }
 
-  sceneMap.on('click', GLOBE_ROUTE_LAYER_ID, e => {
-    if (scene.kind !== activeScene.value) return
-    const routeName = e.features?.[0]?.properties?.name
-    const route = routes.find(item => item.name === routeName)
-    if (!route) return
-    consumeMapClick()
-    appStore.selectRoute(route)
-  })
-  sceneMap.on('mouseenter', GLOBE_ROUTE_LAYER_ID, e => {
-    if (scene.kind !== activeScene.value) return
-    sceneMap.getCanvas().style.cursor = 'pointer'
-    const routeName = e.features?.[0]?.properties?.name
-    if (routeName) {
-      tooltip.value = { visible: true, x: e.point.x + 14, y: e.point.y - 10, text: routeName }
-    }
-  })
-  sceneMap.on('mouseleave', GLOBE_ROUTE_LAYER_ID, () => {
-    sceneMap.getCanvas().style.cursor = ''
-    tooltip.value = { ...tooltip.value, visible: false }
-  })
-
   sceneMap.on('click', GLOBE_NODE_DOT_LAYER_ID, e => {
     if (scene.kind !== activeScene.value) return
     const props = e.features?.[0]?.properties
@@ -1906,38 +1406,23 @@ function addGlobeNativeOverlayLayers(scene) {
 }
 
 function syncGlobeNativeOverlayState() {
-  if (!globeScene?.map) return
+  if (!globeScene?.loaded) return
 
   const canShowGlobeOverlay = activeScene.value === 'globe' || transitionToScene.value === 'globe'
-  const showL2 = canShowGlobeOverlay && layerVisibility.value.L2
   const showL3 = canShowGlobeOverlay && layerVisibility.value.L3
 
   const globeZoom = globeScene.map.getZoom()
   updateClusterState(globeZoom)
 
-  setGeoJsonSourceData(globeScene, GLOBE_ROUTE_SOURCE_ID, buildGlobeRouteData(routes, selectedRouteName.value, clusterState))
-  setGeoJsonSourceData(globeScene, GLOBE_ROUTE_PULSE_SOURCE_ID, buildGlobeRoutePulseData(currentTime, routes, selectedRouteName.value))
   setGeoJsonSourceData(globeScene, GLOBE_NODE_SOURCE_ID, buildGlobeNodeData(flavors, selectedNodeId.value, clusterState))
 
-  setMapLayerVisibility(GLOBE_ROUTE_GLOW_LAYER_ID, showL2, globeScene)
-  setMapLayerVisibility(GLOBE_ROUTE_LAYER_ID, showL2, globeScene)
-  setMapLayerVisibility(GLOBE_ROUTE_PULSE_HALO_LAYER_ID, showL2, globeScene)
-  setMapLayerVisibility(GLOBE_ROUTE_PULSE_LAYER_ID, showL2, globeScene)
   setMapLayerVisibility(GLOBE_NODE_HALO_LAYER_ID, showL3, globeScene)
   setMapLayerVisibility(GLOBE_NODE_GLOW_LAYER_ID, showL3, globeScene)
   setMapLayerVisibility(GLOBE_NODE_DOT_LAYER_ID, showL3, globeScene)
   setMapLayerVisibility(GLOBE_CLUSTER_LABEL_LAYER_ID, showL3, globeScene)
 }
 
-function startAnimation() {
-  function frame() {
-    currentTime = (currentTime + ANIMATION_SPEED) % LOOP_LENGTH
-    redrawDeck()
-    animId = requestAnimationFrame(frame)
-  }
 
-  frame()
-}
 
 async function addVectorLayers(scene) {
   const sceneMap = scene.map
@@ -2038,7 +1523,7 @@ function createMapScene(kind, container) {
     scene.deckOverlay = new MapboxOverlay({
       interleaved: true,
       effects: [lightingEffect],
-      layers: buildLayers(0, flavors, routes, layerVisibility.value, selectedNodeId.value, selectedRouteName.value, scene.kind),
+      layers: buildLayers(flavors, layerVisibility.value, selectedNodeId.value, scene.kind),
       getCursor: ({ isHovering }) => (isHovering ? 'pointer' : 'grab'),
     })
 
@@ -2082,9 +1567,8 @@ function createMapScene(kind, container) {
 }
 
 onMounted(async () => {
-  const [fRes, rRes] = await Promise.all([fetch('/api/flavors'), fetch('/api/routes')])
+  const fRes = await fetch('/api/flavors')
   flavors = await fRes.json()
-  routes = await rRes.json()
   appStore.setFlavors(flavors)
 
   fetch('/tiles/status')
@@ -2098,12 +1582,10 @@ onMounted(async () => {
 
   flatScene = createMapScene('flat', flatMapContainer.value)
   globeScene = createMapScene('globe', globeMapContainer.value)
-  startAnimation()
   window.addEventListener('keydown', handleWindowKeydown)
 })
 
 onUnmounted(() => {
-  cancelAnimationFrame(animId)
   cancelAnimationFrame(projectFrame)
   cancelAnimationFrame(cameraSyncFrame)
   cancelAnimationFrame(sceneTransitionFrame)
@@ -2165,8 +1647,8 @@ function toggleLayer(layer) {
 }
 
 watch(
-  () => [appStore.selectedNode, appStore.selectedRoute, appStore.selectedEcozone],
-  ([node, route]) => {
+  () => [appStore.selectedNode, appStore.selectedEcozone],
+  ([node, ecozone]) => {
     const activeMap = getActiveMap()
 
     if (node && activeMap) {
@@ -2188,14 +1670,6 @@ watch(
       activeMap.flyTo(flyOptions)
     }
 
-    if (route && activeMap && route.path?.length) {
-      const bounds = route.path.reduce(
-        (b, point) => b.extend(point),
-        new maplibregl.LngLatBounds(route.path[0], route.path[0]),
-      )
-      activeMap.fitBounds(bounds, { padding: 88, duration: 1200, essential: true })
-    }
-
     redrawDeck()
     scheduleProjectedNodesUpdate()
   },
@@ -2205,7 +1679,7 @@ watch(
   () => [
     layerVisibility.value.L0,
     layerVisibility.value.L1,
-    layerVisibility.value.L2,
+
     layerVisibility.value.L3,
     appStore.l1Emphasis,
   ],
@@ -2255,33 +1729,7 @@ const layerLegend = computed(() => [
       opacity: !layerVisibility.value.L1 ? 0.15 : (appStore.l1Emphasis ? L1_OPACITY_STRONG : L1_OPACITY_WEAK),
     },
   },
-  {
-    label: 'L2 弧面航迹',
-    dimmed: !layerVisibility.value.L2,
-    style: {
-      width: '20px',
-      height: '10px',
-      display: 'inline-block',
-      borderTop: '2px solid rgba(93, 143, 158, 0.86)',
-      borderRadius: '999px 999px 0 0',
-      transform: 'translateY(3px)',
-      opacity: layerVisibility.value.L2 ? 1 : 0.25,
-      boxShadow: layerVisibility.value.L2 ? '0 -3px 12px rgba(193, 220, 225, 0.34)' : 'none',
-    },
-  },
-  {
-    label: '脉冲流光',
-    dimmed: !layerVisibility.value.L2,
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: 'radial-gradient(circle, rgba(255, 253, 247, 1) 0%, rgba(111, 169, 183, 0.92) 45%, rgba(111, 169, 183, 0) 100%)',
-      display: 'inline-block',
-      opacity: layerVisibility.value.L2 ? 1 : 0.25,
-      boxShadow: layerVisibility.value.L2 ? '0 0 12px rgba(111, 169, 183, 0.38)' : 'none',
-    },
-  },
+
   {
     label: 'L3 气泡节点',
     dimmed: !layerVisibility.value.L3,
@@ -2300,15 +1748,12 @@ const layerLegend = computed(() => [
 const layerToggles = computed(() => [
   { key: 'L0', label: 'L0 底图', enabled: layerEnabled.value.L0, contextual: false },
   { key: 'L1', label: 'L1 区划', enabled: layerEnabled.value.L1, contextual: false },
-  { key: 'L2', label: 'L2 路径', enabled: layerEnabled.value.L2, contextual: true },
   { key: 'L3', label: 'L3 节点', enabled: layerEnabled.value.L3, contextual: false },
 ])
 </script>
 
 <style scoped>
 .map-page {
-  position: fixed;
-  inset: 0;
   background: #c8dde8;
   overflow: hidden;
 }
@@ -2336,10 +1781,6 @@ const layerToggles = computed(() => [
 }
 
 .map-container {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
   background: #d9e7ec;
 }
 

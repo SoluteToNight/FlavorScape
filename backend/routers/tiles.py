@@ -24,7 +24,7 @@ _EMPTY_TILE: bytes | None = None
 def _make_empty_tile() -> bytes:
     from PIL import Image
 
-    img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
+    img = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
@@ -46,7 +46,7 @@ def _render_tile_sync(z: int, x: int, y: int) -> bytes:
         from rio_tiler.io import Reader  # rio-tiler ≥ 5.0 (COGReader alias)
 
         with Reader(str(RASTER_TIF)) as cog:
-            img = cog.tile(x, y, z, tilesize=256)
+            img = cog.tile(x, y, z, tilesize=512)
             # HYP is RGB (3-band), render as PNG
             content = img.render(img_format="PNG")
 

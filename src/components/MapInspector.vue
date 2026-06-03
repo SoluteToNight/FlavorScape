@@ -1,44 +1,44 @@
 <template>
-  <div class="inspector glass-panel" :class="{ collapsed: inspectorCollapsed }">
+  <div class="inspector glass-panel fixed top-[calc(var(--navbar-h)+16px)] right-7 bottom-7 w-[290px] rounded-lg overflow-visible z-10" :class="{ collapsed: inspectorCollapsed }">
     <button
       type="button"
-      class="inspector-toggle"
+      class="inspector-toggle absolute -left-4 top-1/2 z-[2] w-8 h-11 border border-[rgba(180,165,140,0.2)] rounded-full inline-flex items-center justify-center bg-[rgba(255,252,248,0.92)] text-[rgba(87,83,78,0.68)] cursor-pointer -translate-y-1/2"
       :aria-label="inspectorCollapsed ? '展开详情面板' : '折叠详情面板'"
       :aria-expanded="!inspectorCollapsed"
       @click="inspectorCollapsed = !inspectorCollapsed"
     >
-      <span>{{ inspectorCollapsed ? '‹' : '›' }}</span>
+      <span class="text-[22px] leading-none -translate-y-px">{{ inspectorCollapsed ? '‹' : '›' }}</span>
     </button>
 
-    <div v-show="!inspectorCollapsed" class="inspector-body">
+    <div v-show="!inspectorCollapsed" class="h-full overflow-hidden rounded-[inherit]">
       <Transition name="panel" mode="out-in">
         <!-- Node panel -->
-        <div v-if="selectedNode" key="node" class="panel-content">
-        <div class="panel-tab">风味节点</div>
-        <div class="panel-title">{{ selectedNode.dish || selectedNode.city }}</div>
-        <div class="panel-subtitle">{{ selectedNode.city }} · {{ selectedNode.region }} · {{ selectedNode.eco }}</div>
+        <div v-if="selectedNode" key="node" class="panel-content px-6 py-6 overflow-y-auto h-full">
+        <div class="text-2xs tracking-[0.18em] text-text-muted uppercase mb-3.5">风味节点</div>
+        <div class="panel-title font-serif text-2xl font-medium text-text mb-1">{{ selectedNode.dish || selectedNode.city }}</div>
+        <div class="panel-subtitle text-xs text-text-muted tracking-[0.06em] mb-[18px]">{{ selectedNode.city }} · {{ selectedNode.region }} · {{ selectedNode.eco }}</div>
 
-        <div class="section-label">风味雷达图</div>
-        <div class="panel-card">
-          <div class="radar-wrap">
+        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5">风味雷达图</div>
+        <div class="panel-card rounded-[18px] border border-[rgba(180,165,140,0.16)]">
+          <div class="radar-wrap flex justify-center py-3">
             <FlavorRadar :scores="selectedNode.scores" :color="selectedNode.color" :size="148" :animated="true" />
           </div>
         </div>
 
-        <div class="section-label">风味描述</div>
-        <div class="panel-card">
-          <p class="node-description">
+        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5 mt-4">风味描述</div>
+        <div class="panel-card rounded-[18px] border border-[rgba(180,165,140,0.16)]">
+          <p class="node-description m-0 px-4 py-3.5 text-xs leading-[1.85] text-text-mid tracking-[0.03em]">
             {{ selectedNode.description }}
           </p>
         </div>
 
-        <div class="section-label" style="margin-top:16px">食材基因</div>
-        <div class="panel-card">
-          <div class="chips">
+        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5" style="margin-top:16px">食材基因</div>
+        <div class="panel-card rounded-[18px] border border-[rgba(180,165,140,0.16)]">
+          <div class="chips flex flex-wrap gap-2 p-3">
             <span
               v-for="ing in selectedNode.ingredients"
               :key="ing"
-              class="chip"
+              class="chip px-3 py-1.5 rounded-full text-xs border border-transparent"
               :class="{ active: hoveredIngredient === ing }"
               :style="buildTagStyle(selectedNode.color, hoveredIngredient === ing)"
               @mouseenter="hoveredIngredient = ing"
@@ -50,13 +50,13 @@
         </div>
 
         <template v-if="siblings.length">
-          <div class="section-label" style="margin-top:16px">同族成品 · {{ selectedNode.dish_family }}</div>
-          <div class="panel-card">
-            <div class="chips">
+          <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5" style="margin-top:16px">同族成品 · {{ selectedNode.dish_family }}</div>
+          <div class="panel-card rounded-[18px] border border-[rgba(180,165,140,0.16)]">
+            <div class="chips flex flex-wrap gap-2 p-3">
               <span
                 v-for="sib in siblings"
                 :key="sib.id"
-                class="chip chip-clickable"
+                class="chip chip-clickable cursor-pointer px-3 py-1.5 rounded-full text-xs border border-transparent"
                 :style="buildTagStyle(sib.color, false)"
                 @click="appStore.selectNode(sib)"
               >
@@ -68,56 +68,56 @@
         </div>
 
         <!-- L1 Ecozone panel -->
-        <div v-else-if="selectedEcozone" key="ecozone" class="panel-content">
-        <div class="panel-tab">L1 自然生态档案</div>
-        <div class="panel-title" style="font-size:16px;line-height:1.5">{{ selectedEcozone.eco_name_cn || selectedEcozone.eco_name || '未知生态区' }}</div>
-        <div class="panel-subtitle">{{ selectedEcozone.biome_cn || selectedEcozone.biome }} · {{ selectedEcozone.realm }}</div>
+        <div v-else-if="selectedEcozone" key="ecozone" class="panel-content px-6 py-6 overflow-y-auto h-full">
+        <div class="text-2xs tracking-[0.18em] text-text-muted uppercase mb-3.5">L1 自然生态档案</div>
+        <div class="panel-title font-serif font-medium text-text mb-1" style="font-size:16px;line-height:1.5">{{ selectedEcozone.eco_name_cn || selectedEcozone.eco_name || '未知生态区' }}</div>
+        <div class="panel-subtitle text-xs text-text-muted tracking-[0.06em] mb-[18px]">{{ selectedEcozone.biome_cn || selectedEcozone.biome }} · {{ selectedEcozone.realm }}</div>
 
-        <div class="section-label">生境概况</div>
-        <div class="eco-biome-badge" :style="{ borderColor: biomePalette[selectedEcozone.biome] || biomePaletteFallback }">
-          <span class="biome-num">{{ selectedEcozone.eco_code }}</span>
-          <span class="biome-name">{{ selectedEcozone.biome_cn || selectedEcozone.biome }}</span>
+        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5">生境概况</div>
+        <div class="eco-biome-badge inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[20px] border bg-[rgba(200,180,150,0.08)] mb-0.5" :style="{ borderColor: biomePalette[selectedEcozone.biome] || biomePaletteFallback }">
+          <span class="font-['Inter',sans-serif] text-xs text-text-muted">{{ selectedEcozone.eco_code }}</span>
+          <span class="text-xs text-text-mid">{{ selectedEcozone.biome_cn || selectedEcozone.biome }}</span>
         </div>
 
-        <div class="section-label" style="margin-top:16px">气候特征（模拟示意）</div>
-        <div class="panel-card">
-          <div ref="climateEl" class="echart-wrap echart-climate" />
+        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5" style="margin-top:16px">气候特征（模拟示意）</div>
+        <div class="panel-card rounded-[18px] border border-[rgba(180,165,140,0.16)]">
+          <div ref="climateEl" class="echart-climate w-full h-[130px] py-2.5 px-0" />
         </div>
 
-        <div v-if="selectedEcozone.realm" class="panel-source" style="margin-top:16px">
+        <div v-if="selectedEcozone.realm" class="text-2xs text-text-muted tracking-[0.06em]" style="margin-top:16px">
           生物地理界：{{ selectedEcozone.realm }}
         </div>
         </div>
 
         <!-- Route panel -->
-        <div v-else-if="selectedRoute" key="route" class="panel-content">
-        <div class="panel-tab">传播路径</div>
-        <div class="panel-title">{{ selectedRoute.name }}</div>
-        <div class="panel-subtitle">{{ selectedRoute.type === 'sea' ? '海路传播' : '陆路传播' }} · {{ selectedRoute.path.length }} 个节点</div>
-        <div class="panel-card route-card">
-          <div class="route-line" :style="{ background: selectedRoute.color }" />
-          <p class="route-desc">
+        <div v-else-if="selectedRoute" key="route" class="panel-content px-6 py-6 overflow-y-auto h-full">
+        <div class="text-2xs tracking-[0.18em] text-text-muted uppercase mb-3.5">传播路径</div>
+        <div class="panel-title font-serif text-2xl font-medium text-text mb-1">{{ selectedRoute.name }}</div>
+        <div class="panel-subtitle text-xs text-text-muted tracking-[0.06em] mb-[18px]">{{ selectedRoute.type === 'sea' ? '海路传播' : '陆路传播' }} · {{ selectedRoute.path.length }} 个节点</div>
+        <div class="panel-card route-card rounded-[18px] border border-[rgba(180,165,140,0.16)] p-3.5 pb-3">
+          <div class="route-line h-0.5 rounded-full mx-0.5 my-0 mb-3.5 opacity-[0.72]" :style="{ background: selectedRoute.color }" />
+          <p class="text-xs leading-[1.9] text-text-mid font-light mb-4">
             这条{{ selectedRoute.type === 'sea' ? '海上' : '陆上' }}路线是风味基因跨越地理屏障的核心通道。
             沿途经过的生态区差异与气候梯度，塑造了食材在传播过程中的逐步"变异"。
           </p>
-          <div class="waypoints">
-            <div v-for="(pt, i) in selectedRoute.path" :key="i" class="waypoint">
-              <span class="wpt-dot" :style="{ background: selectedRoute.color }" />
-              <span class="wpt-coord">{{ pt[0].toFixed(1) }}°, {{ pt[1].toFixed(1) }}°</span>
+          <div class="flex flex-col gap-2">
+            <div v-for="(pt, i) in selectedRoute.path" :key="i" class="flex items-center gap-2.5">
+              <span class="w-[5px] h-[5px] rounded-full shrink-0" :style="{ background: selectedRoute.color }" />
+              <span class="text-xs font-['Inter',sans-serif] text-text-muted">{{ pt[0].toFixed(1) }}°, {{ pt[1].toFixed(1) }}°</span>
             </div>
           </div>
         </div>
         </div>
 
         <!-- Empty state -->
-        <div v-else key="empty" class="empty-state">
-        <div class="empty-icon">
+        <div v-else key="empty" class="h-full flex flex-col items-center justify-center gap-4 opacity-[0.58] p-6 text-center">
+        <div class="empty-icon w-[42px] h-[42px] rounded-full border border-[rgba(180,165,140,0.22)] flex items-center justify-center text-text-muted">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
             <circle cx="12" cy="12" r="3"/>
             <path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
           </svg>
         </div>
-        <p>点击地图节点<br>或搜索食材查看详情</p>
+        <p class="text-xs text-[rgba(87,83,78,0.72)] leading-[1.9] tracking-[0.04em]">点击地图节点<br>或搜索食材查看详情</p>
         </div>
       </Transition>
     </div>
@@ -242,15 +242,9 @@ const biomePaletteFallback = '#C4B49A'
 </script>
 
 <style scoped>
+/* KEPT: complex transitions, gradients, composite shadows, hover effects, Vue transitions */
+
 .inspector {
-  position: fixed;
-  top: calc(var(--navbar-h) + 16px);
-  right: 28px;
-  bottom: 28px;
-  width: 290px;
-  border-radius: var(--radius);
-  overflow: visible;
-  z-index: 10;
   transition:
     width 220ms ease,
     height 220ms ease,
@@ -258,7 +252,6 @@ const biomePaletteFallback = '#C4B49A'
     border-radius 220ms ease,
     box-shadow 220ms ease;
 }
-
 .inspector.collapsed {
   bottom: auto;
   width: 48px;
@@ -266,29 +259,8 @@ const biomePaletteFallback = '#C4B49A'
   border-radius: 999px;
 }
 
-.inspector-body {
-  height: 100%;
-  overflow: hidden;
-  border-radius: inherit;
-}
-
 .inspector-toggle {
-  position: absolute;
-  left: -16px;
-  top: 50%;
-  z-index: 2;
-  width: 32px;
-  height: 44px;
-  border: 1px solid rgba(180, 165, 140, 0.2);
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 252, 248, 0.92);
-  color: rgba(87, 83, 78, 0.68);
   box-shadow: 0 12px 28px rgba(42, 31, 18, 0.1);
-  cursor: pointer;
-  transform: translateY(-50%);
   transition:
     left 220ms ease,
     width 220ms ease,
@@ -297,24 +269,15 @@ const biomePaletteFallback = '#C4B49A'
     background 180ms ease,
     box-shadow 180ms ease;
 }
-
 .inspector-toggle:hover {
   color: var(--amber);
   background: rgba(255, 252, 248, 0.98);
   box-shadow: 0 14px 32px rgba(42, 31, 18, 0.14);
 }
-
 .inspector-toggle:focus-visible {
   outline: 2px solid rgba(232, 169, 23, 0.34);
   outline-offset: 2px;
 }
-
-.inspector-toggle span {
-  font-size: 22px;
-  line-height: 1;
-  transform: translateY(-1px);
-}
-
 .inspector.collapsed .inspector-toggle {
   inset: 0;
   width: 48px;
@@ -322,79 +285,24 @@ const biomePaletteFallback = '#C4B49A'
   transform: none;
 }
 
-.empty-state {
-  height: 100%;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 16px; opacity: 0.58; padding: 24px;
-  text-align: center;
-}
 .empty-icon {
-  width: 42px; height: 42px;
-  border-radius: 50%;
-  border: 1px solid rgba(180, 165, 140, 0.22);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted);
   background: radial-gradient(circle, rgba(255,252,248,0.82) 0%, rgba(255,252,248,0.36) 100%);
   box-shadow: 0 14px 28px rgba(42, 31, 18, 0.08);
 }
-.empty-state p { font-size: 12px; color: rgba(87,83,78,0.72); line-height: 1.9; letter-spacing: 0.04em; }
 
-.panel-content { padding: 24px; overflow-y: auto; height: 100%; }
-.panel-tab { font-size: 10px; letter-spacing: 0.18em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 14px; }
-.panel-title { font-family: var(--font-serif); font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
-.panel-subtitle { font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; margin-bottom: 18px; }
-.section-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
 .panel-card {
-  border-radius: 18px;
-  border: 1px solid rgba(180, 165, 140, 0.16);
   background:
     linear-gradient(180deg, rgba(255, 252, 248, 0.74) 0%, rgba(255, 252, 248, 0.58) 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
 }
-.radar-wrap { display: flex; justify-content: center; padding: 12px 0; }
 
-.echart-wrap { width: 100%; }
-.echart-climate { height: 130px; padding: 10px 0 6px; }
-
-.node-description {
-  margin: 0;
-  padding: 14px 16px;
-  font-size: 12px;
-  line-height: 1.85;
-  color: var(--text-mid);
-  letter-spacing: 0.03em;
-}
-
-.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
 .chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 11px;
-  border: 1px solid transparent;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 .chip.active,
 .chip:hover { transform: translateY(-1px); }
-.chip-clickable { cursor: pointer; }
 
-.eco-biome-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 6px 14px; border-radius: 20px;
-  border: 1px solid; background: rgba(200,180,150,0.08);
-  margin-bottom: 2px;
-}
-.biome-num { font-family: 'Inter',sans-serif; font-size: 11px; color: var(--text-muted); }
-.biome-name { font-size: 12px; color: var(--text-mid); }
-
-.route-card { padding: 14px 14px 12px; }
-.route-line { height: 2px; border-radius: 999px; margin: 2px 0 14px; opacity: 0.72; box-shadow: 0 0 16px rgba(232,169,23,0.18); }
-.route-desc { font-size: 12px; line-height: 1.9; color: var(--text-mid); font-weight: 300; margin-bottom: 16px; }
-.waypoints { display: flex; flex-direction: column; gap: 8px; }
-.waypoint { display: flex; align-items: center; gap: 10px; }
-.wpt-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-.wpt-coord { font-size: 11px; font-family: 'Inter', sans-serif; color: var(--text-muted); }
-.panel-source { font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em; }
+.route-line { box-shadow: 0 0 16px rgba(232,169,23,0.18); }
 
 .panel-enter-active, .panel-leave-active { transition: opacity 200ms ease; }
 .panel-enter-from, .panel-leave-to { opacity: 0; }

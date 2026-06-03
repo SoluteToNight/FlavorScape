@@ -28,6 +28,7 @@ from .config import CORS_ORIGINS
 from .db.connection import init_pool, close_pool
 from .routers import api, tiles
 from .routers.ingredient_spread import router as ingredient_router
+from .routers.auth import router as auth_router
 from .startup import run_startup, load_ecoregions_from_db
 
 logging.basicConfig(
@@ -69,7 +70,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -77,6 +78,7 @@ app.add_middleware(
 app.include_router(api.router)
 app.include_router(tiles.router)
 app.include_router(ingredient_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")

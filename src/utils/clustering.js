@@ -33,7 +33,7 @@ export function haversineDistance(a, b) {
 /**
  * 根据缩放级别返回聚类距离阈值 (km)
  *
- * 与现有 DOM 气泡聚类 (MapView.vue getClusterDistance) 阈值对齐:
+ * 阈值与 DOM 气泡聚类保持一致:
  *   zoom < 3.4   → 强聚合（跨省大群）
  *   zoom 3.4–4.15 → 中等聚合（相邻城市）
  *   zoom ≥ 4.15  → 无聚合（全部独立）

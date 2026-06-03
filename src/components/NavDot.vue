@@ -1,17 +1,17 @@
 <template>
-  <div class="nav-dot" :class="{ open: isOpen }" @mouseenter="isOpen = true" @mouseleave="isOpen = false">
-    <div class="core" />
+  <div class="nav-dot fixed bottom-8 left-8 z-[90] cursor-pointer" :class="{ open: isOpen }" @mouseenter="isOpen = true" @mouseleave="isOpen = false">
+    <div class="core w-2.5 h-2.5 rounded-full bg-amber relative z-[2]" />
     <Transition name="menu">
-      <div v-show="isOpen" class="menu">
+      <div v-show="isOpen" class="absolute bottom-5 -left-2">
         <div
           v-for="item in navItems"
           :key="item.name"
-          class="spoke"
+          class="absolute flex items-center gap-2.5 cursor-pointer whitespace-nowrap"
           :style="{ bottom: item.bottom + 'px' }"
           @click="navigate(item.name)"
         >
-          <span class="spoke-dot" :class="{ active: route.name === item.name }" />
-          <span class="spoke-label">{{ item.label }}</span>
+          <span class="spoke-dot w-1.5 h-1.5 rounded-full bg-amber opacity-60 shrink-0" :class="{ active: route.name === item.name }" />
+          <span class="spoke-label text-xs font-light text-text-mid tracking-[0.06em] ml-1.5">{{ item.label }}</span>
         </div>
       </div>
     </Transition>
@@ -41,48 +41,14 @@ function navigate(name) {
 </script>
 
 <style scoped>
-.nav-dot {
-  position: fixed;
-  bottom: 32px;
-  left: 32px;
-  z-index: 90;
-  cursor: pointer;
-}
-
+/* KEPT: animation, hover cascades, Vue transitions — Tailwind cannot express these */
 .core {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--amber);
   animation: breathe 2.4s ease-in-out infinite;
-  position: relative;
-  z-index: 2;
   transition: transform var(--transition);
 }
 .nav-dot:hover .core { transform: scale(1.3); }
 
-.menu {
-  position: absolute;
-  bottom: 20px;
-  left: -8px;
-}
-
-.spoke {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
 .spoke-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--amber);
-  opacity: 0.6;
-  flex-shrink: 0;
   transition: opacity var(--transition), transform var(--transition);
 }
 .spoke-dot.active,
@@ -92,12 +58,7 @@ function navigate(name) {
 }
 
 .spoke-label {
-  font-size: 11px;
-  font-weight: 300;
-  color: var(--text-mid);
-  letter-spacing: 0.06em;
   transition: color var(--transition);
-  margin-left: 6px;
 }
 .spoke:hover .spoke-label { color: var(--amber); }
 

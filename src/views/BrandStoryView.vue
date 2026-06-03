@@ -1,5 +1,5 @@
 ﻿<template>
-  <main class="product-page" :class="`view-${currentView}`">
+  <main class="product-page fixed top-navbar inset-x-0 bottom-0 overflow-auto" :class="`view-${currentView}`">
     <section class="studio-toolbar">
       <div class="toolbar-copy">
         <span>FlavorScape Product Studio</span>
@@ -476,7 +476,7 @@ const MAP_STYLE = {
     'hyp-tiles': {
       type: 'raster',
       tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
-      tileSize: 256,
+      tileSize: 512,
       minzoom: 0,
       maxzoom: 8,
       attribution: 'Natural Earth',
@@ -1307,9 +1307,6 @@ function printCapture() {
 
 <style scoped>
 .product-page {
-  position: fixed;
-  inset: var(--navbar-h) 0 0;
-  overflow: auto;
   --ink: #241d17;
   --muted: #6f6254;
   --paper: #f7efe1;
