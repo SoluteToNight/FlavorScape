@@ -4,7 +4,7 @@
   "type": "module",
   "description": "FlavorScape traceability visualization studio",
   "scripts": {
-    "dev": "concurrently \"node server.js\" \"vite\"",
+    "dev": "vite",
     "build": "vite build",
     "start": "NODE_ENV=production node server.js",
     "preview": "vite preview"
@@ -21,6 +21,7 @@
     "@deck.gl/geo-layers": "^9.0.10",
     "@deck.gl/layers": "^9.0.10",
     "@deck.gl/mapbox": "^9.0.10",
+    "@playwright/test": "^1.60.0",
     "@vitejs/plugin-vue": "^5.1.2",
     "concurrently": "^8.2.2",
     "echarts": "^5.5.1",

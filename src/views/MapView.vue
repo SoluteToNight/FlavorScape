@@ -186,7 +186,8 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { AmbientLight, DirectionalLight, LightingEffect } from '@deck.gl/core'
 import { MapboxOverlay } from '@deck.gl/mapbox'
-import { PathLayer, ScatterplotLayer } from '@deck.gl/layers'
+import { PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers'
+import { computeClusters, getClusterOpacity, haversineDistance } from '../utils/clustering.js'
 import { TripsLayer } from '@deck.gl/geo-layers'
 
 const flatMapContainer = ref(null)
@@ -240,6 +241,7 @@ const GLOBE_ROUTE_PULSE_LAYER_ID = 'globe-route-pulses'
 const GLOBE_NODE_HALO_LAYER_ID = 'globe-node-halo'
 const GLOBE_NODE_GLOW_LAYER_ID = 'globe-node-glow'
 const GLOBE_NODE_DOT_LAYER_ID = 'globe-node-dot'
+const GLOBE_CLUSTER_LABEL_LAYER_ID = 'globe-cluster-label'
 const ARC_BLEND_PARAMETERS = {
   blend: true,
   depthWriteEnabled: false,
@@ -288,6 +290,8 @@ let animId = null
 let currentTime = 0
 let flavors = []
 let routes = []
+let clusterState = { clusters: [], clusterMap: new Map(), unclusteredFlavors: [] }
+let lastClusterZoom = -1
 let projectFrame = 0
 let ignoreBackgroundClickUntil = 0
 let pitchBeforeGlobe = 36
@@ -594,8 +598,11 @@ function buildRouteTrips(routeVisuals) {
   return trips
 }
 
-function buildGlobeRouteData(routeList, activeRouteName) {
-  return createFeatureCollection(buildRouteVisuals(routeList, activeRouteName).map(visual => ({
+function buildGlobeRouteData(routeList, activeRouteName, clusterData = null) {
+  const effectiveRoutes = clusterData?.clusters?.length
+    ? routeList.map(route => ({ ...route, path: remapRoutePath(route.path, clusterData) }))
+    : routeList
+  return createFeatureCollection(buildRouteVisuals(effectiveRoutes, activeRouteName).map(visual => ({
     type: 'Feature',
     properties: {
       name: visual.name,
@@ -683,13 +690,41 @@ function buildGlobeRoutePulseData(time, routeList, activeRouteName) {
   return createFeatureCollection(features)
 }
 
-function buildGlobeNodeData(flavorList, activeNodeId) {
-  return createFeatureCollection(flavorList.map(flavor => {
+function buildGlobeNodeData(flavorList, activeNodeId, clusterData = null) {
+  const features = []
+
+  // 聚合节点 feature
+  if (clusterData?.clusters?.length) {
+    clusterData.clusters.forEach(cluster => {
+      features.push({
+        type: 'Feature',
+        properties: {
+          id: cluster.id,
+          kind: 'cluster',
+          count: cluster.count,
+          color: cluster.dominantColor,
+          haloRadius: 62,
+          glowRadius: 44,
+          dotRadius: 10,
+          haloOpacity: 0.36,
+          glowOpacity: 0.92,
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: cluster.center,
+        },
+      })
+    })
+  }
+
+  // 个体节点 feature
+  flavorList.forEach(flavor => {
     const selected = activeNodeId === flavor.id
-    return {
+    features.push({
       type: 'Feature',
       properties: {
         id: flavor.id,
+        kind: 'node',
         dish: flavor.dish,
         city: flavor.city,
         color: flavor.color,
@@ -703,16 +738,70 @@ function buildGlobeNodeData(flavorList, activeNodeId) {
         type: 'Point',
         coordinates: flavor.coordinates,
       },
+    })
+  })
+
+  return createFeatureCollection(features)
+}
+
+function handleClusterClick(cluster) {
+  const activeMap = getActiveMap()
+  if (!activeMap) return
+
+  const targetZoom = Math.min(activeMap.getZoom() + 2, 5.5)
+  activeMap.flyTo({
+    center: cluster.center,
+    zoom: targetZoom,
+    duration: 800,
+    essential: true,
+  })
+}
+
+function remapRoutePath(path, clusterState) {
+  const { clusters, clusterMap } = clusterState
+  if (!clusters.length || path.length < 2) return path
+
+  const remapped = []
+  for (let i = 0; i < path.length; i++) {
+    const wp = path[i]
+    let mapped = wp
+
+    for (const flavor of flavors) {
+      const cid = clusterMap.get(flavor.id)
+      if (!cid) continue
+      const dist = haversineDistance(wp, flavor.coordinates)
+      if (dist < 80) {
+        const cluster = clusters.find(c => c.id === cid)
+        if (cluster) {
+          mapped = cluster.center
+          break
+        }
+      }
     }
-  }))
+
+    const last = remapped[remapped.length - 1]
+    if (!last || haversineDistance(last, mapped) > 5) {
+      remapped.push(mapped)
+    }
+  }
+
+  return remapped.length >= 2 ? remapped : path
 }
 
 function buildLayers(time, flavorList, routeList, vis, activeNodeId, activeRouteName, sceneKind = 'flat') {
   const layers = []
   if (sceneKind === 'globe') return layers
 
+  const map = getActiveMap()
+  const zoom = map ? map.getZoom() : 3.5
+  updateClusterState(zoom)
+  const cOpacity = getClusterOpacity(zoom)
+
   if (vis.L2) {
-    const routeVisuals = buildRouteVisuals(routeList, activeRouteName)
+    const effectiveRoutes = cOpacity > 0.3
+      ? routeList.map(route => ({ ...route, path: remapRoutePath(route.path, clusterState) }))
+      : routeList
+    const routeVisuals = buildRouteVisuals(effectiveRoutes, activeRouteName)
     layers.push(
       new PathLayer({
         id: 'route-surface-shadow-layer',
@@ -824,6 +913,72 @@ function buildLayers(time, flavorList, routeList, vis, activeNodeId, activeRoute
         parameters: ARC_BLEND_PARAMETERS,
       }),
     )
+
+    // ---- 聚合叠加层 ----
+    if (cOpacity > 0.01 && clusterState.clusters.length > 0) {
+      layers.push(
+        new ScatterplotLayer({
+          id: 'cluster-aura-layer',
+          data: clusterState.clusters,
+          getPosition: d => d.center,
+          getRadius: 140000,
+          radiusUnits: 'meters',
+          getFillColor: d => hexToRgb(d.dominantColor, Math.round(68 * cOpacity)),
+          stroked: false,
+          pickable: false,
+          parameters: ARC_BLEND_PARAMETERS,
+        }),
+        new ScatterplotLayer({
+          id: 'cluster-glow-layer',
+          data: clusterState.clusters,
+          getPosition: d => d.center,
+          getRadius: 72000,
+          radiusUnits: 'meters',
+          getFillColor: d => hexToRgb(d.dominantColor, Math.round(140 * cOpacity)),
+          stroked: false,
+          pickable: false,
+          parameters: ARC_BLEND_PARAMETERS,
+        }),
+        new ScatterplotLayer({
+          id: 'cluster-core-layer',
+          data: clusterState.clusters,
+          getPosition: d => d.center,
+          getRadius: 16000,
+          radiusUnits: 'meters',
+          getFillColor: d => hexToRgb(d.dominantColor, Math.round(240 * cOpacity)),
+          getLineColor: () => [255, 252, 246, Math.round(230 * cOpacity)],
+          getLineWidth: 2.8,
+          lineWidthUnits: 'pixels',
+          stroked: true,
+          pickable: true,
+          parameters: ARC_BLEND_PARAMETERS,
+          onClick: ({ object }) => {
+            if (!object) return
+            consumeMapClick()
+            handleClusterClick(object)
+          },
+          onHover: ({ object, x, y }) => {
+            tooltip.value = object
+              ? { visible: true, x: x + 14, y: y - 10, text: `${object.count} 个风味节点 (点击展开)` }
+              : { ...tooltip.value, visible: false }
+          },
+        }),
+        new TextLayer({
+          id: 'cluster-count-layer',
+          data: clusterState.clusters,
+          getPosition: d => d.center,
+          getText: d => String(d.count),
+          getSize: 16,
+          getColor: [255, 255, 255, Math.round(255 * cOpacity)],
+          getTextAnchor: 'middle',
+          getAlignmentBaseline: 'center',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontWeight: 700,
+          pickable: false,
+          parameters: ARC_BLEND_PARAMETERS,
+        }),
+      )
+    }
   }
 
   return layers
@@ -1319,6 +1474,12 @@ function getClusterDistance(zoom) {
   return 0
 }
 
+function updateClusterState(zoom) {
+  if (Math.abs(zoom - lastClusterZoom) < 0.05) return
+  lastClusterZoom = zoom
+  clusterState = computeClusters(flavors, zoom)
+}
+
 function getBubblePlacement(index) {
   return ['north-east', 'north-west', 'north-east', 'north-west'][index % 4]
 }
@@ -1368,80 +1529,6 @@ function createBubbleNode(flavor, point, zoom, modeOverride = null) {
   }
 }
 
-function clusterBaseNodes(nodes, threshold) {
-  const clusters = []
-  const visited = new Set()
-
-  for (let i = 0; i < nodes.length; i++) {
-    const seed = nodes[i]
-    if (visited.has(seed.id)) continue
-
-    const stack = [seed]
-    const members = []
-    visited.add(seed.id)
-
-    while (stack.length) {
-      const current = stack.pop()
-      members.push(current)
-
-      for (let j = 0; j < nodes.length; j++) {
-        const candidate = nodes[j]
-        if (visited.has(candidate.id)) continue
-
-        const dx = current.point.x - candidate.point.x
-        const dy = current.point.y - candidate.point.y
-        if (Math.hypot(dx, dy) <= threshold) {
-          visited.add(candidate.id)
-          stack.push(candidate)
-        }
-      }
-    }
-
-    clusters.push(members)
-  }
-
-  return clusters
-}
-
-function createClusterBubble(members) {
-  const centroid = members.reduce(
-    (acc, member) => {
-      acc.x += member.point.x
-      acc.y += member.point.y
-      return acc
-    },
-    { x: 0, y: 0 },
-  )
-  centroid.x /= members.length
-  centroid.y /= members.length
-
-  const sorted = [...members].sort((a, b) => a.flavor.city.localeCompare(b.flavor.city, 'zh-CN'))
-  const citySummary = sorted.slice(0, 3).map(member => member.flavor.city).join(' · ')
-  const dishSummary = sorted.slice(0, 3).map(member => member.flavor.dish).join(' · ')
-  const suffix = members.length > 3 ? ` 等 ${members.length} 个节点` : ` 共 ${members.length} 个节点`
-
-  return {
-    kind: 'cluster',
-    id: `cluster-${sorted.map(member => member.id).join('-')}`,
-    title: `${members.length} 个风味节点`,
-    city: citySummary,
-    dish: '',
-    description: `${dishSummary}${suffix}`,
-    bubbleImages: sorted.slice(0, 3).map(member => member.flavor.bubbleImage),
-    count: members.length,
-    children: sorted.map(member => member.flavor),
-    coordinates: sorted.map(member => member.flavor.coordinates),
-    color: sorted[0].flavor.color,
-    x: centroid.x,
-    y: centroid.y,
-    mode: 'cluster',
-    selected: false,
-    hovered: hoveredBubbleId.value === `cluster-${sorted.map(member => member.id).join('-')}`,
-    placement: getBubblePlacement(sorted[0].flavor.__bubbleIndex ?? 0),
-    zIndex: hoveredBubbleId.value === `cluster-${sorted.map(member => member.id).join('-')}` ? 22 : 14,
-  }
-}
-
 function updateProjectedNodes() {
   const flatMap = flatScene?.map
   const flatSceneVisible = isSceneVisible('flat')
@@ -1451,46 +1538,60 @@ function updateProjectedNodes() {
   }
 
   const zoom = flatMap.getZoom()
-  const baseNodes = flavors
-    .map((flavor, index) => {
-      flavor.__bubbleIndex = index
-      const point = flatMap.project(flavor.coordinates)
-      if (!isPointVisible(point)) return null
-      return {
-        id: flavor.id,
-        flavor,
-        point,
-        selected: selectedNodeId.value === flavor.id,
-      }
-    })
-    .filter(Boolean)
+  updateClusterState(zoom)
+  const items = []
 
-  const clusterDistance = getClusterDistance(zoom)
-  const selectedNodes = baseNodes.filter(node => node.selected)
-  const normalNodes = baseNodes.filter(node => !node.selected)
-
-  if (!clusterDistance) {
-    projectedNodes.value = baseNodes
-      .map(node => createBubbleNode(node.flavor, node.point, zoom))
-      .filter(Boolean)
-    return
+  // 选中的节点始终单独渲染为 expanded 气泡
+  const selectedFlavor = flavors.find(f => f.id === selectedNodeId.value)
+  if (selectedFlavor) {
+    const point = flatMap.project(selectedFlavor.coordinates)
+    if (isPointVisible(point)) {
+      const bubble = createBubbleNode(selectedFlavor, point, zoom, 'expanded')
+      if (bubble) items.push(bubble)
+    }
   }
 
-  const items = selectedNodes
-    .map(node => createBubbleNode(node.flavor, node.point, zoom, 'expanded'))
-    .filter(Boolean)
+  // 未聚类的独立节点
+  clusterState.unclusteredFlavors.forEach((flavor, index) => {
+    flavor.__bubbleIndex = index
+    if (flavor.id === selectedNodeId.value) return // 已在上方处理
+    const point = flatMap.project(flavor.coordinates)
+    if (!isPointVisible(point)) return
+    const mode = zoom >= 4.15 ? 'expanded' : (zoom >= 3 ? 'compact' : 'hidden')
+    const bubble = createBubbleNode(flavor, point, zoom, mode)
+    if (bubble) items.push(bubble)
+  })
 
-  const clusters = clusterBaseNodes(normalNodes, clusterDistance)
-  clusters.forEach(members => {
-    if (members.length === 1) {
-      const member = members[0]
-      const mode = zoom >= 3 ? 'compact' : 'hidden'
-      const nodeItem = createBubbleNode(member.flavor, member.point, zoom, mode)
-      if (nodeItem) items.push(nodeItem)
-      return
-    }
+  // 聚合气泡
+  clusterState.clusters.forEach((cluster, index) => {
+    const point = flatMap.project(cluster.center)
+    if (!isPointVisible(point)) return
 
-    items.push(createClusterBubble(members))
+    const sorted = [...cluster.members].sort((a, b) => a.city.localeCompare(b.city, 'zh-CN'))
+    const citySummary = sorted.slice(0, 3).map(m => m.city).join(' · ')
+    const dishSummary = sorted.slice(0, 3).map(m => m.dish).join(' · ')
+    const suffix = cluster.count > 3 ? ` 等 ${cluster.count} 个节点` : ` 共 ${cluster.count} 个节点`
+
+    items.push({
+      kind: 'cluster',
+      id: cluster.id,
+      title: `${cluster.count} 个风味节点`,
+      city: citySummary,
+      dish: '',
+      description: `${dishSummary}${suffix}`,
+      bubbleImages: sorted.slice(0, 3).map(m => m.bubbleImage),
+      count: cluster.count,
+      children: sorted,
+      coordinates: sorted.map(m => m.coordinates),
+      color: cluster.dominantColor,
+      x: point.x,
+      y: point.y,
+      mode: 'cluster',
+      selected: false,
+      hovered: hoveredBubbleId.value === cluster.id,
+      placement: getBubblePlacement(index),
+      zIndex: hoveredBubbleId.value === cluster.id ? 22 : 14,
+    })
   })
 
   projectedNodes.value = items
@@ -1724,6 +1825,29 @@ function addGlobeNativeOverlayLayers(scene) {
     console.warn('globe node layer skipped:', err.message)
   }
 
+  // 聚合 count 数字标签 (symbol layer on same source)
+  if (!sceneMap.getLayer(GLOBE_CLUSTER_LABEL_LAYER_ID)) {
+    sceneMap.addLayer({
+      id: GLOBE_CLUSTER_LABEL_LAYER_ID,
+      type: 'symbol',
+      source: GLOBE_NODE_SOURCE_ID,
+      filter: ['==', ['get', 'kind'], 'cluster'],
+      layout: {
+        visibility: 'none',
+        'text-field': ['to-string', ['get', 'count']],
+        'text-size': 14,
+        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: {
+        'text-color': '#FFFFFF',
+        'text-halo-color': 'rgba(0,0,0,0.3)',
+        'text-halo-width': 1.5,
+      },
+    })
+  }
+
   sceneMap.on('click', GLOBE_ROUTE_LAYER_ID, e => {
     if (scene.kind !== activeScene.value) return
     const routeName = e.features?.[0]?.properties?.name
@@ -1747,8 +1871,20 @@ function addGlobeNativeOverlayLayers(scene) {
 
   sceneMap.on('click', GLOBE_NODE_DOT_LAYER_ID, e => {
     if (scene.kind !== activeScene.value) return
-    const nodeId = e.features?.[0]?.properties?.id
-    const node = flavors.find(item => item.id === nodeId)
+    const props = e.features?.[0]?.properties
+    if (!props) return
+
+    // 聚合点击：飞至聚合中心并放大
+    if (props.kind === 'cluster') {
+      const cluster = clusterState.clusters.find(c => c.id === props.id)
+      if (cluster) {
+        consumeMapClick()
+        handleClusterClick(cluster)
+      }
+      return
+    }
+
+    const node = flavors.find(item => item.id === props.id)
     if (!node) return
     consumeMapClick()
     appStore.selectNode(node)
@@ -1757,7 +1893,9 @@ function addGlobeNativeOverlayLayers(scene) {
     if (scene.kind !== activeScene.value) return
     sceneMap.getCanvas().style.cursor = 'pointer'
     const props = e.features?.[0]?.properties
-    if (props?.dish) {
+    if (props?.kind === 'cluster') {
+      tooltip.value = { visible: true, x: e.point.x + 14, y: e.point.y - 10, text: `${props.count} 个风味节点 (点击展开)` }
+    } else if (props?.dish) {
       tooltip.value = { visible: true, x: e.point.x + 14, y: e.point.y - 10, text: `${props.city} · ${props.dish}` }
     }
   })
@@ -1774,9 +1912,12 @@ function syncGlobeNativeOverlayState() {
   const showL2 = canShowGlobeOverlay && layerVisibility.value.L2
   const showL3 = canShowGlobeOverlay && layerVisibility.value.L3
 
-  setGeoJsonSourceData(globeScene, GLOBE_ROUTE_SOURCE_ID, buildGlobeRouteData(routes, selectedRouteName.value))
+  const globeZoom = globeScene.map.getZoom()
+  updateClusterState(globeZoom)
+
+  setGeoJsonSourceData(globeScene, GLOBE_ROUTE_SOURCE_ID, buildGlobeRouteData(routes, selectedRouteName.value, clusterState))
   setGeoJsonSourceData(globeScene, GLOBE_ROUTE_PULSE_SOURCE_ID, buildGlobeRoutePulseData(currentTime, routes, selectedRouteName.value))
-  setGeoJsonSourceData(globeScene, GLOBE_NODE_SOURCE_ID, buildGlobeNodeData(flavors, selectedNodeId.value))
+  setGeoJsonSourceData(globeScene, GLOBE_NODE_SOURCE_ID, buildGlobeNodeData(flavors, selectedNodeId.value, clusterState))
 
   setMapLayerVisibility(GLOBE_ROUTE_GLOW_LAYER_ID, showL2, globeScene)
   setMapLayerVisibility(GLOBE_ROUTE_LAYER_ID, showL2, globeScene)
@@ -1785,6 +1926,7 @@ function syncGlobeNativeOverlayState() {
   setMapLayerVisibility(GLOBE_NODE_HALO_LAYER_ID, showL3, globeScene)
   setMapLayerVisibility(GLOBE_NODE_GLOW_LAYER_ID, showL3, globeScene)
   setMapLayerVisibility(GLOBE_NODE_DOT_LAYER_ID, showL3, globeScene)
+  setMapLayerVisibility(GLOBE_CLUSTER_LABEL_LAYER_ID, showL3, globeScene)
 }
 
 function startAnimation() {

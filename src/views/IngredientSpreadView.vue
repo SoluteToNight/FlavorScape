@@ -1,5 +1,5 @@
 <template>
-  <div class="spread-page">
+  <div class="spread-page" :class="{ 'sidebar-open': !sidebarCollapsed }">
     <div ref="mapContainer" class="spread-map" />
     <div class="spread-vignette spread-vignette-top" aria-hidden="true" />
     <div class="spread-vignette spread-vignette-bottom" aria-hidden="true" />
@@ -8,9 +8,6 @@
       <div class="overlay-kicker">{{ isOverview ? '食材传播总览' : '传播路径总览' }}</div>
       <div class="overlay-year" :style="{ color: activeColor }">{{ displayedYearRange }}</div>
       <div class="overlay-location">{{ overlayTitle }}</div>
-      <div class="overlay-event-type" :style="{ borderColor: activeColor }">
-        {{ overlaySubtitle }}
-      </div>
     </div>
 
     <div class="spread-route-caption" v-if="hasAnyData">
@@ -19,12 +16,18 @@
         {{ isOverview ? `${shownIngredients.length} 种食材传播线同时显示` : captionTitle }}
       </div>
       <div class="caption-route" :style="{ color: activeColor }">
-        {{ isOverview ? '缩小时节点图标自动避让；点击右侧食材或地图节点，可切换到单条传播路径。' : captionRoute }}
+        {{ isOverview ? '点击食材卡片或地图节点查看单条传播路径' : captionRoute }}
       </div>
     </div>
 
-    <aside class="spread-sidebar">
+    <button class="sidebar-toggle" @click="toggleSidebar" :class="{ open: !sidebarCollapsed }" :title="sidebarCollapsed ? '展开面板' : '收起面板'">
+      <span class="toggle-icon">{{ sidebarCollapsed ? '◀' : '▶' }}</span>
+      <span class="toggle-label">{{ sidebarCollapsed ? '展开' : '收起' }}</span>
+    </button>
+
+    <aside class="spread-sidebar" :class="{ collapsed: sidebarCollapsed }">
       <div class="sidebar-header">
+        <button class="sidebar-close-btn" @click="sidebarCollapsed = true" title="收起面板">✕</button>
         <div class="ingredient-selector" v-if="ingredients.length">
           <button
             class="ing-tab overview-tab"
@@ -63,9 +66,7 @@
               </div>
             </div>
           </div>
-          <p class="ing-summary">
-            当前默认展示全部已录入食材。总览层保持较低线宽和透明度，节点采用食材图标并交由地图引擎做碰撞避让；单击某一食材后，再进入完整历史文本和强化路径。
-          </p>
+
         </template>
 
         <template v-else-if="activeData">
@@ -99,11 +100,6 @@
           <button class="route-fit-btn" @click="focusFullRoute">查看全图</button>
         </div>
 
-        <div class="route-rule">
-          <span class="route-rule-dot overview-dot" />
-          <span>每种食材仅绘制同一地区的首次传入节点；重复历史记录保留在单食材时间线中。</span>
-        </div>
-
         <div class="ingredient-overview-list">
           <button
             v-for="detail in shownIngredients"
@@ -130,13 +126,6 @@
           <button class="route-fit-btn" @click="focusFullRoute">查看全路径</button>
         </div>
 
-        <div class="route-rule">
-          <span class="route-rule-dot" :style="{ background: activeColor }" />
-          <span>
-            地图只绘制每个地区的首次传入记录
-            <template v-if="duplicateCount">，已过滤 {{ duplicateCount }} 条重复地区记录</template>。
-          </span>
-        </div>
 
         <div class="event-list" ref="eventListEl">
           <div
@@ -202,18 +191,39 @@ const ingredientDetails = ref({})
 const activeId = ref(OVERVIEW_ID)
 const currentEventKey = ref('')
 const imageLoadFailed = ref(false)
+const sidebarCollapsed = ref(true)
 
 let map = null
 let flowFrame = 0
 let routePopup = null
 let spreadMarkers = []
 let markerSyncFrame = 0
+let clusterRouteSyncFrame = 0
+let clusterRouteUpdateVersion = 0
+let normalizingMinZoomCamera = false
+let spreadPointFeatureCache = null
+let clusterRouteFeatureCache = null
 const loadedImageIds = new Set()
 
 const DEFAULT_MAP_CENTER = [104, 32]
 const DEFAULT_MAP_ZOOM = 3.05
 const DEFAULT_MAP_PITCH = 24
 const DEFAULT_MAP_BEARING = 0
+const WORLD_TILE_SIZE = 512
+const MIN_MAP_ZOOM_FALLBACK = 0.65
+const MAX_RESPONSIVE_MIN_ZOOM = 1.45
+const MIN_ZOOM_CENTER_LAT = 0
+const MIN_ZOOM_SNAP_MARGIN = 0.08
+const MIN_ZOOM_CAMERA_DURATION = 220
+const SPREAD_CLUSTER_MAX_ZOOM = 10
+const SAME_INGREDIENT_CLUSTER_RADIUS = 55
+const MIXED_INGREDIENT_CLUSTER_RADIUS = 18
+const FOCUSED_CLUSTER_MAX_ZOOM = 5.4
+const FOCUSED_CLUSTER_RADIUS = 22
+const TEMPORAL_CLUSTER_WEIGHT = 0.6
+const SPATIAL_CLUSTER_WEIGHT = 0.4
+const OVERVIEW_CLUSTER_TIME_WINDOW_YEARS = 600
+const FOCUSED_CLUSTER_TIME_WINDOW_YEARS = 90
 const RASTER_MAX_ZOOM = 8
 
 const EMPTY_GEOJSON = { type: 'FeatureCollection', features: [] }
@@ -221,6 +231,7 @@ const SPREAD_SOURCES = {
   routes: 'spread-routes',
   points: 'spread-points',
   particles: 'spread-particles',
+  clusterRoutes: 'spread-cluster-routes',
 }
 
 const MAP_STYLE = {
@@ -243,10 +254,11 @@ const MAP_STYLE = {
       type: 'raster',
       source: 'hyp-tiles',
       paint: {
-        'raster-saturation': -0.22,
-        'raster-contrast': 0.08,
-        'raster-brightness-min': 0.06,
-        'raster-opacity': 0.95,
+        'raster-saturation': -0.08,
+        'raster-contrast': 0.22,
+        'raster-brightness-min': 0.02,
+        'raster-brightness-max': 1,
+        'raster-opacity': 1,
       },
     },
   ],
@@ -280,12 +292,8 @@ const overviewStats = computed(() => {
 })
 const displayedYearRange = computed(() => formatRangeForIngredients(shownIngredients.value))
 const overlayTitle = computed(() => {
-  if (isOverview.value) return `已加载 ${shownIngredients.value.length} 种食材 · ${overviewStats.value.uniqueNodes} 个首传节点`
+  if (isOverview.value) return `${shownIngredients.value.length} 种食材 · ${overviewStats.value.uniqueNodes} 个首传节点`
   return `${activeData.value?.name || ''} · ${uniqueEvents.value.length} 个首传节点`
-})
-const overlaySubtitle = computed(() => {
-  if (isOverview.value) return '总览模式：低透明路径、碰撞避让图标、方向粒子'
-  return '单食材模式：完整路径已展开，可缩放查看节点历史'
 })
 const captionTitle = computed(() => {
   if (!activeData.value) return ''
@@ -396,6 +404,22 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
 }
 
+function normalizedLngLat(coord) {
+  const lngRaw = Array.isArray(coord) ? coord[0] : coord?.lng
+  const latRaw = Array.isArray(coord) ? coord[1] : coord?.lat
+  const lng = Number(lngRaw)
+  const lat = Number(latRaw)
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null
+  return [lng, lat]
+}
+
+function sameLngLat(a, b, epsilon = 0.000001) {
+  const first = normalizedLngLat(a)
+  const second = normalizedLngLat(b)
+  if (!first || !second) return false
+  return Math.abs(first[0] - second[0]) <= epsilon && Math.abs(first[1] - second[1]) <= epsilon
+}
+
 function haversineKm(from, to) {
   const R = 6371
   const [lng1, lat1] = from.map(v => v * Math.PI / 180)
@@ -469,12 +493,13 @@ function getRoutePointsForIngredient(ingredient, ingredientIndex = 0) {
   const icon = iconIdForIngredient(ingredient)
   const points = []
 
-  if (ingredient.origin_coordinates) {
+  const originPosition = normalizedLngLat(ingredient.origin_coordinates)
+  if (originPosition) {
     points.push({
       id: `${ingredient.ingredient_id}-origin`,
       ingredient,
       ingredientIndex,
-      position: ingredient.origin_coordinates,
+      position: originPosition,
       label: ingredient.origin,
       order: 0,
       eventKey: `${ingredient.ingredient_id}-origin`,
@@ -486,12 +511,15 @@ function getRoutePointsForIngredient(ingredient, ingredientIndex = 0) {
   }
 
   uniqueEventsFor(ingredient).forEach((event, index) => {
+    const eventPosition = normalizedLngLat(event.coordinates)
+    if (!eventPosition) return
+    if (originPosition && sameLngLat(eventPosition, originPosition)) return
     const eventStableKey = stableEventKey(event)
     points.push({
       id: `${ingredient.ingredient_id}-${eventKey(event, index)}`,
       ingredient,
       ingredientIndex,
-      position: event.coordinates,
+      position: eventPosition,
       label: event.location,
       order: index + 1,
       event,
@@ -599,12 +627,295 @@ function pointFeature(point) {
   }
 }
 
+function pointIngredientId(point) {
+  return point.ingredient?.ingredient_id || point.ingredient_id || ''
+}
+
+function pointYearValue(point) {
+  const year = Number(point.event?.year)
+  return Number.isFinite(year) ? year : null
+}
+
+function averageProjectedCenter(items) {
+  if (!map || !items.length) return null
+  let x = 0
+  let y = 0
+  items.forEach(item => {
+    x += item.screen.x
+    y += item.screen.y
+  })
+  const center = map.unproject([x / items.length, y / items.length])
+  return normalizedLngLat(center)
+}
+
+function makePointClusterFeature(items, clusterIndex) {
+  const coordinates = averageProjectedCenter(items)
+  if (!coordinates) return null
+  const leafIds = items.flatMap(item => item.leafIds || [item.point.id])
+  const ingredientIds = [...new Set(items.flatMap(item => item.ingredientIds || [pointIngredientId(item.point)]).filter(Boolean))]
+  const colors = [...new Set(items.map(item => item.point?.color).filter(Boolean))]
+  const primary = items[0]?.point || {}
+  return {
+    type: 'Feature',
+    properties: {
+      cluster_id: `custom-cluster-${clusterIndex}`,
+      point_count: leafIds.length,
+      point_count_abbreviated: leafIds.length > 99 ? '99+' : String(leafIds.length),
+      leaf_ids: leafIds,
+      ingredient_ids: ingredientIds,
+      mixed: ingredientIds.length > 1,
+      color: ingredientIds.length === 1 ? (primary.color || colors[0] || '#A96B2D') : '#A96B2D',
+    },
+    geometry: {
+      type: 'Point',
+      coordinates,
+    },
+  }
+}
+
+function averageItemYear(items) {
+  const years = items
+    .map(item => item.year)
+    .filter(year => Number.isFinite(year))
+  if (!years.length) return null
+  return years.reduce((sum, year) => sum + year, 0) / years.length
+}
+
+function weightedClusterDistance(candidate, center, radius, timeWindow) {
+  const dx = candidate.screen.x - center.x
+  const dy = candidate.screen.y - center.y
+  const spatialDistance = Math.sqrt(dx * dx + dy * dy)
+  const spatialScore = spatialDistance / Math.max(radius, 1)
+  const temporalScore = Number.isFinite(candidate.year) && Number.isFinite(center.year)
+    ? Math.abs(candidate.year - center.year) / Math.max(timeWindow, 1)
+    : 1
+  return TEMPORAL_CLUSTER_WEIGHT * temporalScore + SPATIAL_CLUSTER_WEIGHT * spatialScore
+}
+
+function clusterProjectedItems(items, radius, timeWindow) {
+  const clusters = []
+  const used = new Set()
+  items.forEach((item, index) => {
+    if (used.has(index)) return
+    const group = [item]
+    used.add(index)
+    let center = { x: item.screen.x, y: item.screen.y, year: item.year }
+
+    let expanded = true
+    while (expanded) {
+      expanded = false
+      items.forEach((candidate, candidateIndex) => {
+        if (used.has(candidateIndex)) return
+        if (weightedClusterDistance(candidate, center, radius, timeWindow) > 1) return
+        group.push(candidate)
+        used.add(candidateIndex)
+        center = {
+          x: group.reduce((sum, value) => sum + value.screen.x, 0) / group.length,
+          y: group.reduce((sum, value) => sum + value.screen.y, 0) / group.length,
+          year: averageItemYear(group),
+        }
+        expanded = true
+      })
+    }
+
+    clusters.push(group)
+  })
+  return clusters
+}
+
+function shouldClusterSpreadPoints() {
+  if (!map) return false
+  const zoom = map.getZoom()
+  if (isOverview.value) return zoom <= SPREAD_CLUSTER_MAX_ZOOM
+  return shownIngredients.value.length === 1 && zoom <= FOCUSED_CLUSTER_MAX_ZOOM
+}
+
+function hasVisiblePointClusters() {
+  return Boolean(spreadPointFeatureCache?.features?.some(feature => feature.properties?.point_count))
+}
+
+function buildCustomClusteredPointGeoJson(points) {
+  if (!map || !shouldClusterSpreadPoints()) {
+    return { type: 'FeatureCollection', features: points.map(pointFeature) }
+  }
+  const sameRadius = isOverview.value ? SAME_INGREDIENT_CLUSTER_RADIUS : FOCUSED_CLUSTER_RADIUS
+  const mixedRadius = isOverview.value ? MIXED_INGREDIENT_CLUSTER_RADIUS : 0
+  const timeWindow = isOverview.value ? OVERVIEW_CLUSTER_TIME_WINDOW_YEARS : FOCUSED_CLUSTER_TIME_WINDOW_YEARS
+
+  const projected = points.map(point => {
+    const screen = map.project(point.position)
+    return {
+      point,
+      screen,
+      leafIds: [point.id],
+      ingredientIds: [pointIngredientId(point)],
+      year: pointYearValue(point),
+    }
+  })
+
+  const byIngredient = new Map()
+  projected.forEach(item => {
+    const id = pointIngredientId(item.point)
+    if (!byIngredient.has(id)) byIngredient.set(id, [])
+    byIngredient.get(id).push(item)
+  })
+
+  const sameIngredientGroups = []
+  byIngredient.forEach(items => {
+    sameIngredientGroups.push(...clusterProjectedItems(items, sameRadius, timeWindow))
+  })
+
+  const representatives = sameIngredientGroups.map((group, index) => {
+    const point = group[0].point
+    const screen = group.reduce((acc, item) => ({ x: acc.x + item.screen.x, y: acc.y + item.screen.y }), { x: 0, y: 0 })
+    return {
+      point,
+      screen: { x: screen.x / group.length, y: screen.y / group.length },
+      leafIds: group.map(item => item.point.id),
+      ingredientIds: [...new Set(group.map(item => pointIngredientId(item.point)).filter(Boolean))],
+      year: averageItemYear(group),
+      groupIndex: index,
+    }
+  })
+
+  const mixedGroups = mixedRadius > 0 ? clusterProjectedItems(representatives, mixedRadius, timeWindow) : representatives.map(item => [item])
+  let clusterIndex = 0
+  const features = []
+  mixedGroups.forEach(group => {
+    const leafIds = group.flatMap(item => item.leafIds)
+    if (leafIds.length <= 1) {
+      const sourceItem = projected.find(item => item.point.id === leafIds[0])
+      if (sourceItem) features.push(pointFeature(sourceItem.point))
+      return
+    }
+    const feature = makePointClusterFeature(group, clusterIndex)
+    clusterIndex += 1
+    if (feature) features.push(feature)
+  })
+
+  return { type: 'FeatureCollection', features }
+}
+
 function buildNativeSpreadGeoJson() {
   const { points, segments } = buildSpreadGeometry()
   return {
     routes: { type: 'FeatureCollection', features: segments.map(lineFeature) },
-    points: { type: 'FeatureCollection', features: points.map(pointFeature) },
+    points: buildCustomClusteredPointGeoJson(points),
+    rawPoints: points,
   }
+}
+
+function updateSpreadPointSourceData(points = null) {
+  if (!map || !map.getSource(SPREAD_SOURCES.points)) return EMPTY_GEOJSON
+  const sourcePoints = points || buildSpreadGeometry().points
+  const data = buildCustomClusteredPointGeoJson(sourcePoints)
+  spreadPointFeatureCache = data
+  setSourceData(SPREAD_SOURCES.points, data)
+  return data
+}
+
+function buildClusterRoutes() {
+  if (!map) return EMPTY_GEOJSON
+
+  const sourceFeatures = spreadPointFeatureCache?.features || []
+  const idToCoord = new Map()
+
+  // Process custom cluster features: map each leaf point to its visible cluster center.
+  const clusterFeatures = sourceFeatures.filter(f => f.properties.point_count)
+  for (const cluster of clusterFeatures) {
+    const leafIds = Array.isArray(cluster.properties.leaf_ids) ? cluster.properties.leaf_ids : []
+    for (const leafId of leafIds) {
+      if (leafId) {
+        idToCoord.set(leafId, cluster.geometry.coordinates)
+      }
+    }
+  }
+
+  // Process unclustered points: map point id to its own coordinates
+  const pointFeatures = sourceFeatures.filter(f => !f.properties.point_count)
+  for (const point of pointFeatures) {
+    if (point.properties.id) {
+      idToCoord.set(point.properties.id, point.geometry.coordinates)
+    }
+  }
+
+  if (!idToCoord.size) return EMPTY_GEOJSON
+
+  const { segments } = buildSpreadGeometry()
+  const dedupeKey = new Set()
+  const features = []
+
+  for (const segment of segments) {
+    const parts = segment.id.split('->')
+    if (parts.length < 2) continue
+    const sourceId = parts[0]
+    const targetId = parts.slice(1).join('->') // handle if id contains '->'
+    const sourceCoord = idToCoord.get(sourceId)
+    const targetCoord = idToCoord.get(targetId)
+    if (!sourceCoord || !targetCoord) continue
+
+    // Skip self-loops (same cluster)
+    if (sourceCoord[0] === targetCoord[0] && sourceCoord[1] === targetCoord[1]) continue
+
+    const key = `${sourceCoord[0].toFixed(4)},${sourceCoord[1].toFixed(4)}->${targetCoord[0].toFixed(4)},${targetCoord[1].toFixed(4)}`
+    if (dedupeKey.has(key)) continue
+    dedupeKey.add(key)
+
+    const color = segment.ingredient?.color || '#A96B2D'
+    const path = buildStylizedPath(sourceCoord, targetCoord, segment.index, segment.ingredientIndex, segment.mode)
+    features.push({
+      type: 'Feature',
+      properties: {
+        color,
+        color_soft: rgba(color, 0.28),
+        mode: segment.mode,
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: path,
+      },
+    })
+  }
+
+  return { type: 'FeatureCollection', features }
+}
+
+async function updateClusterRoutes() {
+  if (!map || !map.getSource(SPREAD_SOURCES.clusterRoutes)) return
+
+  const shouldCluster = hasVisiblePointClusters()
+  const updateVersion = ++clusterRouteUpdateVersion
+
+  if (shouldCluster) {
+    const data = buildClusterRoutes()
+    if (updateVersion !== clusterRouteUpdateVersion) return
+    clusterRouteFeatureCache = data
+    setSourceData(SPREAD_SOURCES.clusterRoutes, data)
+    try { map.setLayoutProperty('spread-cluster-route-shadow', 'visibility', 'visible') } catch (_) {}
+    try { map.setLayoutProperty('spread-cluster-route-main', 'visibility', 'visible') } catch (_) {}
+    try { map.setLayoutProperty('spread-route-shadow', 'visibility', 'none') } catch (_) {}
+    try { map.setLayoutProperty('spread-route-corridor', 'visibility', 'none') } catch (_) {}
+    try { map.setLayoutProperty('spread-route-main', 'visibility', 'none') } catch (_) {}
+    try { map.setLayoutProperty('spread-route-texture', 'visibility', 'none') } catch (_) {}
+  } else {
+    clusterRouteFeatureCache = EMPTY_GEOJSON
+    setSourceData(SPREAD_SOURCES.clusterRoutes, EMPTY_GEOJSON)
+    try { map.setLayoutProperty('spread-cluster-route-shadow', 'visibility', 'none') } catch (_) {}
+    try { map.setLayoutProperty('spread-cluster-route-main', 'visibility', 'none') } catch (_) {}
+    try { map.setLayoutProperty('spread-route-shadow', 'visibility', 'visible') } catch (_) {}
+    try { map.setLayoutProperty('spread-route-corridor', 'visibility', 'visible') } catch (_) {}
+    try { map.setLayoutProperty('spread-route-main', 'visibility', 'visible') } catch (_) {}
+    try { map.setLayoutProperty('spread-route-texture', 'visibility', 'visible') } catch (_) {}
+  }
+}
+
+function scheduleClusterRouteUpdate() {
+  if (clusterRouteSyncFrame) return
+  clusterRouteSyncFrame = requestAnimationFrame(() => {
+    clusterRouteSyncFrame = 0
+    updateSpreadPointSourceData()
+    updateClusterRoutes()
+  })
 }
 
 function pointAlongPath(path, t) {
@@ -622,6 +933,27 @@ function pointAlongPath(path, t) {
 }
 
 function buildParticles(phase) {
+  const useClusterRoutes = hasVisiblePointClusters() && clusterRouteFeatureCache?.features?.length
+  if (useClusterRoutes) {
+    const features = []
+    clusterRouteFeatureCache.features.forEach((route, segmentIndex) => {
+      const path = route.geometry?.coordinates || []
+      const point = pointAlongPath(path, (phase + segmentIndex * 0.19) % 1)
+      if (!point) return
+      features.push({
+        type: 'Feature',
+        properties: {
+          mode: route.properties?.mode || 'land',
+          color: route.properties?.color || '#E5394E',
+          size: route.properties?.mode === 'sea' ? 5.3 : 4.3,
+          overview: true,
+        },
+        geometry: { type: 'Point', coordinates: point },
+      })
+    })
+    return { type: 'FeatureCollection', features }
+  }
+
   const { segments } = buildSpreadGeometry()
   const features = []
   segments.forEach((segment, segmentIndex) => {
@@ -655,11 +987,13 @@ async function updateNativeSpreadLayers() {
 
   const data = buildNativeSpreadGeoJson()
   setSourceData(SPREAD_SOURCES.routes, data.routes)
+  spreadPointFeatureCache = data.points
   setSourceData(SPREAD_SOURCES.points, data.points)
   syncPointMarkers()
   await ensureIngredientImages()
-  setSourceData(SPREAD_SOURCES.points, data.points)
+  updateSpreadPointSourceData(data.rawPoints)
   map.triggerRepaint?.()
+  updateClusterRoutes()
 
   try {
     map.setPaintProperty('spread-route-particles', 'circle-opacity', isOverview.value ? 0.68 : 0.9)
@@ -793,6 +1127,7 @@ function addNativeSpreadLayers() {
   map.addSource(SPREAD_SOURCES.routes, { type: 'geojson', data: EMPTY_GEOJSON, lineMetrics: true })
   map.addSource(SPREAD_SOURCES.points, { type: 'geojson', data: EMPTY_GEOJSON })
   map.addSource(SPREAD_SOURCES.particles, { type: 'geojson', data: EMPTY_GEOJSON })
+  map.addSource(SPREAD_SOURCES.clusterRoutes, { type: 'geojson', data: EMPTY_GEOJSON, lineMetrics: true })
 
   map.addLayer({
     id: 'spread-route-shadow',
@@ -846,28 +1181,102 @@ function addNativeSpreadLayers() {
   })
 
   map.addLayer({
+    id: 'spread-cluster-route-shadow',
+    type: 'line',
+    source: SPREAD_SOURCES.clusterRoutes,
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color_soft'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 2, 6.2, 5, 13.5, 7, 17],
+      'line-opacity': 0.16,
+      'line-blur': 3.8,
+    },
+  })
+
+  map.addLayer({
+    id: 'spread-cluster-route-main',
+    type: 'line',
+    source: SPREAD_SOURCES.clusterRoutes,
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 2, 2.2, 5, 5, 7, 7.5],
+      'line-opacity': 0.72,
+      'line-dasharray': [2, 1.5],
+    },
+  })
+
+  map.addLayer({
+    id: 'spread-cluster-area',
+    type: 'circle',
+    source: SPREAD_SOURCES.points,
+    filter: ['has', 'point_count'],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 25, 5, 35, 8, 45],
+      'circle-color': '#A96B2D',
+      'circle-opacity': 0.16,
+      'circle-stroke-color': '#A96B2D',
+      'circle-stroke-opacity': 0.3,
+      'circle-stroke-width': 1,
+    },
+  })
+
+  map.addLayer({
+    id: 'spread-cluster-core',
+    type: 'circle',
+    source: SPREAD_SOURCES.points,
+    filter: ['has', 'point_count'],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 14, 5, 18, 8, 24],
+      'circle-color': '#FFF8EA',
+      'circle-opacity': 0.96,
+      'circle-stroke-color': '#A96B2D',
+      'circle-stroke-width': 2,
+    },
+  })
+
+  map.addLayer({
+    id: 'spread-cluster-count',
+    type: 'symbol',
+    source: SPREAD_SOURCES.points,
+    filter: ['has', 'point_count'],
+    layout: {
+      'text-field': ['get', 'point_count_abbreviated'],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 2, 11, 6, 14],
+      'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+      'text-allow-overlap': true,
+    },
+    paint: {
+      'text-color': '#A96B2D',
+      'text-halo-color': '#FFF8EA',
+      'text-halo-width': 0.8,
+    },
+  })
+
+  map.addLayer({
     id: 'spread-arrival-area',
     type: 'circle',
     source: SPREAD_SOURCES.points,
+    filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 8, 5, 26, 7, 50],
       'circle-color': ['get', 'color'],
       'circle-opacity': [
         'match',
         ['get', 'state'],
-        'origin', 0.10,
-        'selected', 0.22,
-        0.12,
+        'origin', 0.16,
+        'selected', 0.30,
+        0.18,
       ],
       'circle-stroke-color': ['get', 'color'],
       'circle-stroke-opacity': [
         'match',
         ['get', 'state'],
-        'origin', 0.18,
-        'selected', 0.48,
-        0.24,
+        'origin', 0.36,
+        'selected', 0.64,
+        0.38,
       ],
-      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 2, 0.6, 6, 1.5],
+      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 2, 0.9, 6, 2],
       'circle-blur': 0.25,
     },
   })
@@ -876,12 +1285,26 @@ function addNativeSpreadLayers() {
     id: 'spread-arrival-core',
     type: 'circle',
     source: SPREAD_SOURCES.points,
+    filter: ['!', ['has', 'point_count']],
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 4.8, 5, 7.2, 7, 9.5],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 7.4, 5, 11.5, 7, 15],
       'circle-color': '#FFF8EA',
-      'circle-opacity': 0.96,
+      'circle-opacity': [
+        'match',
+        ['get', 'state'],
+        'selected', 0.98,
+        'origin', 0.92,
+        0.86,
+      ],
       'circle-stroke-color': ['get', 'color'],
-      'circle-stroke-width': ['match', ['get', 'state'], 'selected', 3, 'origin', 2.2, 1.6],
+      'circle-stroke-opacity': [
+        'match',
+        ['get', 'state'],
+        'selected', 0.86,
+        'origin', 0.68,
+        0.58,
+      ],
+      'circle-stroke-width': ['match', ['get', 'state'], 'selected', 3.4, 'origin', 2.4, 1.8],
     },
   })
 
@@ -889,12 +1312,13 @@ function addNativeSpreadLayers() {
     id: 'spread-arrival-icons',
     type: 'symbol',
     source: SPREAD_SOURCES.points,
+    filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['get', 'icon'],
-      'icon-size': ['interpolate', ['linear'], ['zoom'], 2, 0.17, 4, 0.28, 6, 0.42, 8, 0.58],
-      'icon-allow-overlap': false,
-      'icon-ignore-placement': false,
-      'icon-padding': 4,
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 2, 0.20, 4, 0.33, 6, 0.50, 8, 0.66],
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+      'icon-padding': 2,
       'symbol-sort-key': ['get', 'sort_key'],
     },
   })
@@ -917,6 +1341,20 @@ function addNativeSpreadLayers() {
   map.on('zoom', updatePointMarkerScale)
   map.on('zoomend', syncPointMarkers)
   map.on('moveend', scheduleMarkerSync)
+  map.on('zoom', scheduleClusterRouteUpdate)
+
+  map.on('click', 'spread-cluster-core', async (e) => {
+    const feature = e.features?.[0]
+    if (!feature) return
+    const coordinates = normalizedLngLat(feature.geometry.coordinates)
+    if (!coordinates) return
+    const targetZoom = isOverview.value
+      ? Math.min(SPREAD_CLUSTER_MAX_ZOOM + 1, map.getZoom() + 2.5)
+      : Math.min(FOCUSED_CLUSTER_MAX_ZOOM + 1, map.getZoom() + 1.6)
+    map.stop()
+    map.easeTo({ center: coordinates, zoom: targetZoom, duration: 600 })
+  })
+
   updateNativeSpreadLayers()
   stopFlowAnimation()
   flowFrame = requestAnimationFrame(animateFlow)
@@ -955,6 +1393,8 @@ function popupHtml(props) {
 }
 
 function showPointPopup(feature, lngLat) {
+  const popupPosition = normalizedLngLat(lngLat)
+  if (!popupPosition) return
   if (!routePopup) {
     routePopup = new maplibregl.Popup({
       closeButton: false,
@@ -964,7 +1404,7 @@ function showPointPopup(feature, lngLat) {
       offset: 18,
     })
   }
-  routePopup.setLngLat(lngLat).setHTML(popupHtml(feature.properties)).addTo(map)
+  routePopup.setLngLat(popupPosition).setHTML(popupHtml(feature.properties)).addTo(map)
 }
 
 function hidePointPopup() {
@@ -975,6 +1415,7 @@ async function focusFeaturePoint(properties) {
   const ingredientId = properties?.ingredient_id
   const eventKeyValue = properties?.event_key
   if (!ingredientId) return
+  sidebarCollapsed.value = false
   if (isOverview.value || ingredientId !== activeId.value) {
     await selectIngredient(ingredientId, { focus: false, resetSelection: false })
   }
@@ -1064,9 +1505,19 @@ function createImageMarker(point, size) {
   img.loading = 'eager'
   el.appendChild(img)
 
-  el.addEventListener('click', async event => {
+  const activate = async event => {
     event.stopPropagation()
+    event.preventDefault()
     await focusMarkerPoint(point)
+  }
+
+  el.addEventListener('pointerup', activate)
+  el.addEventListener('click', event => {
+    event.stopPropagation()
+  })
+  el.addEventListener('keydown', async event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    await activate(event)
   })
   el.addEventListener('mouseenter', () => showPointPopup(pointFeature(point), point.position))
   el.addEventListener('mouseleave', hidePointPopup)
@@ -1075,6 +1526,7 @@ function createImageMarker(point, size) {
 
 async function focusMarkerPoint(point) {
   if (!point?.ingredient?.ingredient_id) return
+  sidebarCollapsed.value = false
   if (isOverview.value || point.ingredient.ingredient_id !== activeId.value) {
     await selectIngredient(point.ingredient.ingredient_id, { focus: false, resetSelection: false })
   }
@@ -1090,32 +1542,6 @@ async function focusMarkerPoint(point) {
 
 function syncPointMarkers() {
   clearPointMarkers()
-  if (!map || !shownIngredients.value.length) return
-
-  const zoom = map.getZoom()
-  const size = markerSizeForZoom(zoom)
-  const minDistance = markerCullDistance(zoom)
-  const accepted = []
-  const candidates = getDisplayedRoutePoints()
-    .filter(point => point.position)
-    .sort((a, b) => markerPriority(a) - markerPriority(b))
-
-  for (const point of candidates) {
-    const screenPoint = map.project(point.position)
-    if (isOverview.value) {
-      const tooClose = accepted.some(item => {
-        const dx = item.x - screenPoint.x
-        const dy = item.y - screenPoint.y
-        return Math.sqrt(dx * dx + dy * dy) < minDistance
-      })
-      if (tooClose) continue
-    }
-    accepted.push({ x: screenPoint.x, y: screenPoint.y })
-    const marker = new maplibregl.Marker({ element: createImageMarker(point, size), anchor: 'center' })
-      .setLngLat(point.position)
-      .addTo(map)
-    spreadMarkers.push(marker)
-  }
 }
 
 async function addVectorLayers() {
@@ -1132,36 +1558,55 @@ async function addVectorLayers() {
 }
 
 function routeBounds() {
-  const points = getDisplayedRoutePoints().filter(point => point.position)
+  const points = getDisplayedRoutePoints()
+    .map(point => normalizedLngLat(point.position))
+    .filter(Boolean)
   if (!points.length) return null
-  const bounds = new maplibregl.LngLatBounds(points[0].position, points[0].position)
-  points.slice(1).forEach(point => bounds.extend(point.position))
+  const bounds = new maplibregl.LngLatBounds(points[0], points[0])
+  points.slice(1).forEach(point => bounds.extend(point))
   return bounds
 }
 
-function focusFullRoute(duration = 1050) {
+function focusFullRoute() {
   if (!map) return
   const bounds = routeBounds()
   if (!bounds) return
-  map.fitBounds(bounds, {
-    padding: { top: 96, bottom: 92, left: 82, right: 486 },
-    maxZoom: isOverview.value ? 4.1 : 5.4,
+  const padding = { top: 96, bottom: 92, left: 82, right: sidebarCollapsed.value ? 82 : 486 }
+  const maxZoom = isOverview.value ? 4.1 : 5.4
+  const camera = map.cameraForBounds(bounds, {
+    padding,
+    maxZoom,
+    bearing: DEFAULT_MAP_BEARING,
+  })
+  const center = normalizedLngLat(camera?.center) || normalizedLngLat(bounds.getCenter()) || DEFAULT_MAP_CENTER
+  const zoom = Number.isFinite(camera?.zoom) ? Math.min(camera.zoom, maxZoom) : maxZoom
+  map.stop()
+  map.jumpTo({
+    center,
+    zoom,
     pitch: DEFAULT_MAP_PITCH,
     bearing: DEFAULT_MAP_BEARING,
-    duration,
-    essential: true,
+  })
+}
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  nextTick(() => {
+    if (!sidebarCollapsed.value) focusFullRoute(600)
   })
 }
 
 function focusRoutePoint(point, duration = 820, updateSelection = true) {
-  if (!map || !point?.position) return
+  const center = normalizedLngLat(point?.position)
+  if (!map || !center) return
   if (updateSelection) {
     currentEventKey.value = point.event ? stableEventKey(point.event) : ''
   }
   updateNativeSpreadLayers()
   nextTick(() => scrollToActiveEvent())
+  map.stop()
   map.easeTo({
-    center: point.position,
+    center,
     zoom: point.isOrigin ? 4.15 : 5.65,
     pitch: DEFAULT_MAP_PITCH,
     bearing: DEFAULT_MAP_BEARING,
@@ -1173,7 +1618,9 @@ function focusRoutePoint(point, duration = 820, updateSelection = true) {
 function focusEvent(event) {
   currentEventKey.value = stableEventKey(event)
   const regionKey = normalizeRegionKey(event)
-  const point = getRoutePointsForIngredient(activeData.value).find(item => item.event && normalizeRegionKey(item.event) === regionKey)
+  const points = getRoutePointsForIngredient(activeData.value)
+  const point = points.find(item => item.event && normalizeRegionKey(item.event) === regionKey)
+    || points.find(item => item.isOrigin && sameLngLat(item.position, event.coordinates))
   focusRoutePoint(point, 820, false)
 }
 
@@ -1216,7 +1663,6 @@ async function loadIngredients() {
     currentEventKey.value = ''
     eventCardRefs.value = {}
     updateNativeSpreadLayers()
-    nextTick(() => focusFullRoute(0))
   } catch (err) {
     console.warn('[IngredientSpread] load failed:', err)
   }
@@ -1227,6 +1673,7 @@ async function selectOverview() {
   currentEventKey.value = ''
   imageLoadFailed.value = false
   eventCardRefs.value = {}
+  sidebarCollapsed.value = false
   await updateNativeSpreadLayers()
   nextTick(() => focusFullRoute(760))
 }
@@ -1234,6 +1681,7 @@ async function selectOverview() {
 async function selectIngredient(id, options = {}) {
   const { focus = true, resetSelection = true } = options
   activeId.value = id
+  sidebarCollapsed.value = false
   imageLoadFailed.value = false
   try {
     const detail = await fetchIngredientDetail(id)
@@ -1273,7 +1721,6 @@ function initMap() {
   map.on('load', () => {
     addVectorLayers()
     addNativeSpreadLayers()
-    focusFullRoute(0)
   })
 }
 
@@ -1289,6 +1736,10 @@ onUnmounted(() => {
     cancelAnimationFrame(markerSyncFrame)
     markerSyncFrame = 0
   }
+  if (clusterRouteSyncFrame) {
+    cancelAnimationFrame(clusterRouteSyncFrame)
+    clusterRouteSyncFrame = 0
+  }
   clearPointMarkers()
   hidePointPopup()
   map?.remove()
@@ -1303,7 +1754,6 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
   background:
     linear-gradient(90deg, rgba(93, 74, 48, 0.045) 1px, transparent 1px),
     linear-gradient(180deg, rgba(93, 74, 48, 0.035) 1px, transparent 1px),
@@ -1312,33 +1762,43 @@ onUnmounted(() => {
 }
 
 .spread-map {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  height: 100%;
   background: #d9e7ec;
 }
 
 .spread-vignette {
   position: fixed;
   left: 0;
-  right: 420px;
+  right: 0;
   pointer-events: none;
   z-index: 2;
 }
 
 .spread-vignette-top {
   top: var(--navbar-h);
-  height: 160px;
-  background: linear-gradient(180deg, rgba(249, 245, 238, 0.72) 0%, rgba(249, 245, 238, 0) 100%);
+  height: 88px;
+  background: linear-gradient(180deg, rgba(249, 245, 238, 0.35) 0%, rgba(249, 245, 238, 0) 100%);
 }
 
 .spread-vignette-bottom {
   bottom: 0;
-  height: 170px;
-  background: linear-gradient(180deg, rgba(42, 34, 24, 0) 0%, rgba(42, 34, 24, 0.13) 100%);
+  height: 88px;
+  background: linear-gradient(180deg, rgba(42, 34, 24, 0) 0%, rgba(42, 34, 24, 0.22) 100%);
 }
 
 :deep(.maplibregl-canvas) {
   outline: none;
+}
+
+:deep(.maplibregl-ctrl-bottom-right) {
+  right: 18px;
+  bottom: 18px;
+  transition: right 0.38s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.spread-page.sidebar-open :deep(.maplibregl-ctrl-bottom-right) {
+  right: 438px;
 }
 
 :deep(.spread-point-popup .maplibregl-popup-content) {
@@ -1444,19 +1904,6 @@ onUnmounted(() => {
   text-shadow: 0 1px 0 rgba(255,255,255,0.72);
 }
 
-.overlay-event-type {
-  display: inline-block;
-  font-size: 11px;
-  color: rgba(36, 28, 20, 0.74);
-  padding: 3px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(36, 28, 20, 0.16);
-  margin-top: 8px;
-  background: rgba(255,252,248,0.68);
-  backdrop-filter: blur(8px);
-  letter-spacing: 0.06em;
-}
-
 .spread-route-caption {
   position: fixed;
   left: 24px;
@@ -1495,19 +1942,102 @@ onUnmounted(() => {
 }
 
 .spread-sidebar {
+  position: fixed;
+  top: var(--navbar-h);
+  right: 0;
+  bottom: 0;
   width: 420px;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--glass-border);
-  background: linear-gradient(180deg, rgba(255, 252, 248, 0.94) 0%, rgba(246, 238, 226, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(255, 252, 248, 0.96) 0%, rgba(246, 238, 226, 0.92) 100%);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   overflow: hidden;
+  z-index: 20;
+  transform: translateX(0);
+  transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -8px 0 32px rgba(42, 34, 24, 0.12);
+}
+
+.spread-sidebar.collapsed {
+  transform: translateX(100%);
+  box-shadow: none;
+}
+
+.sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  border: 1px solid rgba(180, 165, 140, 0.28);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  background: rgba(255, 252, 248, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(70, 48, 28, 0.72);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.28s ease;
+  box-shadow: -2px 0 18px rgba(42, 34, 24, 0.08);
+}
+
+.sidebar-toggle:hover {
+  color: rgba(70, 48, 28, 0.92);
+  background: rgba(255, 252, 248, 0.96);
+  border-color: rgba(180, 165, 140, 0.42);
+  padding-right: 12px;
+}
+
+.sidebar-toggle.open {
+  right: 420px;
+}
+
+.sidebar-toggle .toggle-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sidebar-toggle .toggle-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl;
+}
+
+.sidebar-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(180, 165, 140, 0.22);
+  border-radius: 50%;
+  background: rgba(255, 252, 248, 0.6);
+  color: rgba(87, 78, 68, 0.6);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   z-index: 5;
 }
 
+.sidebar-close-btn:hover {
+  background: rgba(255, 252, 248, 0.9);
+  color: rgba(45, 38, 30, 0.8);
+  border-color: rgba(180, 165, 140, 0.36);
+}
+
 .sidebar-header {
+  position: relative;
   padding: 24px 24px 18px;
   border-bottom: 1px solid var(--glass-border);
 }
@@ -1567,16 +2097,17 @@ onUnmounted(() => {
   justify-content: center;
   overflow: hidden;
   background:
-    radial-gradient(circle at 30% 22%, rgba(255,255,255,0.9), rgba(255,255,255,0.2) 28%, transparent 56%),
-    color-mix(in srgb, var(--ing-color, #e5394e) 10%, #fff8ea);
-  border: 1px solid color-mix(in srgb, var(--ing-color, #e5394e) 30%, rgba(180,165,140,0.24));
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.48), 0 14px 30px rgba(70, 48, 28, 0.11);
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,0.98), rgba(255,255,255,0.42) 30%, transparent 58%),
+    color-mix(in srgb, var(--ing-color, #e5394e) 16%, #fff8ea);
+  border: 1px solid color-mix(in srgb, var(--ing-color, #e5394e) 42%, rgba(180,165,140,0.24));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.64), 0 16px 34px rgba(70, 48, 28, 0.15);
 }
 
 .ingredient-image img {
   width: 94%;
   height: 94%;
   object-fit: contain;
+  filter: drop-shadow(0 5px 9px rgba(52, 35, 20, 0.26));
 }
 
 .overview-emblem img {
@@ -1701,32 +2232,6 @@ onUnmounted(() => {
   background: rgba(255,252,248,0.86);
 }
 
-.route-rule {
-  display: flex;
-  gap: 9px;
-  align-items: flex-start;
-  margin: 0 24px 10px;
-  padding: 9px 11px;
-  border-radius: 8px;
-  background: rgba(255,252,248,0.58);
-  border: 1px solid rgba(180, 165, 140, 0.18);
-  color: rgba(87,83,78,0.75);
-  font-size: 12px;
-  line-height: 1.65;
-}
-
-.route-rule-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  margin-top: 7px;
-  flex-shrink: 0;
-}
-
-.overview-dot {
-  background: linear-gradient(135deg, #e5394e, #c9a646 52%, #9b6a2f);
-}
-
 .ingredient-overview-list {
   flex: 1;
   overflow-y: auto;
@@ -1764,14 +2269,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--ing-color, #c9a646) 12%, #fff8ea);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ing-color, #c9a646) 28%, transparent);
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255,255,255,0.9), transparent 58%),
+    color-mix(in srgb, var(--ing-color, #c9a646) 18%, #fff8ea);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ing-color, #c9a646) 38%, transparent),
+    0 8px 18px rgba(70, 48, 28, 0.12);
 }
 
 .overview-card-image img {
   width: 84%;
   height: 84%;
   object-fit: contain;
+  filter: drop-shadow(0 4px 7px rgba(52, 35, 20, 0.24));
 }
 
 .overview-card-body {
@@ -1971,64 +2481,90 @@ onUnmounted(() => {
 :deep(.spread-image-marker) {
   width: var(--marker-size, 32px);
   height: var(--marker-size, 32px);
-  border: 1px solid color-mix(in srgb, var(--ing-color, #c9a646) 54%, rgba(255,252,248,0.9));
+  border: 0;
   border-radius: 50%;
-  padding: 3px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   appearance: none;
-  background:
-    radial-gradient(circle at 32% 24%, rgba(255,255,255,0.96), rgba(255,255,255,0.24) 34%, transparent 58%),
-    color-mix(in srgb, var(--ing-color, #c9a646) 12%, rgba(255,248,234,0.96));
-  box-shadow:
-    0 0 0 2px rgba(255,252,248,0.82),
-    0 7px 16px rgba(56, 38, 22, 0.22),
-    0 0 18px color-mix(in srgb, var(--ing-color, #c9a646) 22%, transparent);
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
   transform: translateZ(0);
-  transition: width 160ms ease, height 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition: width 160ms ease, height 160ms ease, filter 160ms ease, transform 160ms ease;
 }
 
 :deep(.spread-image-marker img) {
-  width: 88%;
-  height: 88%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   pointer-events: none;
-  filter: drop-shadow(0 3px 5px rgba(52, 35, 20, 0.18));
+  filter: drop-shadow(0 5px 7px rgba(52, 35, 20, 0.26));
 }
 
 :deep(.spread-image-marker.origin) {
-  border-style: dashed;
-  background:
-    radial-gradient(circle at 30% 22%, rgba(255,255,255,0.98), rgba(255,255,255,0.34) 35%, transparent 60%),
-    color-mix(in srgb, var(--ing-color, #c9a646) 8%, rgba(246, 238, 226, 0.98));
+  background: transparent;
 }
 
 :deep(.spread-image-marker.selected),
 :deep(.spread-image-marker:hover) {
-  border-color: color-mix(in srgb, var(--ing-color, #c9a646) 78%, #fff8ea);
-  box-shadow:
-    0 0 0 3px rgba(255,252,248,0.94),
-    0 9px 22px rgba(56, 38, 22, 0.26),
-    0 0 0 8px color-mix(in srgb, var(--ing-color, #c9a646) 16%, transparent),
-    0 0 26px color-mix(in srgb, var(--ing-color, #c9a646) 34%, transparent);
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ing-color, #c9a646) 54%, transparent));
+  transform: translateZ(0) scale(1.08);
 }
 
 @media (max-width: 900px) {
-  .spread-page {
-    flex-direction: column;
-  }
-
   .spread-vignette {
     right: 0;
   }
 
   .spread-sidebar {
     width: 100%;
-    height: 46vh;
+    height: 48vh;
+    top: auto;
+    bottom: 0;
     border-left: none;
     border-top: 1px solid var(--glass-border);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+  }
+
+  .spread-sidebar.collapsed {
+    transform: translateY(100%);
+    box-shadow: none;
+  }
+
+  .spread-sidebar:not(.collapsed) {
+    transform: translateY(0);
+  }
+
+  .sidebar-toggle {
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+    flex-direction: row;
+    padding: 10px 16px;
+    border: 1px solid rgba(180, 165, 140, 0.28);
+    border-radius: 20px;
+  }
+
+  .sidebar-toggle.open {
+    right: 16px;
+    bottom: calc(48vh + 16px);
+  }
+
+  .sidebar-toggle .toggle-label {
+    writing-mode: horizontal-tb;
+  }
+
+  :deep(.maplibregl-ctrl-bottom-right) {
+    right: 16px;
+    bottom: 76px;
+  }
+
+  .spread-page.sidebar-open :deep(.maplibregl-ctrl-bottom-right) {
+    right: 16px;
+    bottom: calc(48vh + 72px);
   }
 
   .spread-route-caption {

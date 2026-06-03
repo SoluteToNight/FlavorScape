@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # 寻味地理 — 一键启动脚本 (Bash / MSYS2 / Git Bash)
 # 用法：bash start.sh
+#
+# 行为说明：后端作为后台进程运行（日志写入 .backend.log），
+# 前端在前台运行。Ctrl+C 会自动清理后端进程。
+# Windows 用户若需要独立窗口运行，请使用 start.ps1。
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -67,12 +71,12 @@ done
 [ $waited -ge $max ] && warn "后端在 ${max}s 内未响应，前端将继续（后端可能还在加载）"
 
 # 7. 启动前端（前台，Ctrl+C 停止）
-step "启动 Vite 前端 → http://localhost:5173"
+step "启动 Vite 前端 → http://127.0.0.1:3002"
 echo ""
 echo "  ─────────────────────────────────────────"
 ok "服务已全部启动"
 echo ""
-echo "    前端  →  http://localhost:5173"
+echo "    前端  →  http://127.0.0.1:3002"
 echo "    后端  →  http://localhost:8001"
 echo "    API   →  http://localhost:8001/docs"
 echo ""

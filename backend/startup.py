@@ -15,19 +15,14 @@ from .config import (
     RASTER_ZIP, RASTER_ZIP_ENTRY, RASTER_TIF, RASTER_COG,
     PHYSICAL_ZIP, TEOW_ZIP, TEOW_SHP, TEOW_WGS84,
 )
+from .data.biome_names import BIOME_MAP  # canonical biome definitions
 
 log = logging.getLogger("startup")
 
 vector_data: dict[str, Any] = {}
 
-BIOME_NAMES = {
-    1: "热带湿润阔叶林", 2: "热带干旱阔叶林", 3: "热带和亚热带针叶林",
-    4: "温带阔叶混交林", 5: "温带针叶林",   6: "北方针叶林（泰加林）",
-    7: "热带稀树草原",   8: "温带草原与灌丛", 9: "洪泛草原与稀树草原",
-    10: "山地草甸与灌丛", 11: "苔原",        12: "地中海型森林与灌丛",
-    13: "沙漠与干旱灌丛", 14: "红树林",
-    98: "岩石与冰川",    99: "水体",
-}
+# biome_number → Chinese display name (derived from canonical BIOME_MAP)
+BIOME_NAMES = {num: cn for num, (en, cn) in BIOME_MAP.items()}
 
 SHP_EXTS = [".shp", ".dbf", ".shx", ".prj", ".cpg"]
 
@@ -176,8 +171,6 @@ def load_ecoregions_from_db() -> None:
     """
     import json as _json
     from backend.db.connection import get_conn
-
-    BIOME_NAMES_REVERSE = {v: k for k, v in BIOME_NAMES.items()}
 
     sql = """
         SELECT eco_name, eco_name_cn, eco_code, realm, biome, biome_cn,

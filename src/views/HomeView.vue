@@ -16,44 +16,64 @@
         <path d="M96 44 C89 31 94 18 108 12 C113 28 109 38 96 44 Z" />
       </svg>
     </div>
+
     <canvas ref="canvasEl" class="bg-canvas" />
-    <section class="hero-section">
-    <div class="content">
-      <p class="eyebrow">Flavor Geography Product Studio</p>
-      <h1 class="tagline">寻味地理</h1>
-      <p class="identity-line">地方食材可视化产品生成器</p>
-      <p class="subtitle">
-        把产地、加工、流通、历史传播和餐桌应用组织成可展示、可嵌入、可导出的品牌故事地图、溯源公示牌和产业图谱。
-      </p>
-      <p class="poetic-line">从空间证据到商业叙事，把地方风味做成一份可交付产品。</p>
-      <div class="hero-actions">
-        <button class="cta-btn primary" @click="router.push('/brand')">进入产品生成器</button>
-        <button class="cta-btn secondary" @click="router.push('/spread')">查看传播图谱</button>
+
+    <section class="hero-section" aria-labelledby="home-title">
+      <div class="hero-copy">
+        <p class="eyebrow">FlavorScape Atlas / Origin & Taste</p>
+        <h1 id="home-title" class="tagline" aria-label="寻味地理">
+          <span class="tagline-main">寻味</span>
+          <span class="tagline-sub">地理</span>
+        </h1>
+        <p class="identity-line">把地方风味写成一册可漫游的地理志</p>
+        <p class="subtitle">
+          从 <mark>产地证据</mark> 到 <mark>传播路线</mark>，从食材档案到品牌公示，
+          在流动的地图、路径与风物标本之间，重新组织一座地方的味觉记忆。
+        </p>
+
+        <div class="hero-actions" aria-label="首页主要入口">
+          <button class="entry-btn" @click="router.push('/brand')">
+            <span>进入品牌生成器</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12h13M13 6l6 6-6 6" />
+            </svg>
+          </button>
+          <button class="ghost-btn" @click="router.push('/spread')">
+            查看传播图谱
+          </button>
+        </div>
+
+        <div class="hero-meta" aria-label="产品能力摘要">
+          <span><b>03</b> 产品入口</span>
+          <span><b>GIS</b> 空间证据</span>
+          <span><b>PNG</b> 品牌导出</span>
+        </div>
       </div>
-    </div>
-    <div class="product-preview" aria-label="产品输出预览">
-      <div class="preview-map">
-        <span v-for="dot in previewDots" :key="dot.label" :style="{ left: dot.x, top: dot.y, background: dot.color }" />
+
+      <div class="atlas-illustration" aria-hidden="true">
+        <div class="board-watermark">FLAVORSCAPE</div>
+        <div class="taste-orbit">
+          <span class="orbit-ring orbit-one" />
+          <span class="orbit-ring orbit-two" />
+          <span class="orbit-ring orbit-three" />
+          <svg viewBox="0 0 520 520">
+            <path class="terrain terrain-one" d="M72 334 C132 218 196 296 258 168 C318 46 408 104 464 56" />
+            <path class="terrain terrain-two" d="M46 232 C126 150 184 186 254 246 C344 324 412 256 486 372" />
+            <path class="route route-red" d="M74 352 C152 246 205 276 270 184 C333 95 395 112 462 70" />
+            <path class="route route-green" d="M66 188 C142 228 190 164 260 230 C326 294 384 268 470 356" />
+            <circle class="node node-a" cx="74" cy="352" r="8" />
+            <circle class="node node-b" cx="270" cy="184" r="8" />
+            <circle class="node node-c" cx="462" cy="70" r="8" />
+            <circle class="node node-d" cx="470" cy="356" r="8" />
+          </svg>
+          <span class="seal seal-origin">ORIGIN</span>
+          <span class="seal seal-route">ROUTE</span>
+          <span class="seal seal-taste">TASTE</span>
+        </div>
+        <p class="map-caption">产地 · 路径 · 风物证据</p>
       </div>
-      <div class="preview-body">
-        <span class="preview-label">Traceability Report</span>
-        <strong>汉源花椒可信产地报告</strong>
-        <p>产区、加工、城市集散和餐桌应用已组织为一份可嵌入报告。</p>
-      </div>
-      <div class="preview-output">
-        <span>H5</span>
-        <span>PDF</span>
-        <span>PNG</span>
-      </div>
-    </div>
     </section>
-    <div class="sample-strip" aria-label="首页数据样本">
-      <article v-for="sample in sampleCards" :key="sample.title" class="sample-card">
-        <span class="sample-type">{{ sample.type }}</span>
-        <h2>{{ sample.title }}</h2>
-        <p>{{ sample.body }}</p>
-      </article>
-    </div>
   </div>
 </template>
 
@@ -64,39 +84,15 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const canvasEl = ref(null)
 
-const sampleCards = [
-  {
-    type: '产品模板',
-    title: '品牌故事地图、溯源公示牌、产业图谱',
-    body: '同一份食材数据可以输出多种展示形态，服务品牌官网、展厅、汇报和电商详情页。',
-  },
-  {
-    type: '空间证据',
-    title: '产地、加工、流通、餐桌节点',
-    body: 'GIS 不只画地图，而是把地方食材的可信来源和使用场景转化为可阅读证据链。',
-  },
-  {
-    type: '批量生成',
-    title: '风格预设与报告输出',
-    body: '先支持地理志、公示牌和产业图谱三类视觉模板，后续可扩展到更多地方食材。',
-  },
-]
-
-const previewDots = [
-  { label: 'origin', x: '21%', y: '58%', color: '#5E7B50' },
-  { label: 'process', x: '34%', y: '48%', color: '#A96535' },
-  { label: 'hub', x: '56%', y: '54%', color: '#3E7891' },
-  { label: 'market', x: '76%', y: '38%', color: '#C63D42' },
-]
 let rafId = null
 let cleanupHomeCanvas = () => {}
 
 const pathDefs = [
-  { pts: [[0.1,0.5],[0.3,0.3],[0.5,0.4],[0.7,0.35],[0.9,0.5]], col: '#E8A917' },
-  { pts: [[0.0,0.3],[0.2,0.45],[0.4,0.5],[0.6,0.4],[0.85,0.55]], col: '#0FB89A' },
-  { pts: [[0.15,0.7],[0.35,0.55],[0.55,0.6],[0.75,0.5],[0.95,0.65]], col: '#E5394E' },
-  { pts: [[0.05,0.2],[0.25,0.35],[0.5,0.25],[0.75,0.4],[0.9,0.3]], col: '#3D6F87' },
-  { pts: [[0.2,0.8],[0.4,0.65],[0.6,0.7],[0.8,0.6],[1.0,0.75]], col: '#7FA961' },
+  { pts: [[0.08,0.46],[0.26,0.27],[0.48,0.38],[0.70,0.32],[0.92,0.48]], col: '#E8A917' },
+  { pts: [[0.02,0.31],[0.22,0.47],[0.42,0.50],[0.62,0.40],[0.88,0.56]], col: '#0FB89A' },
+  { pts: [[0.12,0.72],[0.34,0.56],[0.55,0.62],[0.76,0.50],[0.96,0.66]], col: '#E5394E' },
+  { pts: [[0.04,0.20],[0.25,0.36],[0.52,0.24],[0.76,0.40],[0.92,0.30]], col: '#3D6F87' },
+  { pts: [[0.18,0.83],[0.40,0.66],[0.60,0.71],[0.81,0.60],[1.00,0.77]], col: '#7FA961' },
 ]
 
 function catmull(pts, t, W, H) {
@@ -107,50 +103,140 @@ function catmull(pts, t, W, H) {
   const p1 = pts[seg]
   const p2 = pts[Math.min(n, seg + 1)]
   const p3 = pts[Math.min(n, seg + 2)]
-  const t2 = lt * lt, t3 = t2 * lt
+  const t2 = lt * lt
+  const t3 = t2 * lt
+
   return [
     0.5 * ((2*p1[0]) + (-p0[0]+p2[0])*lt + (2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2 + (-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3) * W,
     0.5 * ((2*p1[1]) + (-p0[1]+p2[1])*lt + (2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2 + (-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3) * H,
   ]
 }
 
+function extractCoastlineLines(collection) {
+  const lines = []
+
+  collection.features?.forEach(feature => {
+    const geometry = feature.geometry
+    if (!geometry) return
+
+    if (geometry.type === 'LineString') {
+      lines.push(geometry.coordinates)
+    }
+
+    if (geometry.type === 'MultiLineString') {
+      geometry.coordinates.forEach(line => lines.push(line))
+    }
+  })
+
+  return lines.filter(line => line.length > 1)
+}
+
+function projectCoastlinePoint(lon, lat, W, H) {
+  const mapW = Math.min(W * 0.92, H * 1.72)
+  const mapH = mapW / 2
+  const left = (W - mapW) / 2
+  const top = H * 0.50 - mapH * 0.52
+
+  return [
+    left + ((lon + 180) / 360) * mapW,
+    top + ((90 - lat) / 180) * mapH,
+  ]
+}
+
+function drawCoastlineMap(ctx, coastlineLines, W, H) {
+  if (!coastlineLines.length) return
+
+  const strokeLines = (strokeStyle, lineWidth) => {
+    ctx.strokeStyle = strokeStyle
+    ctx.lineWidth = lineWidth
+    coastlineLines.forEach(line => {
+      let started = false
+      ctx.beginPath()
+      line.forEach(point => {
+        const [lon, lat] = point
+        if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
+        const [x, y] = projectCoastlinePoint(lon, lat, W, H)
+        if (!started) {
+          ctx.moveTo(x, y)
+          started = true
+        } else {
+          ctx.lineTo(x, y)
+        }
+      })
+      if (started) ctx.stroke()
+    })
+  }
+
+  ctx.save()
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  strokeLines('rgba(255,252,248,0.54)', Math.max(2.4, W / 520))
+  strokeLines('rgba(62,78,65,0.26)', Math.max(0.75, W / 1680))
+  ctx.restore()
+}
+
 onMounted(() => {
   const canvas = canvasEl.value
   const ctx = canvas.getContext('2d')
   let W, H, mouseX, mouseY
+  let coastlineLines = []
+  const coastlineAbort = new AbortController()
 
   const resize = () => {
     W = canvas.width = window.innerWidth
     H = canvas.height = window.innerHeight
-    mouseX = W / 2; mouseY = H / 2
+    mouseX = W / 2
+    mouseY = H / 2
   }
   resize()
 
   window.addEventListener('resize', resize)
-  const onMouseMove = e => { mouseX = e.clientX; mouseY = e.clientY }
+  const onMouseMove = e => {
+    mouseX = e.clientX
+    mouseY = e.clientY
+  }
   window.addEventListener('mousemove', onMouseMove)
+
+  fetch('/geo/coastline-110m.geojson', { signal: coastlineAbort.signal })
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    })
+    .then(data => {
+      coastlineLines = extractCoastlineLines(data)
+    })
+    .catch(err => {
+      if (err.name !== 'AbortError') console.warn('[Home coastline]', err.message)
+    })
 
   const particles = pathDefs.flatMap((pd, pi) =>
     Array.from({ length: 5 }, () => ({
-      pi, t: Math.random(),
-      speed: 0.0006 + Math.random() * 0.0004,
+      pi,
+      t: Math.random(),
+      speed: 0.00055 + Math.random() * 0.00038,
       col: pd.col,
-      size: 1.5 + Math.random() * 1.5,
-      trail: [], trailLen: 18 + Math.floor(Math.random() * 12),
+      size: 1.5 + Math.random() * 1.7,
+      trail: [],
+      trailLen: 20 + Math.floor(Math.random() * 14),
     }))
   )
 
   function draw() {
     ctx.clearRect(0, 0, W, H)
-    // Subtle terrain traces keep the particle field grounded without becoming a map.
+    drawCoastlineMap(ctx, coastlineLines, W, H)
+
     ctx.save()
     ctx.strokeStyle = 'rgba(180,160,130,0.08)'
     ctx.lineWidth = 0.5
-    ctx.setLineDash([4, 10])
-    ;[[0.1,0.38,0.9,0.42],[0.0,0.58,1.0,0.62],[0.15,0.22,0.85,0.28]].forEach(([x1,y1,x2,y2]) => {
-      ctx.beginPath(); ctx.moveTo(x1*W, y1*H); ctx.lineTo(x2*W, y2*H); ctx.stroke()
+    ctx.setLineDash([4, 12])
+    ;[[0.08,0.38,0.92,0.42],[0.00,0.58,1.00,0.62],[0.15,0.22,0.85,0.28]].forEach(([x1,y1,x2,y2]) => {
+      ctx.beginPath()
+      ctx.moveTo(x1*W, y1*H)
+      ctx.lineTo(x2*W, y2*H)
+      ctx.stroke()
     })
-    ctx.setLineDash([]); ctx.restore()
+    ctx.setLineDash([])
+    ctx.restore()
 
     particles.forEach(p => {
       const prevT = p.t
@@ -171,15 +257,21 @@ onMounted(() => {
         ctx.lineWidth = p.size * (i / p.trail.length)
         ctx.stroke()
       }
-      ctx.beginPath(); ctx.arc(fx, fy, p.size * 1.2, 0, Math.PI * 2)
-      ctx.fillStyle = p.col; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1
+      ctx.beginPath()
+      ctx.arc(fx, fy, p.size * 1.2, 0, Math.PI * 2)
+      ctx.fillStyle = p.col
+      ctx.globalAlpha = 0.9
+      ctx.fill()
+      ctx.globalAlpha = 1
     })
+
     rafId = requestAnimationFrame(draw)
   }
 
   draw()
 
   cleanupHomeCanvas = () => {
+    coastlineAbort.abort()
     window.removeEventListener('resize', resize)
     window.removeEventListener('mousemove', onMouseMove)
   }
@@ -198,10 +290,13 @@ onUnmounted(() => {
   inset: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 18%, rgba(94,123,80,0.18), transparent 32%),
-    radial-gradient(circle at 82% 28%, rgba(62,120,145,0.14), transparent 30%),
+    radial-gradient(circle at 50% 44%, rgba(255, 252, 248, 0.74), transparent 30%),
+    radial-gradient(circle at 18% 18%, rgba(94,123,80,0.20), transparent 34%),
+    radial-gradient(circle at 82% 24%, rgba(62,120,145,0.15), transparent 32%),
+    radial-gradient(circle at 50% 100%, rgba(169,101,53,0.13), transparent 38%),
     linear-gradient(135deg, #fbf7ef 0%, #eef3ed 48%, #f7efe3 100%);
 }
+
 .home-page::before {
   content: '';
   position: absolute;
@@ -209,402 +304,572 @@ onUnmounted(() => {
   background:
     linear-gradient(rgba(92,75,57,0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(92,75,57,0.028) 1px, transparent 1px);
-  background-size: 84px 84px;
-  mask-image: radial-gradient(circle at 50% 48%, rgba(0,0,0,0.50), transparent 70%);
+  background-size: 92px 92px;
+  mask-image: radial-gradient(circle at 50% 48%, rgba(0,0,0,0.48), transparent 72%);
   transform: rotate(-6deg);
 }
+
+.home-page::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(76vw, 820px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(139, 94, 52, 0.12);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 22px rgba(255, 252, 248, 0.10),
+    0 0 0 86px rgba(94, 123, 80, 0.035),
+    inset 0 0 110px rgba(255, 252, 248, 0.42);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
 .atlas-layer {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
 }
-.specimen path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
+
 .specimen {
   position: absolute;
-  opacity: 0.24;
+  opacity: 0.18;
   filter: drop-shadow(0 12px 24px rgba(83,62,36,0.05));
   animation: fadeUp 1.4s ease 0.35s both;
 }
+
 .specimen path {
+  fill: none;
   stroke: rgba(92,75,57,0.72);
   stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
+
 .specimen-chili path { stroke: rgba(177, 47, 58, 0.62); }
 .specimen-star path { stroke: rgba(156, 112, 22, 0.58); }
 .specimen-rice path { stroke: rgba(78, 119, 80, 0.62); }
+
 .specimen-chili {
-  left: clamp(22px, 7vw, 104px);
-  top: 20vh;
-  width: 72px;
+  left: clamp(24px, 8vw, 132px);
+  top: 22vh;
+  width: clamp(72px, 7vw, 104px);
   transform: rotate(-10deg);
 }
+
 .specimen-star {
-  right: clamp(28px, 8vw, 126px);
+  right: clamp(28px, 9vw, 150px);
   top: 18vh;
-  width: 94px;
+  width: clamp(92px, 8vw, 132px);
   transform: rotate(14deg);
 }
+
 .specimen-rice {
-  right: clamp(34px, 9vw, 150px);
-  bottom: 22vh;
-  width: 112px;
+  right: clamp(34px, 10vw, 170px);
+  bottom: 18vh;
+  width: clamp(112px, 9vw, 158px);
   transform: rotate(-8deg);
 }
+
 .bg-canvas {
   position: absolute;
   inset: 0;
   z-index: 1;
   width: 100%;
   height: 100%;
-  opacity: 0.92;
+  opacity: 0.82;
   mix-blend-mode: multiply;
 }
 
 .hero-section {
   position: relative;
-  z-index: 2;
-  width: min(1180px, calc(100% - 72px));
-  min-height: calc(100vh - 230px);
+  z-index: 3;
+  min-height: 100vh;
+  width: min(1320px, calc(100% - 72px));
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 56px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
   align-items: center;
-  padding: 86px 0 36px;
+  gap: clamp(40px, 6vw, 92px);
+  justify-content: center;
+  padding: calc(var(--navbar-h) + 24px) 0 44px;
 }
 
-.content {
+.hero-copy {
   position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-  padding: 0;
-}
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.28em;
-  color: rgba(87,83,78,0.62);
-  font-weight: 300;
-  text-transform: uppercase;
-  margin-bottom: 22px;
-  animation: fadeUp 1s ease 0.4s both;
-}
-.tagline {
-  font-family: var(--font-serif);
-  font-size: clamp(54px, 7vw, 92px);
-  font-weight: 500;
-  color: var(--text);
-  letter-spacing: 0.14em;
-  line-height: 1.05;
-  text-align: center;
-  max-width: 860px;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.76);
-  animation: fadeUp 1.2s ease 0.6s both;
-}
-.identity-line {
-  margin-top: 24px;
-  font-family: var(--font-serif);
-  font-size: clamp(18px, 2.2vw, 28px);
-  font-weight: 400;
-  letter-spacing: 0.18em;
-  color: rgba(28,25,23,0.78);
-  animation: fadeUp 1.1s ease 0.68s both;
-}
-.subtitle {
   max-width: 720px;
-  margin-top: 18px;
-  font-size: clamp(14px, 1.45vw, 17px);
-  font-weight: 300;
-  line-height: 2;
-  letter-spacing: 0.06em;
-  color: rgba(87,83,78,0.78);
-  text-align: center;
+  padding: 26px 0 22px;
+}
+
+.hero-copy::before {
+  content: '';
+  position: absolute;
+  left: -28px;
+  top: 10px;
+  width: 3px;
+  height: 72%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, transparent, var(--carmine), var(--saffron), transparent);
+  opacity: 0.68;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: clamp(16px, 2vw, 28px);
+  color: rgba(87,83,78,0.72);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  animation: fadeUp 1s ease 0.34s both;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 42px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--carmine), rgba(201,166,70,0.36));
+}
+
+.tagline {
+  margin: 0;
+  position: relative;
+  display: grid;
+  width: fit-content;
+  font-family: var(--font-serif);
+  line-height: 0.86;
+  text-shadow: 0 30px 86px rgba(83,62,36,0.18);
+  animation: fadeUp 1.2s ease 0.48s both;
+}
+
+.tagline::after {
+  content: 'ATLAS';
+  position: absolute;
+  right: -76px;
+  bottom: 6px;
+  color: rgba(166, 105, 53, 0.18);
+  font-family: var(--font-sans);
+  font-size: clamp(46px, 5.6vw, 82px);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  transform: rotate(-90deg);
+  transform-origin: right bottom;
+}
+
+.tagline-main,
+.tagline-sub {
+  display: block;
+  color: var(--text);
+}
+
+.tagline-main {
+  font-size: clamp(88px, 10vw, 154px);
+  font-weight: 600;
+  letter-spacing: clamp(0.08em, 0.92vw, 0.15em);
+}
+
+.tagline-sub {
+  margin-left: clamp(70px, 8vw, 124px);
+  margin-top: clamp(2px, 0.6vw, 10px);
+  color: transparent;
+  font-size: clamp(74px, 8.2vw, 128px);
+  font-weight: 500;
+  letter-spacing: clamp(0.14em, 1.4vw, 0.24em);
+  background: linear-gradient(118deg, var(--earth) 0%, var(--carmine) 54%, var(--saffron) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.identity-line {
+  margin-top: clamp(28px, 3vw, 38px);
+  color: rgba(28,25,23,0.84);
+  font-family: var(--font-serif);
+  font-size: clamp(22px, 2.25vw, 32px);
+  font-weight: 500;
+  letter-spacing: 0.10em;
+  animation: fadeUp 1.1s ease 0.62s both;
+}
+
+.subtitle {
+  max-width: 640px;
+  margin: 20px 0 0;
+  color: rgba(72,64,55,0.82);
+  font-size: clamp(14px, 1.45vw, 18px);
+  font-weight: 400;
+  line-height: 2.05;
+  letter-spacing: 0.055em;
   animation: fadeUp 1.1s ease 0.74s both;
 }
-.poetic-line {
-  margin-top: 11px;
+
+.subtitle mark {
+  padding: 0 0.18em;
+  background: linear-gradient(180deg, transparent 54%, rgba(201,166,70,0.32) 54%);
+  color: #743b2b;
   font-family: var(--font-serif);
-  font-size: clamp(13px, 1.15vw, 15px);
-  font-weight: 300;
-  letter-spacing: 0.12em;
-  color: rgba(168,162,158,0.86);
-  animation: fadeUp 1.1s ease 0.86s both;
-}
-.cta-btn {
-  pointer-events: all;
-  padding: 13px 28px;
-  background: rgba(255,252,248,0.88);
-  border: 1px solid rgba(232,169,23,0.42);
-  border-radius: 999px;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 0.16em;
-  color: #724b2e;
-  cursor: pointer;
-  backdrop-filter: var(--blur-sm); -webkit-backdrop-filter: var(--blur-sm);
-  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.70);
-  transition: all var(--transition);
-  animation: fadeUp 1.2s ease 1s both;
-}
-.cta-btn:hover {
-  background: rgba(255,252,248,0.98);
-  box-shadow: var(--shadow-md), 0 0 24px rgba(232,169,23,0.15);
-  transform: translateY(-1px);
-  border-color: rgba(232,169,23,0.55);
 }
 
 .hero-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 34px;
-  pointer-events: all;
-}
-
-.cta-btn.primary {
-  background: linear-gradient(135deg, var(--earth), var(--leaf));
-  color: #fffaf2;
-  border-color: transparent;
-  box-shadow: 0 14px 34px rgba(67, 92, 60, 0.18);
-}
-
-.cta-btn.secondary {
-  background: rgba(255,252,248,0.68);
-}
-.sample-strip {
-  position: fixed;
-  left: 50%;
-  bottom: 34px;
-  z-index: 3;
-  width: min(960px, calc(100% - 64px));
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex-wrap: wrap;
+  align-items: center;
   gap: 14px;
-  transform: translateX(-50%);
-}
-.sample-card {
-  min-height: 108px;
-  padding: 15px 17px 16px;
-  border: 1px solid rgba(180,165,140,0.22);
-  border-radius: 8px;
-  background: rgba(255,252,248,0.68);
-  box-shadow: 0 12px 38px rgba(83,62,36,0.07), inset 0 1px 0 rgba(255,255,255,0.64);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  animation: fadeUp 1s ease both;
+  margin-top: clamp(32px, 4vw, 50px);
+  animation: fadeUp 1.1s ease 0.92s both;
 }
 
-.product-preview {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  min-width: 0;
-  border: 1px solid rgba(116, 92, 62, 0.16);
-  border-radius: 12px;
-  background: rgba(255, 252, 247, 0.72);
-  box-shadow: 0 24px 70px rgba(58, 42, 24, 0.12), inset 0 1px 0 rgba(255,255,255,0.72);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  pointer-events: none;
-  animation: fadeUp 1.2s ease 0.92s both;
-}
-
-.preview-map {
-  position: relative;
-  height: 150px;
-  overflow: hidden;
-  border-radius: 12px 12px 0 0;
-  background:
-    linear-gradient(120deg, rgba(94,123,80,0.14), transparent 38%),
-    linear-gradient(35deg, transparent 48%, rgba(62,120,145,0.18) 49%, transparent 52%),
-    linear-gradient(160deg, transparent 44%, rgba(169,101,53,0.18) 45%, transparent 48%),
-    #e6eee5;
-}
-
-.preview-map::before {
-  content: '';
-  position: absolute;
-  inset: 24px 28px;
-  border-top: 2px solid rgba(169,101,53,0.46);
-  border-right: 2px solid rgba(62,120,145,0.44);
-  border-radius: 60% 42% 54% 46%;
-  transform: rotate(-9deg);
-}
-
-.preview-map span {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(255,252,248,0.82), 0 10px 22px rgba(58,42,24,0.18);
-}
-
-.preview-body {
-  padding: 16px 18px 12px;
-}
-
-.preview-label {
-  color: rgba(92,75,57,0.56);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.preview-body strong {
-  display: block;
-  margin-top: 7px;
-  color: var(--text);
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 500;
-}
-
-.preview-body p {
-  margin-top: 8px;
-  color: rgba(87,83,78,0.72);
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.preview-output {
-  display: flex;
-  gap: 6px;
-  padding: 0 18px 16px;
-}
-
-.preview-output span {
-  padding: 4px 9px;
+.entry-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 210px;
+  min-height: 52px;
+  padding: 15px 30px 15px 34px;
+  border: 1px solid rgba(139, 94, 52, 0.14);
   border-radius: 999px;
-  background: rgba(94,123,80,0.1);
-  color: #5e7b50;
-  font-size: 10px;
-  font-weight: 700;
+  background: linear-gradient(135deg, #8f4e37 0%, var(--earth) 45%, var(--leaf) 100%);
+  box-shadow:
+    0 18px 44px rgba(67, 92, 60, 0.20),
+    inset 0 1px 0 rgba(255,255,255,0.22);
+  color: #fffaf2;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
 }
-.sample-card:nth-child(1) { animation-delay: 1.05s; }
-.sample-card:nth-child(2) { animation-delay: 1.15s; }
-.sample-card:nth-child(3) { animation-delay: 1.25s; }
-.sample-card:nth-child(1) { border-top-color: rgba(229,57,78,0.34); }
-.sample-card:nth-child(2) { border-top-color: rgba(15,184,154,0.34); }
-.sample-card:nth-child(3) { border-top-color: rgba(127,169,97,0.34); }
-.sample-type {
-  display: block;
-  margin-bottom: 9px;
-  color: rgba(148,106,18,0.82);
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.16em;
+
+.ghost-btn {
+  min-height: 52px;
+  padding: 14px 24px;
+  border: 1px solid rgba(118, 96, 68, 0.18);
+  border-radius: 999px;
+  background: rgba(255,252,248,0.62);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.62), 0 12px 34px rgba(51,37,22,0.07);
+  color: var(--text-mid);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  transition: transform var(--transition), background var(--transition), color var(--transition), border-color var(--transition);
 }
-.sample-card h2 {
-  margin-bottom: 8px;
-  color: rgba(28,25,23,0.84);
+
+.ghost-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(198,61,66,0.22);
+  background: rgba(255,252,248,0.86);
+  color: var(--text);
+}
+
+.entry-btn:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.05);
+  box-shadow:
+    0 24px 58px rgba(67, 92, 60, 0.26),
+    0 0 32px rgba(201,166,70,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.26);
+}
+
+.entry-btn:focus-visible {
+  outline: 3px solid rgba(62,120,145,0.34);
+  outline-offset: 4px;
+}
+
+.entry-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--transition);
+}
+
+.entry-btn:hover svg {
+  transform: translateX(3px);
+}
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+  animation: fadeUp 1s ease 1.02s both;
+}
+
+.hero-meta span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 1px solid rgba(118, 96, 68, 0.14);
+  border-radius: 999px;
+  background: rgba(255,252,248,0.46);
+  color: rgba(92,81,71,0.78);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.hero-meta b {
+  color: var(--carmine);
   font-family: var(--font-serif);
   font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
+  font-weight: 600;
 }
-.sample-card p {
-  color: rgba(87,83,78,0.70);
-  font-size: 11px;
-  font-weight: 300;
-  line-height: 1.75;
-  letter-spacing: 0.04em;
+
+.atlas-illustration {
+  position: relative;
+  min-height: 620px;
+  animation: fadeUp 1.2s ease 0.58s both;
+}
+
+.board-watermark {
+  position: absolute;
+  right: -24px;
+  top: 28px;
+  color: rgba(32,27,22,0.06);
+  font-size: clamp(58px, 6.8vw, 108px);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+.taste-orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(44vw, 610px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(1deg);
+}
+
+.taste-orbit::before {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,252,248,0.44), transparent 35%),
+    conic-gradient(from 120deg, rgba(198,61,66,0.18), rgba(201,166,70,0.20), rgba(94,123,80,0.16), rgba(62,120,145,0.15), rgba(198,61,66,0.18));
+  filter: blur(0.2px);
+  opacity: 0.9;
+}
+
+.orbit-ring {
+  position: absolute;
+  border: 1px solid rgba(139,94,52,0.16);
+  border-radius: 50%;
+}
+
+.orbit-one {
+  inset: 5%;
+  box-shadow: 0 0 0 26px rgba(255,252,248,0.09);
+}
+
+.orbit-two {
+  inset: 19%;
+  border-style: dashed;
+  transform: rotate(18deg);
+}
+
+.orbit-three {
+  inset: 34%;
+  border-color: rgba(198,61,66,0.18);
+}
+
+.taste-orbit svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 22px 32px rgba(83,62,36,0.12));
+}
+
+.terrain,
+.route {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.terrain {
+  stroke: rgba(92,75,57,0.20);
+  stroke-width: 2;
+  stroke-dasharray: 7 12;
+}
+
+.route {
+  stroke-width: 5;
+}
+
+.route-red { stroke: rgba(198,61,66,0.82); }
+.route-green { stroke: rgba(94,123,80,0.76); }
+.node { fill: #fffaf2; stroke-width: 4; }
+.node-a, .node-c { stroke: var(--carmine); }
+.node-b, .node-d { stroke: var(--leaf); }
+
+.seal {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  aspect-ratio: 1;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: rgba(255,252,248,0.28);
+  color: rgba(116,59,43,0.68);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  transform: rotate(-12deg);
+}
+
+.seal-origin { left: 5%; top: 18%; }
+.seal-route { right: 4%; top: 38%; color: rgba(94,123,80,0.68); transform: rotate(10deg); }
+.seal-taste { left: 35%; bottom: 2%; color: rgba(166,105,53,0.7); transform: rotate(-4deg); }
+
+.map-caption {
+  position: absolute;
+  right: 9%;
+  bottom: 9%;
+  color: rgba(92,81,71,0.72);
+  font-family: var(--font-serif);
+  font-size: clamp(16px, 1.5vw, 22px);
+  letter-spacing: 0.18em;
+  writing-mode: vertical-rl;
+}
+
+.ghost-btn:focus-visible {
+  outline: 3px solid rgba(62,120,145,0.34);
+  outline-offset: 4px;
 }
 
 @media (max-width: 900px) {
   .hero-section {
-    min-height: calc(100vh - 250px);
-    width: min(560px, calc(100% - 40px));
+    width: min(760px, calc(100% - 40px));
     grid-template-columns: 1fr;
-    padding-top: 76px;
+    gap: 28px;
+    padding: calc(var(--navbar-h) + 18px) 0 28px;
   }
-  .content {
-    padding-bottom: 0;
-  }
-  .sample-strip {
-    grid-template-columns: 1fr;
-    width: min(520px, calc(100% - 40px));
-    bottom: 22px;
-    gap: 8px;
-  }
-  .product-preview {
-    display: none;
-  }
-  .sample-card {
-    min-height: auto;
-    padding: 11px 14px 12px;
-  }
-  .sample-card:nth-child(3) {
-    display: none;
-  }
-}
 
-@media (max-width: 1200px) {
-  .hero-section {
-    grid-template-columns: 1fr;
-    min-height: calc(100vh - 220px);
+  .hero-copy {
+    max-width: 100%;
   }
-  .product-preview {
+
+  .hero-copy::before,
+  .tagline::after,
+  .board-watermark {
     display: none;
+  }
+
+  .tagline-main {
+    font-size: clamp(70px, 12vw, 116px);
+  }
+
+  .tagline-sub {
+    margin-left: clamp(42px, 5vw, 72px);
+    font-size: clamp(58px, 10vw, 92px);
+  }
+
+  .atlas-illustration {
+    min-height: 420px;
+  }
+
+  .taste-orbit {
+    width: min(72vw, 460px);
+  }
+
+  .subtitle {
+    max-width: 580px;
   }
 }
 
 @media (max-width: 640px) {
-  .specimen {
-    opacity: 0.14;
+  .home-page::after {
+    width: 96vw;
+    box-shadow:
+      0 0 0 14px rgba(255, 252, 248, 0.10),
+      0 0 0 52px rgba(94, 123, 80, 0.035),
+      inset 0 0 80px rgba(255, 252, 248, 0.42);
   }
+
+  .specimen {
+    opacity: 0.12;
+  }
+
   .specimen-chili {
     left: 18px;
     top: 18vh;
   }
+
   .specimen-star {
     right: 16px;
     top: 17vh;
   }
+
   .specimen-rice {
     display: none;
   }
-  .content {
-    padding: 0;
-  }
-  .hero-actions {
-    flex-direction: column;
-    width: min(280px, 100%);
-  }
+
   .eyebrow {
-    letter-spacing: 0.20em;
-    margin-bottom: 18px;
+    letter-spacing: 0.14em;
   }
-  .tagline {
-    font-size: clamp(54px, 16vw, 72px);
-    letter-spacing: 0.12em;
-    line-height: 1.28;
+
+  .tagline-main {
+    font-size: clamp(58px, 18vw, 88px);
   }
+
+  .tagline-sub {
+    margin-left: clamp(28px, 8vw, 42px);
+    font-size: clamp(50px, 16vw, 72px);
+    letter-spacing: 0.14em;
+  }
+
   .identity-line {
-    margin-top: 18px;
     font-size: 18px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
   }
+
   .subtitle {
-    margin-top: 20px;
     font-size: 13px;
-    line-height: 1.82;
+    line-height: 1.86;
+    letter-spacing: 0.04em;
   }
-  .poetic-line {
-    display: none;
+
+  .hero-actions {
+    align-items: stretch;
   }
-  .sample-card h2 {
-    font-size: 14px;
+
+  .entry-btn,
+  .ghost-btn {
+    width: min(282px, 100%);
   }
-  .sample-card p {
+
+  .atlas-illustration {
+    min-height: 320px;
+  }
+
+  .taste-orbit {
+    width: min(86vw, 340px);
+  }
+
+  .seal {
+    width: 64px;
     font-size: 10px;
-    line-height: 1.65;
+  }
+
+  .map-caption {
+    display: none;
   }
 }
 
