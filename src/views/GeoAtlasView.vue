@@ -299,7 +299,9 @@ onUnmounted(() => { stopTour(); atlasMap?.remove() })
 .exhibition-screen {
   position: fixed; inset: var(--navbar-h) 0 0 0;
   background: #04080c; color: #fff;
-  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
   overflow: hidden;
 }
 
@@ -311,8 +313,8 @@ onUnmounted(() => { stopTour(); atlasMap?.remove() })
   pointer-events: none; /* 让空白区域鼠标穿透到底图 */
 }
 
-.brand-identity h1 { font-family: "Noto Serif SC", serif; font-size: 22px; font-weight: 400; margin: 4px 0 0; letter-spacing: 2px; }
-.hud-kicker { font-size: 10px; font-family: monospace; color: #a18a66; letter-spacing: 0.2em; text-transform: uppercase; }
+.brand-identity h1 { font-family: var(--font-serif); font-size: 22px; font-weight: 500; margin: 4px 0 0; letter-spacing: 0.08em; }
+.hud-kicker { font-size: 10px; font-family: var(--font-sans); font-weight: 600; color: rgba(224, 195, 145, 0.86); letter-spacing: 0.18em; text-transform: uppercase; }
 
 .exhibition-controls { display: flex; gap: 24px; align-items: center; pointer-events: auto; }
 .product-tabs { display: flex; background: rgba(255,255,255,0.05); border-radius: 30px; padding: 4px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
@@ -337,7 +339,7 @@ onUnmounted(() => { stopTour(); atlasMap?.remove() })
 .cinematic-stage { position: absolute; inset: 0; }
 .atlas-real-map { width: 100%; height: 100%; }
 
-.map-loading { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; background: #04080c; z-index: 10; font-family: monospace; color: #666; font-size: 12px; }
+.map-loading { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; background: #04080c; z-index: 10; font-family: var(--font-sans); color: rgba(230, 224, 212, 0.72); font-size: 13px; font-weight: 400; letter-spacing: 0.08em; }
 .loader-ring { width: 40px; height: 40px; border: 2px solid rgba(255,255,255,0.1); border-top-color: #a18a66; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -348,11 +350,11 @@ onUnmounted(() => { stopTour(); atlasMap?.remove() })
 
 /* 左侧：微型扫描仪面板 */
 .product-hud { top: 100px; left: 40px; width: 280px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border-left: 3px solid #a18a66; }
-.hud-title-wrap h2 { font-family: "Noto Serif SC", serif; font-size: 24px; font-weight: 500; margin: 0 0 4px; color: #e6e0d4; }
-.hud-title-wrap p { font-size: 11px; color: #888; font-family: monospace; margin: 0 0 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.hud-title-wrap h2 { font-family: var(--font-serif); font-size: 24px; font-weight: 500; margin: 0 0 4px; color: #e6e0d4; }
+.hud-title-wrap p { font-size: 11px; color: rgba(230, 224, 212, 0.48); font-family: var(--font-sans); font-weight: 400; margin: 0 0 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .hud-data-list { display: flex; flex-direction: column; gap: 12px; }
 .hud-data-row { display: flex; flex-direction: column; gap: 4px; }
-.hud-data-row .label { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+.hud-data-row .label { font-size: 9px; color: rgba(230, 224, 212, 0.42); font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
 .hud-data-row .value { font-size: 13px; color: #ccc; }
 
 /* 右侧：科幻感时间轴 */
@@ -366,7 +368,7 @@ onUnmounted(() => { stopTour(); atlasMap?.remove() })
 .timeline-node.active .node-icon { border-color: var(--node-color); box-shadow: 0 0 15px var(--node-color); background: var(--node-color); }
 .timeline-node.active .pulse-ring { width: 8px; height: 8px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #fff; }
 .node-info { display: flex; flex-direction: column; }
-.step-num { font-family: monospace; font-size: 9px; color: #888; }
+.step-num { font-family: var(--font-sans); font-size: 9px; font-weight: 700; color: rgba(230, 224, 212, 0.48); letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
 .timeline-node.active .step-num { color: var(--node-color); }
 .node-info strong { font-size: 14px; font-weight: 400; letter-spacing: 1px; margin-top: 2px;}
 
@@ -377,9 +379,9 @@ onUnmounted(() => { stopTour(); atlasMap?.remove() })
   padding: 60px 40px 40px; display: flex; justify-content: center; text-align: center;
 }
 .subtitle-content { max-width: 800px; }
-.subtitle-meta { display: flex; justify-content: center; gap: 16px; margin-bottom: 12px; font-family: monospace; font-size: 11px; letter-spacing: 1px; }
-.node-coord { color: #666; }
-.subtitle-title { font-family: "Noto Serif SC", serif; font-size: 32px; font-weight: 500; color: #fff; margin: 0 0 16px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+.subtitle-meta { display: flex; justify-content: center; gap: 16px; margin-bottom: 12px; font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; }
+.node-coord { color: rgba(230, 224, 212, 0.42); font-variant-numeric: tabular-nums; }
+.subtitle-title { font-family: var(--font-serif); font-size: 32px; font-weight: 500; color: #fff; margin: 0 0 16px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
 .subtitle-text { font-size: 15px; color: #ccc; line-height: 1.8; margin: 0 0 16px; }
 .subtitle-evidence { display: inline-block; padding: 6px 16px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 11px; color: #a18a66; background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
 .subtitle-evidence strong { color: #666; font-weight: normal; }
