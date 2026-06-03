@@ -120,10 +120,11 @@ const authStore = useAuthStore()
 
 const isHome = computed(() => route.name === 'home')
 const isMap  = computed(() => route.name === 'map')
-const isProduct = computed(() => ['brand', 'spread', 'marketing', 'archive'].includes(route.name))
+const isProduct = computed(() => ['brand', 'spread', 'marketing', 'archive', 'studio'].includes(route.name))
 
 // 2. 更新导航数组
 const navItems = [
+  { name: 'studio',    path: '/studio',    label: '创作工作台' },
   { name: 'home',      path: '/',          label: '产品入口' },
   { name: 'brand',     path: '/brand',     label: '智慧大屏' }, // 名字更聚焦
   { name: 'marketing', path: '/marketing', label: '营销海报' }, // 🌟 新增入口
@@ -202,7 +203,7 @@ function select(item) {
 }
 .navbar.is-home .nav-link { color: rgba(90,83,78,0.75); }
 .navbar.is-home .nav-link:hover { color: var(--text-mid); background: rgba(255,255,255,0.15); }
-.navbar.is-home .nav-link.active { color: #fffaf2; background: linear-gradient(135deg, var(--earth), var(--leaf)); }
+.navbar.is-home .nav-link.active { color: var(--earth); background: rgba(139, 94, 52, 0.08); box-shadow: inset 0 0 0 1px rgba(139, 94, 52, 0.12); }
 .navbar.is-home .logo-sans { color: rgba(90,83,78,0.75); }
 
 .navbar.is-map {
@@ -229,10 +230,10 @@ function select(item) {
   background: rgba(94, 123, 80, 0.08);
 }
 .nav-link.active {
-  color: #fffaf2;
-  background: linear-gradient(135deg, var(--earth), var(--leaf));
+  color: var(--earth);
+  background: rgba(139, 94, 52, 0.08);
   font-weight: 600;
-  box-shadow: 0 6px 18px rgba(67, 92, 60, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(139, 94, 52, 0.12);
 }
 
 .search-input {
