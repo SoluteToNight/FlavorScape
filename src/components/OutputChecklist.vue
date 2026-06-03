@@ -42,6 +42,7 @@
     <div class="mt-4">
       <button
         class="w-full glass-panel px-4 py-2.5 text-sm text-earth font-bold cursor-pointer hover:shadow-app-sm transition-shadow"
+        @click="emit('export-poster')"
       >
         一键导出全部
       </button>
@@ -52,6 +53,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useStudioStore } from '../stores/studio'
+
+const emit = defineEmits(['export-poster'])
 
 const store = useStudioStore()
 const activeProject = computed(() => store.activeProject)
