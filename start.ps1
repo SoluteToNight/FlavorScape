@@ -1,6 +1,10 @@
-# FlavorScape one-shot startup script for Windows PowerShell.
+# FlavorScape one-shot startup script for PowerShell 7+ (pwsh).
 # Run from the repository root:
-#   .\start.ps1
+#   pwsh -File .\start.ps1
+#
+# 行为说明：为后端和前端各打开一个独立的 PowerShell 窗口。
+# 关闭这两个窗口即可停止服务（不会自动清理后台进程）。
+# 若需要单窗口 + Ctrl+C 清理，请使用 bash start.sh。
 
 $ErrorActionPreference = "Continue"
 $Root = $PSScriptRoot
@@ -118,7 +122,7 @@ $backendArgs = @(
     "-ExecutionPolicy", "Bypass",
     "-Command", $backendCommand
 )
-Start-Process powershell.exe -ArgumentList $backendArgs
+Start-Process pwsh.exe -ArgumentList $backendArgs
 
 # 7. Wait for backend readiness.
 Write-Step "Waiting for backend /health..."
@@ -132,7 +136,7 @@ while ($waited -lt $maxWait) {
     $waited += 3
 
     try {
-        $resp = Invoke-WebRequest -Uri "http://localhost:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:8001/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
         $json = $resp.Content | ConvertFrom-Json
         if ($json.status -eq "ok") {
             $ready = $true
@@ -158,7 +162,7 @@ if ($ready) {
 }
 
 # 8. Start the frontend in a new PowerShell window.
-Write-Step "Starting Vite frontend at http://localhost:5173"
+Write-Step "Starting Vite frontend at http://127.0.0.1:3002"
 $frontendCommand = "Set-Location -LiteralPath $quotedRoot; " +
     "Write-Host '  [frontend] FlavorScape Vite Dev' -ForegroundColor Cyan; " +
     "& $quotedNpmCmd run dev"
@@ -168,14 +172,14 @@ $frontendArgs = @(
     "-ExecutionPolicy", "Bypass",
     "-Command", $frontendCommand
 )
-Start-Process powershell.exe -ArgumentList $frontendArgs
+Start-Process pwsh.exe -ArgumentList $frontendArgs
 
 # 9. Done.
 Write-Host ""
 Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
 Write-Ok "Startup sequence completed"
 Write-Host ""
-Write-Host "    Frontend: http://localhost:5173" -ForegroundColor White
+Write-Host "    Frontend: http://127.0.0.1:3002" -ForegroundColor White
 Write-Host "    Backend:  http://localhost:8001" -ForegroundColor White
 Write-Host "    API docs: http://localhost:8001/docs" -ForegroundColor White
 Write-Host ""

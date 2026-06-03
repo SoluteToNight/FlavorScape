@@ -12,7 +12,7 @@ app.use(cors())
 app.use(express.json())
 
 // Proxy all /api/* and /tiles/* to FastAPI (port 8001)
-const proxy = createProxyMiddleware({ target: 'http://localhost:8001', changeOrigin: true })
+const proxy = createProxyMiddleware({ target: 'http://127.0.0.1:8001', changeOrigin: true })
 app.use('/api', proxy)
 app.use('/tiles', proxy)
 

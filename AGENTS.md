@@ -7,7 +7,7 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 - Windows one-shot: `.\start.ps1` from repo root; it creates `.venv`, installs deps, frees port 8001, starts FastAPI, waits on `/health`, then starts Vite.
 - Bash one-shot: `bash start.sh`; it writes backend logs to `.backend.log` and uses `python3` only to parse the health response.
 - Manual backend: `.venv/Scripts/python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8001 --reload`.
-- Manual frontend: `npm run dev`; this starts both Express (`server.js`, port 3001) and Vite (port 5173).
+- Manual frontend: `npm run dev`; this starts Vite on port 3002 (which proxies `/api` and `/tiles` to FastAPI).
 - Python deps: `uv pip install --python .venv/Scripts/python.exe -r backend/requirements.txt`; do not let `uv` pick the system Python.
 - DB reset/seed: `.venv/Scripts/python.exe -m backend.db.run_migration` after `.env` has `DATABASE_URL` for a PostGIS database.
 - Production static build: `npm run build && npm run start`; `server.js` serves `dist/` but does not proxy Python `/tiles` or FastAPI data.
@@ -15,7 +15,7 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 
 ## Ports and stale sources
 
-- Current ports: FastAPI 8001, Vite dev 5173, Vite preview 4173, Express 3001.
+- Current ports: FastAPI 8001, Vite dev 3002, Vite preview 4173, Express 3001.
 - Ignore `backend/main.py`'s docstring command using port 8000; `backend/config.py`, scripts, and Vite proxy all use 8001.
 - `.claude/settings.local.json` also contains stale 8000 permission examples; do not copy them into new docs or commands.
 
@@ -24,11 +24,16 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 - Save development screenshots in `dev/screenshots/`; do not leave generated PNGs in the repo root.
 - Playwright validation screenshots and map UI review captures should use `dev/screenshots/` as the default output folder.
 
+## Product scope
+
+- Desktop-only product scope: do not design, implement, review, or screenshot mobile layouts unless the user explicitly asks for mobile work in that request.
+- UI/UX validation should default to desktop viewports only; avoid spending effort on mobile responsiveness or mobile adaptation.
+
 ## Architecture traps
 
-- Dev is three-process when fully running: FastAPI 8001 from `start.ps1`/`start.sh`, plus `npm run dev` launching Express 3001 and Vite 5173.
-- The browser app in dev calls Vite, and Vite proxies `/api/*` and `/tiles/*` to FastAPI 8001; Express API routes are not the dev app’s normal data path.
-- In production, Express serves `dist/` and its own `/api/*` from `api/data.js`; it has no `/tiles/*` proxy, so full WebGIS production needs a separate FastAPI backend/reverse proxy.
+- Dev is two-process when fully running: FastAPI 8001 from `start.ps1`/`start.sh`, plus Vite 3002 from `npm run dev`.
+- The browser app in dev calls Vite, and Vite proxies `/api/*` and `/tiles/*` to FastAPI 8001.
+- In production, Express serves `dist/` and proxies `/api/*` and `/tiles/*` to FastAPI; a separate FastAPI backend is required for full WebGIS functionality.
 - FastAPI lifespan blocks all requests until `run_startup()` finishes raster extraction/vector loading and `init_pool()` opens PostgreSQL connections.
 - First backend start may spend minutes extracting `data/HYP_HR_SR_W_DR.zip` and loading shapefiles; `start.ps1` waits up to 300s on `/health`.
 
@@ -37,7 +42,6 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 - FastAPI `/api/*` routes call `backend/db/query.py`, which queries PostgreSQL/PostGIS and merges display metadata from `backend/data/app_data.py`.
 - Keep `dish` values stable: `query.py` joins DB flavor rows to UI metadata by dish name.
 - Route UI metadata is matched by `dispersal_event` order against `app_data.ROUTES`; reordering routes can silently mismatch names/colors/types.
-- `api/data.js` is a smaller hardcoded Express data source; update it deliberately if changing production Express fallback behavior.
 - `.env` is required for `DATABASE_URL` but is ignored by `.gitignore`; never print or commit real credentials.
 
 ## Map/GIS gotchas

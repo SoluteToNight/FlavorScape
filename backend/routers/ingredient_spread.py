@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -23,44 +24,59 @@ INGREDIENT_DIR = DATA_DIR / "ingredient"
 
 _cache: dict[str, dict] = {}
 _loaded = False
+_cache_signature: tuple[tuple[str, int, int], ...] = ()
+_lock = threading.Lock()
 
 
-def _load_all() -> dict[str, dict]:
-    global _cache, _loaded
-    if _loaded:
-        return _cache
-
+def _ingredient_file_signature() -> tuple[tuple[str, int, int], ...]:
     if not INGREDIENT_DIR.exists():
-        log.warning("Ingredient data directory not found: %s", INGREDIENT_DIR)
+        return ()
+    return tuple(
+        (fp.name, fp.stat().st_mtime_ns, fp.stat().st_size)
+        for fp in sorted(INGREDIENT_DIR.glob("*.json"))
+    )
+
+
+def _load_all() -> None:
+    """确保 _cache 已填充（线程安全，Double-Checked Locking）。"""
+    global _cache, _loaded, _cache_signature
+    signature = _ingredient_file_signature()
+    if _loaded and signature == _cache_signature:
+        return
+
+    with _lock:
+        signature = _ingredient_file_signature()
+        if _loaded and signature == _cache_signature:
+            return
+
+        if not INGREDIENT_DIR.exists():
+            log.warning("Ingredient data directory not found: %s", INGREDIENT_DIR)
+            _cache = {}
+            _cache_signature = signature
+            _loaded = True
+            return
+
+        next_cache = {}
+        for fp in sorted(INGREDIENT_DIR.glob("*.json")):
+            try:
+                data = json.loads(fp.read_text(encoding="utf-8"))
+                iid = data.get("ingredient_id") or fp.stem
+                next_cache[iid] = data
+                log.info("Loaded ingredient: %s (%s)", iid, data.get("name", "?"))
+            except Exception as exc:
+                log.warning("Failed to load %s: %s", fp.name, exc)
+
+        _cache = next_cache
+        _cache_signature = signature
         _loaded = True
-        return _cache
-
-    for fp in sorted(INGREDIENT_DIR.glob("*.json")):
-        try:
-            data = json.loads(fp.read_text(encoding="utf-8"))
-            iid = data.get("ingredient_id") or fp.stem
-            _cache[iid] = data
-            log.info("Loaded ingredient: %s (%s)", iid, data.get("name", "?"))
-        except Exception as exc:
-            log.warning("Failed to load %s: %s", fp.name, exc)
-
-    _loaded = True
-    return _cache
-
-
-def _reload():
-    global _cache, _loaded
-    _cache = {}
-    _loaded = False
-    _load_all()
 
 
 @router.get("/spread")
 def list_ingredients():
     """列出所有可用食材传播数据（概要信息）。"""
-    all_data = _load_all()
+    _load_all()
     results = []
-    for iid, data in all_data.items():
+    for iid, data in _cache.items():
         timeline = data.get("timeline", [])
         results.append({
             "ingredient_id": iid,
@@ -84,20 +100,20 @@ def list_ingredients():
 @router.get("/spread/{ingredient_id}")
 def get_ingredient_spread(ingredient_id: str):
     """获取单个食材的完整传播时间线。"""
-    all_data = _load_all()
-    if ingredient_id not in all_data:
-        raise HTTPException(404, f"Ingredient '{ingredient_id}' not found. Available: {list(all_data.keys())}")
-    return all_data[ingredient_id]
+    _load_all()
+    if ingredient_id not in _cache:
+        raise HTTPException(404, f"Ingredient '{ingredient_id}' not found. Available: {list(_cache.keys())}")
+    return _cache[ingredient_id]
 
 
 @router.get("/spread/{ingredient_id}/path")
 def get_ingredient_path(ingredient_id: str):
     """获取食材传播路径（按时间排序的坐标序列 + 路径段信息）。"""
-    all_data = _load_all()
-    if ingredient_id not in all_data:
+    _load_all()
+    if ingredient_id not in _cache:
         raise HTTPException(404, f"Ingredient '{ingredient_id}' not found.")
 
-    data = all_data[ingredient_id]
+    data = _cache[ingredient_id]
     timeline = sorted(data.get("timeline", []), key=lambda e: e["year"])
 
     origin_coords = data.get("origin_coordinates")

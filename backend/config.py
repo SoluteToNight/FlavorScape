@@ -27,6 +27,7 @@ TILE_CACHE_SIZE = 512
 PORT = 8001
 
 CORS_ORIGINS = [
-    "http://localhost:5173", "http://localhost:4173",
-    "http://127.0.0.1:5173", "http://127.0.0.1:4173",
+    "http://localhost:3002", "http://127.0.0.1:3002",  # Vite dev
+    "http://localhost:3001", "http://127.0.0.1:3001",  # Express production
+    "http://localhost:4173", "http://127.0.0.1:4173",  # Vite preview
 ]
