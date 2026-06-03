@@ -326,4 +326,3 @@ function select(item) {
 
 .dropdown-enter-active, .dropdown-leave-active { transition: opacity 150ms ease; }
 .dropdown-enter-from, .dropdown-leave-to { opacity: 0; }
-</style>
