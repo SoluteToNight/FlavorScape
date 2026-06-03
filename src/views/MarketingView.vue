@@ -125,50 +125,26 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import html2canvas from 'html2canvas'
 import StaticGeoMap from '@/components/StaticGeoMap.vue'
+import { useProductCases } from '@/composables/useProductCases'
 
-const products = [
-  {
-    id: 'pepper',
-    name: '漢源花椒',
-    province: '四川省',
-    image: '/ingredients/pepper-realistic.png',
-    desc: '大渡河干热河谷微气候 · 海拔1600米正路贡椒',
-    poeticLine: '健康且好吃的食物，有趣且爱吃的朋友。',
-    narrative: '溯源于 <span class="hl">四川省</span>，经 <span class="hl">汉源 → 成都 → 上海</span> 全链路冷链直达。',
-    nodes: [
-      { short: '汉源', coord: [102.6342, 29.5621] },
-      { short: '成都', coord: [104.1623, 30.8241] },
-      { short: '上海', coord: [121.3821, 31.1123] }
-    ],
-    evidence: [
-      { label: '芳香挥发油', value: '≥ 5.5%' },
-      { label: '羟基山椒素', value: '≥ 35mg/g' },
-      { label: '农残检测', value: '零检出' }
-    ]
-  },
-  {
-    id: 'rice',
-    name: '五常大米',
-    province: '黑龙江省',
-    image: '/ingredients/rice-realistic.png',
-    desc: '拉林河流域寒地黑土 · 140天单季熟成',
-    poeticLine: '时间凝结的纯粹，出走半生归来仍是稻香。',
-    narrative: '原产于 <span class="hl">黑龙江省</span>，经 <span class="hl">五常 → 哈尔滨 → 长三角</span> 锁鲜运送。',
-    nodes: [
-      { short: '五常', coord: [127.1676, 44.9192] },
-      { short: '哈尔滨', coord: [126.6331, 45.7422] },
-      { short: '长三角', coord: [121.4737, 31.2304] }
-    ],
-    evidence: [
-      { label: '产地积温', value: '2700℃' },
-      { label: '直链淀粉', value: '17.2%' },
-      { label: '胶稠度', value: '≥ 70mm' }
-    ]
-  }
-]
+const { cases, loadAll } = useProductCases()
+
+const products = computed(() =>
+  cases.value.map(pc => ({
+    id: pc.id,
+    name: pc.name,
+    province: pc.province,
+    image: pc.heroImage,
+    desc: pc.marketing.creative.desc.default,
+    poeticLine: pc.marketing.creative.poeticLine.default,
+    narrative: pc.marketing.creative.narrative.default,
+    nodes: pc.marketing.spatial.nodes,
+    evidence: pc.marketing.spatial.evidence,
+  }))
+)
 
 const themes = [
   {
@@ -209,9 +185,13 @@ const isExporting = ref(false)
 const imagePosY = ref(50)
 const customImage = ref(null)
 
-const product = computed(() => products.find(p => p.id === activeProductId.value) || products[0])
+const product = computed(() => products.value.find(p => p.id === activeProductId.value) || products.value[0])
 const activeTheme = computed(() => themes.find(t => t.id === activeThemeId.value) || themes[0])
 const formattedNarrative = computed(() => product.value.narrative)
+
+onMounted(() => {
+  loadAll()
+})
 
 function handleProductChange(item) {
   activeProductId.value = item.id

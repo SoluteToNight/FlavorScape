@@ -1,0 +1,38 @@
+{
+  "id": "hotpot-base",
+  "name": "火锅底料",
+  "category": "调味品",
+  "province": "四川省",
+  "heroImage": "/ingredients/hotpot-base.png",
+  "origin": "成都 · 川渝食脉",
+  "colors": { "primary": "#C63D42", "accent": "#A96535" },
+  "marketing": {
+    "spatial": {
+      "nodes": [
+        { "short": "成都", "coord": [104.06, 30.67], "desc": "郫县豆瓣核心产区" },
+        { "short": "重庆", "coord": [106.55, 29.57], "desc": "牛油炼制与调味中心" },
+        { "short": "上海", "coord": [121.38, 31.11], "desc": "长三角主销市场" }
+      ],
+      "evidence": [
+        { "label": "辣度指数", "value": "≥ 8000 SHU" },
+        { "label": "牛油含量", "value": "≥ 45%" },
+        { "label": "菌落检测", "value": "国标合格" }
+      ]
+    },
+    "creative": {
+      "desc": { "default": "川渝火锅灵魂 · 郫县豆瓣与牛油黄金配比", "type": "text", "maxLength": 60 },
+      "poeticLine": { "default": "一锅红油，沸腾江湖。", "type": "text", "maxLength": 40 },
+      "narrative": { "default": "源自四川省成都，精选郫县豆瓣与重庆牛油，经成都 → 重庆 → 上海全链路冷链直达。", "type": "rich-text", "maxLength": 300 },
+      "theme": { "default": "heritage", "type": "select", "options": ["nature", "heritage", "indigo"] },
+      "copy": {
+        "xiaohongshu": { "default": "川渝火锅底料，正宗郫县豆瓣+醇厚牛油，一锅沸腾江湖味。", "type": "text", "maxLength": 200 },
+        "ecommerce": { "default": "【产地直供】四川火锅底料·川渝老味道。郫县豆瓣发酵180天，牛油含量≥45%，麻辣鲜香。", "type": "text", "maxLength": 200 }
+      }
+    }
+  },
+  "studio": {
+    "brandScenario": "调味品供应链 / 餐饮品牌",
+    "recommendedOutputs": ["poster", "archive"],
+    "brandName": "火锅底料"
+  }
+}

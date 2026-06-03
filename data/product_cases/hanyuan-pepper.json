@@ -1,0 +1,38 @@
+{
+  "id": "hanyuan-pepper",
+  "name": "漢源花椒",
+  "category": "调味品",
+  "province": "四川省",
+  "heroImage": "/ingredients/pepper-realistic.png",
+  "origin": "四川汉源 · 干热河谷",
+  "colors": { "primary": "#9C3131", "accent": "#516E58" },
+  "marketing": {
+    "spatial": {
+      "nodes": [
+        { "short": "汉源", "coord": [102.6342, 29.5621], "desc": "海拔1600m批次抽样" },
+        { "short": "成都", "coord": [104.1623, 30.8241], "desc": "入库理化复检" },
+        { "short": "上海", "coord": [121.3821, 31.1123], "desc": "冷链全损耗监控" }
+      ],
+      "evidence": [
+        { "label": "芳香挥发油", "value": "≥ 5.5%" },
+        { "label": "羟基山椒素", "value": "≥ 35mg/g" },
+        { "label": "农残检测", "value": "零检出" }
+      ]
+    },
+    "creative": {
+      "desc": { "default": "大渡河干热河谷微气候 · 海拔1600米正路贡椒", "type": "text", "maxLength": 60 },
+      "poeticLine": { "default": "健康且好吃的食物，有趣且爱吃的朋友。", "type": "text", "maxLength": 40 },
+      "narrative": { "default": "溯源于 <span class=\"hl\">四川省</span>，经 <span class=\"hl\">汉源 → 成都 → 上海</span> 全链路冷链直达。", "type": "rich-text", "maxLength": 300 },
+      "theme": { "default": "nature", "type": "select", "options": ["nature", "heritage", "indigo"] },
+      "copy": {
+        "xiaohongshu": { "default": "这颗花椒来自四川汉源大渡河干热河谷，海拔1600米的正路贡椒，挥发油超5.5%，麻味层次感无敌。", "type": "text", "maxLength": 200 },
+        "ecommerce": { "default": "【产地直供】汉源贡椒·国家地理标志保护产品。大渡河谷微气候孕育，挥发油≥5.5%，粒粒饱满麻香醇厚。", "type": "text", "maxLength": 200 }
+      }
+    }
+  },
+  "studio": {
+    "brandScenario": "地方农产品品牌化 / 餐饮供应链 / 非遗食材",
+    "recommendedOutputs": ["poster", "archive", "display", "spread"],
+    "brandName": "汉源贡椒"
+  }
+}
