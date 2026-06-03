@@ -18,6 +18,22 @@ function Quote-ForPowerShell($value) {
     return "'" + ($value -replace "'", "''") + "'"
 }
 
+$PowerShellHost = $null
+$pwshInfo = Get-Command pwsh.exe -ErrorAction SilentlyContinue
+if ($pwshInfo) {
+    $PowerShellHost = $pwshInfo.Source
+} else {
+    $windowsPowerShellInfo = Get-Command powershell.exe -ErrorAction SilentlyContinue
+    if ($windowsPowerShellInfo) {
+        $PowerShellHost = $windowsPowerShellInfo.Source
+    }
+}
+
+if (-not $PowerShellHost) {
+    Write-Err "Neither pwsh.exe nor powershell.exe was found. Cannot open backend/frontend windows."
+    exit 1
+}
+
 Write-Host ""
 Write-Host "  FlavorScape startup" -ForegroundColor White
 Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
@@ -122,7 +138,7 @@ $backendArgs = @(
     "-ExecutionPolicy", "Bypass",
     "-Command", $backendCommand
 )
-Start-Process pwsh.exe -ArgumentList $backendArgs
+Start-Process $PowerShellHost -ArgumentList $backendArgs
 
 # 7. Wait for backend readiness.
 Write-Step "Waiting for backend /health..."
@@ -172,7 +188,7 @@ $frontendArgs = @(
     "-ExecutionPolicy", "Bypass",
     "-Command", $frontendCommand
 )
-Start-Process pwsh.exe -ArgumentList $frontendArgs
+Start-Process $PowerShellHost -ArgumentList $frontendArgs
 
 # 9. Done.
 Write-Host ""
