@@ -453,7 +453,7 @@ onUnmounted(() => clearInterval(timer))
 <style scoped>
 .import-page {
   min-height: 100vh;
-  padding: calc(var(--navbar-h) + 42px) clamp(42px, 6vw, 96px) 56px;
+  padding: calc(var(--navbar-h) + 28px) var(--page-gutter) 56px;
   background: #f6f0e7;
   color: #2f2a22;
   font-family: var(--font-sans);
@@ -506,8 +506,8 @@ h1 {
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(560px, 1.2fr) minmax(430px, 0.8fr);
-  gap: 24px;
+  grid-template-columns: minmax(520px, 1.2fr) minmax(360px, 0.86fr);
+  gap: var(--panel-gap);
 }
 
 .upload-panel,
@@ -968,9 +968,18 @@ li.done {
   background: #9f4a2d;
 }
 
+@media (max-width: 1439px), (max-height: 800px) {
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  .template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1180px) {
   .workspace-grid,
-  .template-grid,
   .score-grid {
     grid-template-columns: 1fr;
   }

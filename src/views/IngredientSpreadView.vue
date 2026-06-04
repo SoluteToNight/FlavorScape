@@ -1765,8 +1765,6 @@ onUnmounted(() => {
 .spread-map {
   width: 100%;
   height: 100%;
-  min-width: 1024px;
-  min-height: 680px;
   background: #d9e7ec;
 }
 
@@ -1801,7 +1799,7 @@ onUnmounted(() => {
 }
 
 .spread-page.sidebar-open :deep(.maplibregl-ctrl-bottom-right) {
-  right: 438px;
+  right: calc(clamp(360px, 28vw, 420px) + 18px);
 }
 
 :deep(.spread-point-popup .maplibregl-popup-content) {
@@ -1877,8 +1875,8 @@ onUnmounted(() => {
 
 .map-overlay-info {
   position: fixed;
-  top: calc(var(--navbar-h) + 24px);
-  left: 24px;
+  top: calc(var(--navbar-h) + var(--scene-inset));
+  left: var(--rail-left);
   z-index: 10;
   pointer-events: none;
 }
@@ -1909,10 +1907,10 @@ onUnmounted(() => {
 
 .spread-route-caption {
   position: fixed;
-  left: 24px;
-  bottom: 28px;
+  left: var(--rail-left);
+  bottom: var(--page-bottom-offset);
   z-index: 10;
-  width: min(430px, calc(100vw - 468px));
+  width: min(430px, calc(100vw - var(--rail-left) - 460px));
   padding: 14px 16px 15px;
   border-left: 2px solid rgba(93, 74, 48, 0.28);
   background: rgba(255, 252, 248, 0.72);
@@ -1949,7 +1947,7 @@ onUnmounted(() => {
   top: var(--navbar-h);
   right: 0;
   bottom: 0;
-  width: 420px;
+  width: clamp(360px, 28vw, 420px);
   max-width: min(420px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
@@ -2001,7 +1999,7 @@ onUnmounted(() => {
 }
 
 .sidebar-toggle.open {
-  right: 420px;
+  right: clamp(360px, 28vw, 420px);
 }
 
 @media (max-width: 900px) {
@@ -2009,7 +2007,7 @@ onUnmounted(() => {
     width: min(430px, calc(100vw - 48px));
   }
   .sidebar-toggle.open {
-    right: min(420px, calc(100vw - 32px));
+    right: min(clamp(360px, 28vw, 420px), calc(100vw - 32px));
   }
 }
 

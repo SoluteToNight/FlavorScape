@@ -493,8 +493,8 @@ async function exportPoster() {
 
 <style scoped>
 /* ================= 工作台基础布局 (保持不变) ================= */
-.marketing-studio { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: calc(100vh - var(--navbar-h)); height: auto; margin-top: var(--navbar-h); background: #dcd9d2; }
-.studio-sidebar { background: #faf9f6; border-right: 1px solid rgba(0,0,0,0.08); padding: 32px 24px; display: flex; flex-direction: column; gap: 28px; overflow-y: auto; z-index: 20;}
+.marketing-studio { display: grid; grid-template-columns: clamp(280px, 21vw, 340px) minmax(0, 1fr); min-height: calc(100vh - var(--navbar-h)); height: auto; margin-top: var(--navbar-h); background: #dcd9d2; }
+.studio-sidebar { background: #faf9f6; border-right: 1px solid rgba(0,0,0,0.08); padding: clamp(22px, 2vw, 32px) clamp(18px, 1.6vw, 24px); display: flex; flex-direction: column; gap: 28px; overflow-y: auto; z-index: 20;}
 .sidebar-header h2 { font-size: 19px; color: #1a1715; font-weight: 700; margin: 4px 0; }
 .sidebar-header p { font-size: 12px; color: #6e6660; line-height: 1.5; }
 .group-title { font-size: 11px; text-transform: uppercase; color: #8a8077; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.05em; }
@@ -543,7 +543,7 @@ async function exportPoster() {
 .export-btn { width: 100%; padding: 14px; background: #201a17; color: #faf9f6; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: auto; }
 .copy-btn { width: 100%; padding: 12px; margin-top: 10px; background: #fff; color: #2a2320; border: 1px solid #d7d0c6; border-radius: 6px; font-weight: 700; cursor: pointer; }
 .copy-btn:hover { border-color: #b85433; color: #b85433; background: rgba(184, 84, 51, 0.04); }
-.studio-stage { min-width: 0; padding: 40px; overflow: auto; display: grid; place-items: start center; }
+.studio-stage { min-width: 0; padding: var(--stage-padding); overflow: auto; display: grid; place-items: start center; }
 
 /* ================= 字体矩阵 ================= */
 .font-modern { font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", -apple-system, sans-serif; }
@@ -636,10 +636,8 @@ async function exportPoster() {
 .layout-indigo .m-label { font-size: 9px; color: var(--t-accent); }
 .layout-indigo .m-value { font-size: 14px; margin-top: 4px; display: block; }
 
-@media (max-width: 1100px) {
-  .marketing-studio { grid-template-columns: 300px minmax(0, 1fr); }
-  .studio-sidebar { padding: 24px 18px; }
-  .studio-stage { padding: 28px; }
+@media (max-width: 1439px), (max-height: 800px) {
+  .marketing-studio { grid-template-columns: 280px minmax(0, 1fr); }
 }
 
 @media (max-width: 860px) {

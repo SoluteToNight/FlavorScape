@@ -385,14 +385,14 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
   background: #F4F3ED; /* 高级画册纸张底色 */
   color: #332F2A;
   display: grid;
-  grid-template-columns: 320px minmax(420px, 1fr) 300px; /* 三栏布局 */
+  grid-template-columns: clamp(270px, 20vw, 320px) minmax(420px, 1fr) clamp(260px, 19vw, 300px); /* 三栏布局 */
   overflow: auto;
   font-family: -apple-system, "PingFang SC", sans-serif;
 }
 
 /* ================= 两侧信息列 ================= */
 .atlas-sidebar {
-  padding: 32px 24px;
+  padding: clamp(20px, 2vw, 32px) clamp(18px, 1.8vw, 24px);
   overflow-y: auto;
   z-index: 10;
   display: flex; flex-direction: column; gap: 40px;
@@ -449,6 +449,7 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
 .floating-metrics-strip {
   position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 32px; background: rgba(255,255,255,0.9);
+  width: min(760px, calc(100% - 72px));
   padding: 20px 32px; border-radius: 4px; box-shadow: 0 12px 32px rgba(0,0,0,0.08);
   border: 1px solid rgba(0,0,0,0.05); z-index: 5;
 }
@@ -459,7 +460,7 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
 
 /* 地图左上角节点摘要 */
 .floating-map-legend {
-  position: absolute; top: 32px; left: 32px; z-index: 5;
+  position: absolute; top: 24px; left: 24px; z-index: 5;
   background: rgba(255,255,255,0.85); padding: 16px; border: 1px solid rgba(0,0,0,0.08);
   backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 2px;
 }
@@ -496,8 +497,8 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
 .cert-code { font-size: 10px; font-family: monospace; color: #aaa; }
 
 /* ================= 响应式调整 ================= */
-@media (max-width: 1200px) {
-  .archive-atlas-page { grid-template-columns: 280px minmax(380px, 1fr) 280px; }
+@media (max-width: 1439px), (max-height: 800px) {
+  .archive-atlas-page { grid-template-columns: 260px minmax(380px, 1fr) 250px; }
   .floating-metrics-strip { flex-wrap: wrap; justify-content: center; width: 80%; padding: 16px; gap: 16px; bottom: 20px; }
 }
 @media (max-height: 760px) {

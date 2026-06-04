@@ -84,7 +84,7 @@ function goToMap(d) {
   position: sticky; top: 0;
   background: rgba(248,244,239,0.95);
   backdrop-filter: var(--blur-sm); -webkit-backdrop-filter: var(--blur-sm);
-  padding: 16px 60px;
+  padding: 16px var(--page-gutter);
   z-index: 20;
   display: flex; align-items: center; gap: 20px;
   flex-wrap: wrap;
@@ -111,7 +111,7 @@ function goToMap(d) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: 20px;
-  padding: 24px 60px 60px;
+  padding: 24px var(--page-gutter) 60px;
 }
 
 @media (max-width: 860px) {
@@ -150,6 +150,6 @@ function goToMap(d) {
 }
 .lib-footer {
   text-align: center; font-size: 11px; color: var(--text-muted);
-  letter-spacing: 0.1em; padding: 0 60px 40px;
+  letter-spacing: 0.1em; padding: 0 var(--page-gutter) 40px;
 }
 </style>

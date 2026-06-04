@@ -353,6 +353,7 @@ onUnmounted(() => {
   right: 0;
   bottom: 0;
   height: auto;
+  overflow: hidden;
 }
 
 .brand-display-experience.framed {

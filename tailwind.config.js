@@ -71,6 +71,20 @@ export default {
       },
       spacing: {
         navbar: '60px',
+        gutter: 'var(--page-gutter)',
+        stage: 'var(--stage-padding)',
+      },
+      maxWidth: {
+        'desktop-shell': 'var(--content-max)',
+        'desktop-shell-narrow': 'var(--content-narrow)',
+      },
+      screens: {
+        'desktop-compact': { max: '1439px' },
+        'desktop-standard': { min: '1440px', max: '1679px' },
+        'desktop-wide': { min: '1680px' },
+        'desktop-short': { raw: '(max-height: 800px)' },
+        'desktop-mid': { raw: '(min-height: 801px) and (max-height: 899px)' },
+        'desktop-tall': { raw: '(min-height: 900px)' },
       },
       transitionDuration: {
         DEFAULT: '250ms',

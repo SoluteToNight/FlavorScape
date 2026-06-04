@@ -257,6 +257,10 @@ const biomePaletteFallback = '#C4B49A'
 /* KEPT: complex transitions, gradients, composite shadows, hover effects, Vue transitions */
 
 .inspector {
+  top: var(--page-top-offset) !important;
+  right: var(--rail-right) !important;
+  bottom: var(--page-bottom-offset) !important;
+  width: var(--inspector-w) !important;
   transition:
     width 220ms ease,
     height 220ms ease,

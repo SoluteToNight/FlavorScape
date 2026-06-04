@@ -65,8 +65,10 @@ onMounted(async () => {
   const [chRes, rRes] = await Promise.all([
     fetch('/api/chapters'), fetch('/api/routes'),
   ])
-  chapters.value = await chRes.json()
-  routes.value = await rRes.json()
+  const chapterData = await chRes.json().catch(() => [])
+  const routeData = await rRes.json().catch(() => [])
+  chapters.value = Array.isArray(chapterData) ? chapterData : []
+  routes.value = Array.isArray(routeData) ? routeData : []
   drawMiniMap()
 })
 
@@ -87,8 +89,8 @@ function drawMiniMap() {
   const H = canvas.height = canvas.offsetHeight || 260
 
   const routeName = current.value.routeName
-  const route = routes.value.find(r => r.name === routeName)
-  if (!route) return
+  const route = (Array.isArray(routes.value) ? routes.value : []).find(r => r?.name === routeName)
+  if (!route?.path?.length) return
 
   // Compute bounding box for route
   const lngs = route.path.map(p => p[0])
@@ -100,9 +102,12 @@ function drawMiniMap() {
     (1 - (lat - minLat) / (maxLat - minLat)) * (H * 0.75) + H * 0.125,
   ]
   const pts = route.path.map(proj)
+  if (pts.length < 2) return
 
   let t = 0
   function frame() {
+    if (pts.length < 2) return
+    try {
     ctx.clearRect(0, 0, W, H)
     ctx.fillStyle = '#EDE5D8'; ctx.fillRect(0, 0, W, H)
     // Base route line
@@ -120,6 +125,7 @@ function drawMiniMap() {
     // Particle
     t = (t + 0.012) % 1
     const seg = Math.min(Math.floor(t * (pts.length-1)), pts.length-2)
+    if (!pts[seg] || !pts[seg + 1]) return
     const lt = t * (pts.length-1) - seg
     const [px, py] = [pts[seg][0] + (pts[seg+1][0]-pts[seg][0])*lt, pts[seg][1] + (pts[seg+1][1]-pts[seg][1])*lt]
     const g = ctx.createRadialGradient(px,py,0,px,py,10)
@@ -127,6 +133,10 @@ function drawMiniMap() {
     ctx.beginPath(); ctx.arc(px,py,10,0,Math.PI*2); ctx.fillStyle = g; ctx.fill()
     ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fillStyle = route.color; ctx.fill()
     rafId = requestAnimationFrame(frame)
+    } catch {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
   }
   frame()
 }
@@ -140,10 +150,11 @@ function drawMiniMap() {
   background: var(--bg);
   display: flex;
   overflow: auto;
+  padding-inline: var(--page-gutter);
 }
 
 .left-nav {
-  width: 200px; padding: 48px 40px;
+  width: 180px; padding: 40px 24px 40px 12px;
   display: flex; flex-direction: column;
   position: relative;
 }
@@ -170,7 +181,7 @@ function drawMiniMap() {
 .chapter-dot.active .dot-label { color: var(--text); }
 .chapter-dot:hover .dot-label { color: var(--text-mid); }
 
-.right-content { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 40px 60px 40px 20px; overflow: visible; }
+.right-content { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 40px 0 40px 12px; overflow: visible; }
 
 @media (max-width: 860px) {
   .narrative-page { flex-direction: column; }

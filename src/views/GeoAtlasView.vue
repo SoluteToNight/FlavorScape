@@ -11,7 +11,7 @@
 
   <main v-else class="exhibition-screen fixed top-navbar inset-x-0 bottom-0 overflow-hidden">
     <!-- 顶部隐形 HUD 控制栏 -->
-    <header class="hud-top-bar absolute top-0 inset-x-0 z-50 px-10 py-6 flex justify-between items-start">
+    <header class="hud-top-bar absolute top-0 inset-x-0 z-50 flex justify-between items-start" style="padding: var(--scene-inset) var(--page-gutter) 24px;">
       <div>
         <span class="hud-kicker text-[10px] font-sans font-semibold tracking-[0.18em] uppercase">FLAVORSCAPE GEO-ATLAS</span>
         <h1 class="font-serif text-3xl font-medium mt-1 mb-0 tracking-[0.08em]">风味空间叙事 · 智慧大屏</h1>
@@ -51,7 +51,7 @@
       <div class="hud-overlay absolute inset-0 pointer-events-none z-20" :class="{ 'is-touring': isTouring }">
 
         <!-- 左侧：产品信息 HUD -->
-        <aside class="hud-panel pointer-events-auto absolute top-[100px] left-10 w-[280px] p-5 bg-[rgba(10,15,20,0.4)] border border-[rgba(255,255,255,0.08)] rounded shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+        <aside class="hud-panel pointer-events-auto absolute w-[280px] p-5 bg-[rgba(10,15,20,0.4)] border border-[rgba(255,255,255,0.08)] rounded shadow-[0_20px_40px_rgba(0,0,0,0.5)]" style="top: var(--page-top-offset); left: var(--rail-left); width: clamp(248px, 19vw, 280px);">
           <div>
             <h2 class="font-serif text-[24px] font-medium m-0 mb-1 text-[#e6e0d4]">{{ product.name }}</h2>
             <p class="text-[11px] font-sans font-normal m-0 mb-5 pb-4 border-b border-[rgba(255,255,255,0.1)] hud-species">{{ product.species }}</p>
@@ -65,7 +65,7 @@
         </aside>
 
         <!-- 右侧：时间线轨道 -->
-        <aside class="hud-panel pointer-events-auto absolute top-[100px] right-10 w-[240px] px-5 py-6 bg-[rgba(10,15,20,0.4)] border border-[rgba(255,255,255,0.08)] rounded">
+        <aside class="hud-panel pointer-events-auto absolute px-5 py-6 bg-[rgba(10,15,20,0.4)] border border-[rgba(255,255,255,0.08)] rounded" style="top: var(--page-top-offset); right: var(--rail-right); width: clamp(220px, 17vw, 240px);">
           <div class="timeline-track relative flex flex-col gap-6">
             <div
               v-for="(node, index) in nodes" :key="node.id"

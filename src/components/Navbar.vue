@@ -1,6 +1,6 @@
 <template>
   <nav class="navbar fixed top-0 inset-x-0 h-navbar z-[100] border-b transition-[background,border-color] duration-[400ms] ease" :class="{ 'is-home': isHome, 'is-map': isMap, 'is-product': isProduct }">
-    <div class="max-w-[1500px] mx-auto h-full flex items-center px-8 gap-7">
+    <div class="navbar-shell h-full flex items-center">
 
       <!-- Logo -->
       <RouterLink to="/" class="navbar-logo no-underline flex items-baseline gap-0 shrink-0 h-9 px-3.5 rounded-full tracking-[0.04em]">
@@ -21,7 +21,7 @@
       </div>
 
       <!-- Search -->
-      <div class="relative flex items-center gap-2 shrink-0" :class="{ expanded: searchOpen }">
+      <div class="search-wrap relative flex items-center gap-2 shrink-0" :class="{ expanded: searchOpen }">
         <input
           v-if="searchOpen"
           ref="searchEl"
@@ -220,9 +220,20 @@ function select(item) {
   box-shadow: inset 0 0 0 1px rgba(110, 92, 68, 0.1);
 }
 
+.navbar-shell {
+  width: min(var(--content-max), calc(100% - (var(--page-gutter) * 2)));
+  margin-inline: auto;
+  gap: clamp(12px, 1.5vw, 28px);
+}
+
 .nav-links {
+  min-width: 0;
   background: rgba(255, 252, 247, 0.48);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.62);
+}
+
+.nav-link {
+  flex: 0 1 auto;
 }
 
 .nav-link:hover {
@@ -237,13 +248,14 @@ function select(item) {
 }
 
 .search-input {
+  width: clamp(176px, 13vw, 220px);
   animation: fadeRight 200ms ease;
 }
 .search-input:focus {
   background: rgba(255,252,248,0.98);
   box-shadow: 0 0 0 2px var(--amber-soft);
   border-color: rgba(232,169,23,0.3);
-  width: 260px;
+  width: clamp(210px, 16vw, 260px);
 }
 .search-input::placeholder { color: var(--text-muted); }
 
@@ -271,5 +283,33 @@ function select(item) {
 }
 .shadow-app-md {
   box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 1439px), (max-height: 800px) {
+  .navbar-shell {
+    gap: 12px;
+  }
+
+  .navbar-logo {
+    padding-inline: 12px;
+  }
+
+  .nav-links {
+    gap: 0;
+    padding: 3px;
+  }
+
+  .nav-link {
+    padding-inline: 11px;
+    font-size: 12px;
+  }
+
+  .search-wrap {
+    gap: 8px;
+  }
+
+  .search-input {
+    width: 176px;
+  }
 }
 </style>

@@ -58,13 +58,13 @@ onMounted(async () => {
   top: var(--navbar-h); left: 0; right: 0; bottom: 0;
   background: var(--bg);
   display: flex; align-items: flex-start; justify-content: center;
-  padding: 48px 0;
+  padding: 32px var(--page-gutter) 48px;
   overflow-y: auto;
 }
 .about-glass {
-  max-width: 640px; width: 90%;
+  max-width: 760px; width: min(100%, 760px);
   border-radius: var(--radius);
-  padding: 48px 52px;
+  padding: clamp(28px, 3vw, 48px) clamp(24px, 3vw, 52px);
 }
 .about-title { font-family: var(--font-serif); font-size: 20px; font-weight: 500; letter-spacing: 0.1em; margin-bottom: 4px; }
 .about-lead { font-size: 11px; color: var(--text-muted); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 32px; }

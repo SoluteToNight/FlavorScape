@@ -34,8 +34,89 @@
   --radius-sm: 10px;
   --transition: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --navbar-h: 60px;
+  --page-top-offset: calc(var(--navbar-h) + 28px);
+  --page-bottom-offset: 28px;
+  --page-gutter: clamp(18px, 2.25vw, 42px);
+  --content-max: 1540px;
+  --content-narrow: 1240px;
+  --panel-gap: clamp(14px, 1.2vw, 24px);
+  --rail-left: clamp(18px, 2vw, 32px);
+  --rail-right: clamp(18px, 2vw, 32px);
+  --scene-inset: clamp(16px, 1.8vw, 28px);
+  --hero-offset-x: clamp(44px, 4.6vw, 72px);
+  --hero-offset-y: clamp(86px, 10vh, 124px);
+  --hero-copy-w: clamp(520px, 36vw, 640px);
+  --inspector-w: clamp(248px, 20vw, 290px);
+  --stage-padding: clamp(18px, 2vw, 32px);
+  --sidebar-compact: 280px;
+  --sidebar-standard: 320px;
+  --sidebar-wide: 360px;
+  --sidebar-secondary-compact: 260px;
+  --sidebar-secondary-standard: 300px;
+  --sidebar-secondary-wide: 340px;
   --font-sans: 'Noto Sans SC', 'Inter', sans-serif;
   --font-serif: 'Noto Serif SC', serif;
+}
+
+@media (max-width: 1439px), (max-height: 800px) {
+  :root {
+    --page-top-offset: calc(var(--navbar-h) + 20px);
+    --page-bottom-offset: 20px;
+    --page-gutter: 18px;
+    --content-max: 1380px;
+    --panel-gap: 14px;
+    --rail-left: 18px;
+    --rail-right: 18px;
+    --scene-inset: 16px;
+    --hero-offset-x: 54px;
+    --hero-offset-y: 92px;
+    --hero-copy-w: 560px;
+    --inspector-w: 252px;
+    --stage-padding: 18px;
+  }
+}
+
+@media (min-width: 1440px) and (max-width: 1679px) and (min-height: 801px) {
+  :root {
+    --content-max: 1500px;
+    --panel-gap: 18px;
+    --rail-left: 24px;
+    --rail-right: 24px;
+    --scene-inset: 22px;
+    --hero-offset-x: 62px;
+    --hero-offset-y: 104px;
+    --hero-copy-w: 600px;
+    --inspector-w: 272px;
+    --stage-padding: 24px;
+  }
+}
+
+@media (min-width: 1680px) and (min-height: 900px) {
+  :root {
+    --content-max: 1620px;
+    --panel-gap: 24px;
+    --rail-left: 28px;
+    --rail-right: 28px;
+    --scene-inset: 28px;
+    --hero-offset-x: 72px;
+    --hero-offset-y: 112px;
+    --hero-copy-w: 640px;
+    --inspector-w: 290px;
+    --stage-padding: 32px;
+  }
+}
+
+@media (min-height: 801px) and (max-height: 899px) {
+  :root {
+    --hero-offset-y: 96px;
+    --page-top-offset: calc(var(--navbar-h) + 22px);
+  }
+}
+
+@media (min-height: 900px) {
+  :root {
+    --hero-offset-y: clamp(102px, 10vh, 124px);
+  }
 }
 
 html, body {
@@ -56,6 +137,16 @@ html, body {
   width: 100%;
   min-height: 100%;
   position: relative;
+}
+
+.desktop-shell {
+  width: min(var(--content-max), calc(100% - (var(--page-gutter) * 2)));
+  margin-inline: auto;
+}
+
+.desktop-shell-narrow {
+  width: min(var(--content-narrow), calc(100% - (var(--page-gutter) * 2)));
+  margin-inline: auto;
 }
 
 /* Page transitions */

@@ -89,7 +89,7 @@ const capabilities = [
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;
+  object-position: center 26px;
   filter: saturate(0.98) contrast(1.01);
 }
 
@@ -105,15 +105,15 @@ const capabilities = [
 
 .hero-copy {
   position: absolute;
-  left: 72px;
-  top: 108px;
+  left: var(--hero-offset-x);
+  top: max(calc(var(--navbar-h) + 61px), calc(var(--hero-offset-y) + 25px));
   z-index: 2;
-  width: 640px;
+  width: var(--hero-copy-w);
 }
 
 .title-block {
   position: relative;
-  width: 520px;
+  width: clamp(420px, 32vw, 520px);
 }
 
 .hero-title {
@@ -121,7 +121,7 @@ const capabilities = [
   flex-direction: column;
   margin: 0;
   font-family: var(--font-serif), STSong, serif;
-  font-size: 142px;
+  font-size: clamp(112px, 8.8vw, 142px);
   font-weight: 800;
   line-height: 0.92;
   letter-spacing: 0;
@@ -132,19 +132,19 @@ const capabilities = [
 }
 
 .title-red {
-  margin-left: 74px;
+  margin-left: clamp(54px, 4.3vw, 74px);
   margin-top: 2px;
   color: #a2482a;
 }
 
 .english-mark {
   position: absolute;
-  left: 330px;
-  top: 92px;
+  left: clamp(258px, 20vw, 330px);
+  top: clamp(72px, 6.4vw, 92px);
   display: grid;
   gap: 2px;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 16px;
+  font-size: clamp(13px, 1vw, 16px);
   line-height: 1.35;
   letter-spacing: 0;
   color: #6d624e;
@@ -165,9 +165,9 @@ const capabilities = [
 }
 
 .hero-slogan {
-  margin-top: 32px;
+  margin-top: clamp(20px, 2.3vh, 32px);
   font-family: var(--font-serif), STSong, serif;
-  font-size: 25px;
+  font-size: clamp(21px, 1.6vw, 25px);
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0;
@@ -176,9 +176,9 @@ const capabilities = [
 
 .capability-row {
   display: flex;
-  gap: 34px;
-  margin-top: 30px;
-  width: 560px;
+  gap: clamp(18px, 2vw, 34px);
+  margin-top: clamp(18px, 2.2vh, 30px);
+  width: min(100%, 560px);
 }
 
 .capability-item {
@@ -228,8 +228,8 @@ const capabilities = [
 
 .hero-actions {
   display: flex;
-  gap: 20px;
-  margin-top: 42px;
+  gap: clamp(14px, 1.4vw, 20px);
+  margin-top: clamp(24px, 3vh, 42px);
 }
 
 .primary-action,
@@ -298,48 +298,29 @@ const capabilities = [
   line-height: 1;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1439px), (max-height: 800px) {
   .hero-copy {
-    left: 54px;
-    width: 600px;
+    width: min(560px, calc(100vw - 96px));
   }
 
-  .hero-title {
-    font-size: 122px;
+  .hero-copy,
+  .title-block {
+    max-width: 100%;
   }
 
-  .english-mark {
-    left: 292px;
-    top: 78px;
+  .capability-item {
+    width: 96px;
   }
 
-  .capability-row {
-    gap: 22px;
+  .primary-action,
+  .secondary-action {
+    height: 52px;
   }
-
 }
 
 @media (max-height: 760px) {
-  .hero-copy {
-    top: 92px;
+  .capability-desc {
+    font-size: 11px;
   }
-
-  .hero-title {
-    font-size: 118px;
-  }
-
-  .hero-slogan {
-    margin-top: 24px;
-    font-size: 22px;
-  }
-
-  .capability-row {
-    margin-top: 22px;
-  }
-
-  .hero-actions {
-    margin-top: 30px;
-  }
-
 }
 </style>

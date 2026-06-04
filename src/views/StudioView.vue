@@ -222,14 +222,14 @@
         </section>
 
         <div v-else-if="currentOutputData" class="preview-workspace">
-          <div class="poster-scroll" :class="{ 'display-scroll': activeOutput === 'display' }">
+          <div ref="previewViewportEl" class="poster-scroll" :class="{ 'display-scroll': activeOutput === 'display' }">
             <div class="canvas-zoom-control" aria-label="预览缩放">
               <button
                 v-for="item in zoomOptions"
-                :key="item.value"
+                :key="item.label"
                 type="button"
-                :class="{ active: previewScale === item.value }"
-                @click="previewScale = item.value"
+                :class="{ active: item.mode === 'fit' ? previewMode === 'fit' : (previewMode === 'fixed' && previewScale === item.value) }"
+                @click="applyZoomOption(item)"
               >
                 {{ item.label }}
               </button>
@@ -300,7 +300,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import html2canvas from 'html2canvas'
 import BrandDisplayExperience from '../components/BrandDisplayExperience.vue'
 import CreativeEditor from '../components/CreativeEditor.vue'
@@ -341,8 +341,11 @@ const isExporting = ref(false)
 const exportError = ref('')
 const exportScale = ref(3)
 const previewScale = ref(0.72)
+const previewMode = ref('fit')
 const exportRef = ref(null)
 const activeSideTab = ref('edit')
+const previewViewportEl = ref(null)
+let previewResizeObserver = null
 
 const outputOptions = [
   {
@@ -369,7 +372,7 @@ const outputOptions = [
 ]
 
 const zoomOptions = [
-  { label: 'Fit', value: 0.61 },
+  { label: 'Fit', mode: 'fit' },
   { label: '72%', value: 0.72 },
   { label: '86%', value: 0.86 },
   { label: '100%', value: 1 },
@@ -482,6 +485,32 @@ function themeBackground(theme) {
   return map[theme] || '#ffffff'
 }
 
+function calculateFitScale() {
+  const viewport = previewViewportEl.value
+  const frame = activeFrame.value
+  if (!viewport || !frame) return defaultPreviewScales[activeOutput.value] || 0.72
+  const availableWidth = Math.max(220, viewport.clientWidth - 40)
+  const availableHeight = Math.max(220, viewport.clientHeight - 56)
+  const nextScale = Math.min(1, availableWidth / frame.width, availableHeight / frame.height)
+  const minScale = activeOutput.value === 'display' ? 0.34 : 0.42
+  return Number(Math.max(minScale, nextScale).toFixed(2))
+}
+
+function syncPreviewScale() {
+  if (previewMode.value !== 'fit') return
+  previewScale.value = calculateFitScale()
+}
+
+function applyZoomOption(item) {
+  if (item.mode === 'fit') {
+    previewMode.value = 'fit'
+    syncPreviewScale()
+    return
+  }
+  previewMode.value = 'fixed'
+  previewScale.value = item.value
+}
+
 function exportFilename() {
   const data = currentOutputData.value
   const title = data?.title || 'studio-output'
@@ -578,12 +607,20 @@ onMounted(async () => {
   await store.loadRemoteProjects()
   loadRoutes()
   ensureDisplayRoute()
-  previewScale.value = defaultPreviewScales[activeOutput.value] || 0.72
+  await nextTick()
+  syncPreviewScale()
+  previewResizeObserver = new ResizeObserver(() => syncPreviewScale())
+  if (previewViewportEl.value) previewResizeObserver.observe(previewViewportEl.value)
+  window.addEventListener('resize', syncPreviewScale)
 })
 
 watch(activeOutput, type => {
+  previewMode.value = 'fit'
   previewScale.value = defaultPreviewScales[type] || 0.72
+  nextTick(() => syncPreviewScale())
 })
+
+watch(currentOutputData, () => nextTick(() => syncPreviewScale()))
 
 watch(
   () => [displayData.value?.interactionMode, displayData.value?.selectedRouteId],
@@ -591,6 +628,11 @@ watch(
     if (mode === 'route') ensureDisplayRoute()
   },
 )
+
+onUnmounted(() => {
+  previewResizeObserver?.disconnect()
+  window.removeEventListener('resize', syncPreviewScale)
+})
 </script>
 
 <style scoped>
@@ -613,7 +655,7 @@ watch(
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding: 26px 34px 30px;
+  padding: 26px var(--page-gutter) 30px;
   background:
     linear-gradient(rgba(32, 27, 22, 0.032) 1px, transparent 1px),
     linear-gradient(90deg, rgba(32, 27, 22, 0.026) 1px, transparent 1px),
@@ -646,7 +688,7 @@ watch(
   align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
-  max-width: 1120px;
+  max-width: var(--content-narrow);
   margin: 0 auto 22px;
 }
 
@@ -694,7 +736,7 @@ watch(
 }
 
 .launchpad {
-  max-width: 1120px;
+  max-width: var(--content-narrow);
   margin: 0 auto;
 }
 
@@ -811,7 +853,7 @@ watch(
 }
 
 .product-step {
-  max-width: 1120px;
+  max-width: var(--content-narrow);
   margin: 0 auto;
 }
 
@@ -1003,7 +1045,7 @@ watch(
   min-height: 0;
   flex: 1;
   display: grid;
-  grid-template-columns: 360px minmax(620px, 1fr) 340px;
+  grid-template-columns: var(--sidebar-wide) minmax(680px, 1fr) var(--sidebar-secondary-wide);
 }
 
 .studio-panel {
@@ -1297,7 +1339,7 @@ watch(
   display: grid;
   place-items: start center;
   height: 100%;
-  padding: 28px 0 36px;
+  padding: var(--stage-padding) 20px calc(var(--stage-padding) + 10px);
   background:
     linear-gradient(rgba(32, 27, 22, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(32, 27, 22, 0.046) 1px, transparent 1px),
@@ -1309,7 +1351,7 @@ watch(
 .poster-scroll.display-scroll {
   overflow: hidden;
   place-items: center;
-  padding: 18px;
+  padding: var(--stage-padding);
 }
 
 .canvas-zoom-control {
@@ -1390,5 +1432,21 @@ watch(
   top: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+@media (max-width: 1439px), (max-height: 800px) {
+  .studio-grid {
+    grid-template-columns: var(--sidebar-compact) minmax(560px, 1fr) var(--sidebar-secondary-compact);
+  }
+
+  .product-gallery {
+    grid-template-columns: minmax(0, 1fr) 248px;
+  }
+}
+
+@media (min-width: 1440px) and (max-width: 1679px) and (min-height: 801px) {
+  .studio-grid {
+    grid-template-columns: var(--sidebar-standard) minmax(620px, 1fr) var(--sidebar-secondary-standard);
+  }
 }
 </style>

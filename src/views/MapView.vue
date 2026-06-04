@@ -2478,7 +2478,10 @@ const layerToggles = computed(() => [
 <style scoped>
 .map-page {
   position: fixed;
-  inset: 0;
+  top: var(--navbar-h);
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: #c8dde8;
   overflow: hidden;
 }
@@ -2962,9 +2965,9 @@ const layerToggles = computed(() => [
 }
 
 :deep(.maplibregl-ctrl-bottom-right) {
-  left: 28px !important;
+  left: var(--rail-left) !important;
   right: auto !important;
-  bottom: 84px !important;
+  bottom: calc(var(--page-bottom-offset) + 56px) !important;
 }
 
 :deep(.maplibregl-ctrl-group) {
@@ -2978,8 +2981,8 @@ const layerToggles = computed(() => [
 
 .legend-panel {
   position: absolute;
-  top: calc(var(--navbar-h) + 18px);
-  left: 28px;
+  top: var(--scene-inset);
+  left: var(--rail-left);
   width: 218px;
   padding: 16px 16px 14px;
   border-radius: 20px;
@@ -3051,8 +3054,8 @@ const layerToggles = computed(() => [
 
 .devtools-trigger {
   position: absolute;
-  left: 28px;
-  bottom: 28px;
+  left: var(--rail-left);
+  bottom: var(--page-bottom-offset);
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -3067,8 +3070,8 @@ const layerToggles = computed(() => [
 
 .scene-toggle {
   position: absolute;
-  left: 172px;
-  bottom: 28px;
+  left: calc(var(--rail-left) + 144px);
+  bottom: var(--page-bottom-offset);
   height: 40px;
   display: inline-flex;
   align-items: center;
@@ -3135,8 +3138,8 @@ const layerToggles = computed(() => [
 
 .devtools-panel {
   position: absolute;
-  left: 28px;
-  bottom: 84px;
+  left: var(--rail-left);
+  bottom: calc(var(--page-bottom-offset) + 56px);
   width: 228px;
   padding: 16px;
   border-radius: 20px;
@@ -3314,14 +3317,16 @@ const layerToggles = computed(() => [
 
 .map-hint {
   position: absolute;
-  bottom: 26px;
+  bottom: var(--page-bottom-offset);
   left: 50%;
   transform: translateX(-50%);
+  width: min(520px, calc(100vw - (var(--rail-left) * 2) - var(--inspector-w) - 84px));
   font-size: 11px;
   color: rgba(90, 83, 78, 0.48);
   letter-spacing: 0.14em;
   z-index: 10;
   pointer-events: none;
+  text-align: center;
 }
 
 .devtools-enter-active,
@@ -3337,18 +3342,17 @@ const layerToggles = computed(() => [
 
 @media (max-width: 1080px) {
   :deep(.maplibregl-ctrl-bottom-right) {
-    left: 18px !important;
+    left: var(--rail-left) !important;
   }
 
   .legend-panel {
     width: 196px;
-    left: 18px;
   }
 
   .devtools-trigger,
   .scene-toggle,
   .devtools-panel {
-    left: 18px;
+    left: var(--rail-left);
   }
 
   .scene-toggle {
