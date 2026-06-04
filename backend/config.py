@@ -1,8 +1,13 @@
 from pathlib import Path
+import os
+
+from dotenv import load_dotenv
 
 BASE_DIR     = Path(__file__).parent
 PROJECT_DIR  = BASE_DIR.parent
 DATA_DIR     = PROJECT_DIR / "data"
+
+load_dotenv(PROJECT_DIR / ".env")
 
 # Raster
 RASTER_ZIP   = DATA_DIR / "HYP_HR_SR_W_DR.zip"
@@ -22,6 +27,12 @@ TEOW_MERGED  = EXTRACTED_DIR / "wwf_terr_ecos_merged.shp"
 
 # Tile cache
 TILE_CACHE_SIZE = 512
+TILE_SIZE = int(os.getenv("TILE_SIZE", "256"))
+
+# Auth
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_MINUTES = 60 * 24
 
 # CORS origins (Vite dev + production)
 PORT = 8001
@@ -31,3 +42,8 @@ CORS_ORIGINS = [
     "http://localhost:3001", "http://127.0.0.1:3001",  # Express production
     "http://localhost:4173", "http://127.0.0.1:4173",  # Vite preview
 ]
+
+# DeepSeek
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro")

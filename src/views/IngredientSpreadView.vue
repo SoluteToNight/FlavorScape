@@ -1759,11 +1759,14 @@ onUnmounted(() => {
     linear-gradient(180deg, rgba(93, 74, 48, 0.035) 1px, transparent 1px),
     #f5efe5;
   background-size: 44px 44px;
+  overflow: auto;
 }
 
 .spread-map {
   width: 100%;
   height: 100%;
+  min-width: 1024px;
+  min-height: 680px;
   background: #d9e7ec;
 }
 
@@ -1947,6 +1950,7 @@ onUnmounted(() => {
   right: 0;
   bottom: 0;
   width: 420px;
+  max-width: min(420px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--glass-border);
@@ -1998,6 +2002,15 @@ onUnmounted(() => {
 
 .sidebar-toggle.open {
   right: 420px;
+}
+
+@media (max-width: 900px) {
+  .spread-route-caption {
+    width: min(430px, calc(100vw - 48px));
+  }
+  .sidebar-toggle.open {
+    right: min(420px, calc(100vw - 32px));
+  }
 }
 
 .sidebar-toggle .toggle-icon {

@@ -1,0 +1,18 @@
+.maplibregl-canvas {
+  outline: none;
+}
+
+.maplibregl-ctrl-attrib {
+  background: rgba(255, 252, 248, 0.7) !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+}
+
+.maplibregl-ctrl-group {
+  background: rgba(255, 252, 248, 0.78) !important;
+  border: 1px solid rgba(180, 165, 140, 0.22) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 32px rgba(35, 25, 12, 0.08) !important;
+  backdrop-filter: var(--blur-sm) !important;
+  overflow: hidden;
+}

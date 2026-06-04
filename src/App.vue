@@ -10,17 +10,24 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Navbar from './components/Navbar.vue'
+import { useAuthStore } from './stores/auth.js'
 
 const route = useRoute()
+const authStore = useAuthStore()
+
+onMounted(() => {
+  authStore.init()
+})
 </script>
 
 <style scoped>
 .app-root {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 </style>

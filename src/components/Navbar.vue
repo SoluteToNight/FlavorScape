@@ -1,19 +1,19 @@
 <template>
-  <nav class="navbar" :class="{ 'is-home': isHome, 'is-map': isMap, 'is-product': isProduct }">
-    <div class="navbar-inner">
+  <nav class="navbar fixed top-0 inset-x-0 h-navbar z-[100] border-b transition-[background,border-color] duration-[400ms] ease" :class="{ 'is-home': isHome, 'is-map': isMap, 'is-product': isProduct }">
+    <div class="max-w-[1500px] mx-auto h-full flex items-center px-8 gap-7">
 
       <!-- Logo -->
-      <RouterLink to="/" class="navbar-logo">
-        <span class="logo-serif">寻味</span><span class="logo-sans">地理</span>
+      <RouterLink to="/" class="navbar-logo no-underline flex items-baseline gap-0 shrink-0 h-9 px-3.5 rounded-full tracking-[0.04em]">
+        <span class="logo-serif font-serif text-[17px] font-medium text-earth">寻味</span><span class="logo-sans font-sans text-sm font-light text-text-mid tracking-[0.1em]">地理</span>
       </RouterLink>
 
       <!-- Nav links -->
-      <div class="nav-links">
+      <div class="nav-links flex items-center gap-1 flex-1 justify-center h-[38px] p-1 border border-[rgba(110,92,68,0.11)] rounded-full">
         <RouterLink
           v-for="item in navItems"
           :key="item.name"
           :to="item.path"
-          class="nav-link"
+          class="nav-link no-underline text-sm font-medium text-text-mid tracking-[0.02em] px-[15px] py-1.5 rounded-full transition-all relative whitespace-nowrap"
           :class="{ active: route.name === item.name }"
         >
           {{ item.label }}
@@ -21,19 +21,19 @@
       </div>
 
       <!-- Search -->
-      <div class="navbar-search" :class="{ expanded: searchOpen }">
+      <div class="relative flex items-center gap-2 shrink-0" :class="{ expanded: searchOpen }">
         <input
           v-if="searchOpen"
           ref="searchEl"
           v-model="query"
-          class="search-input"
+          class="search-input w-[220px] h-[34px] bg-[rgba(255,252,248,0.85)] border border-glass-border rounded-[17px] px-4 font-sans text-xs font-light text-text tracking-[0.02em] outline-none transition-all"
           placeholder="搜索食物、地域或风味…"
           autocomplete="off"
           @input="onInput"
           @blur="onBlur"
           @keydown.escape="closeSearch"
         />
-        <button class="search-btn" :class="{ open: searchOpen }" @click="toggleSearch" aria-label="搜索">
+        <button class="search-btn w-[34px] h-[34px] rounded-full border border-glass-border bg-transparent cursor-pointer text-text-mid flex items-center justify-center transition-all shrink-0" :class="{ open: searchOpen }" @click="toggleSearch" aria-label="搜索">
           <svg v-if="!searchOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
@@ -42,20 +42,65 @@
           </svg>
         </button>
         <Transition name="dropdown">
-          <div v-if="results.length && showDropdown" class="search-dropdown">
+          <div v-if="results.length && showDropdown" class="search-dropdown absolute top-[calc(100%+8px)] right-0 w-80 bg-[rgba(255,252,248,0.96)] border border-glass-border rounded-sm shadow-app-md overflow-hidden z-[110]">
             <div
               v-for="item in results"
               :key="item.label"
-              class="search-item"
+              class="flex items-center gap-2.5 px-4 py-2.5 cursor-pointer transition-colors"
               @mousedown.prevent="select(item)"
             >
-              <span class="item-dot" :style="{ background: item.color }" />
-              <span class="item-label">{{ item.label }}</span>
-              <span class="item-sub">{{ item.sub }}</span>
-              <span class="item-tag">→ 地图</span>
+              <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ background: item.color }" />
+              <span class="text-sm text-text">{{ item.label }}</span>
+              <span class="text-xs text-text-muted ml-1">{{ item.sub }}</span>
+              <span class="ml-auto text-2xs text-amber opacity-80">→ 地图</span>
             </div>
           </div>
         </Transition>
+      </div>
+
+      <!-- Auth -->
+      <div class="relative shrink-0">
+        <!-- Logged out -->
+        <RouterLink
+          v-if="!authStore.isLoggedIn"
+          to="/login"
+          class="auth-btn h-[34px] rounded-full border border-[rgba(139,94,52,0.28)] bg-transparent cursor-pointer text-sm font-medium text-earth tracking-[0.03em] px-5 transition-all hover:bg-[rgba(139,94,52,0.1)] hover:border-earth active:scale-[0.97] no-underline inline-flex items-center"
+        >
+          登录
+        </RouterLink>
+
+        <!-- Logged in -->
+        <div v-else class="relative">
+          <button
+            class="auth-btn h-[34px] rounded-full border border-[rgba(94,123,80,0.28)] bg-transparent cursor-pointer text-sm font-medium text-leaf tracking-[0.03em] px-4 transition-all hover:bg-[rgba(94,123,80,0.1)] active:scale-[0.97] flex items-center gap-1.5"
+            @click="userMenuOpen = !userMenuOpen"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            {{ authStore.user?.username }}
+          </button>
+          <Transition name="dropdown">
+            <div
+              v-if="userMenuOpen"
+              class="absolute top-[calc(100%+8px)] right-0 w-36 bg-[rgba(255,252,248,0.96)] border border-glass-border rounded-[10px] shadow-app-md overflow-hidden z-[110]"
+            >
+              <RouterLink
+                to="/profile"
+                class="block w-full text-left px-4 py-2.5 text-sm text-text hover:bg-[rgba(110,92,68,0.06)] transition-colors no-underline"
+                @click="userMenuOpen = false"
+              >
+                个人主页
+              </RouterLink>
+              <button
+                class="w-full text-left px-4 py-2.5 text-sm text-text hover:bg-[rgba(110,92,68,0.06)] transition-colors"
+                @click="userMenuOpen = false; authStore.logout()"
+              >
+                退出登录
+              </button>
+            </div>
+          </Transition>
+        </div>
       </div>
 
     </div>
@@ -66,21 +111,25 @@
 import { ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app.js'
+import { useAuthStore } from '../stores/auth.js'
+import { api } from '../utils/api.js'
 
 const route  = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 
 const isHome = computed(() => route.name === 'home')
 const isMap  = computed(() => route.name === 'map')
-const isProduct = computed(() => ['brand', 'spread', 'marketing', 'archive'].includes(route.name))
+const isProduct = computed(() => ['brand', 'spread', 'marketing', 'archive', 'studio', 'import'].includes(route.name))
 
-// 2. 更新导航数组
 const navItems = [
+  { name: 'studio',    path: '/studio',    label: '创作工作台' },
   { name: 'home',      path: '/',          label: '产品入口' },
-  { name: 'brand',     path: '/brand',     label: '智慧大屏' }, // 名字更聚焦
-  { name: 'marketing', path: '/marketing', label: '营销海报' }, // 🌟 新增入口
+  { name: 'brand',     path: '/brand',     label: '智慧大屏' },
+  { name: 'marketing', path: '/marketing', label: '营销海报' },
   { name: 'archive',   path: '/archive',   label: '实证白皮书' },
+  { name: 'import',    path: '/import',    label: '资产导入' },
   { name: 'spread',    path: '/spread',    label: '传播图谱' },
   { name: 'map',       path: '/map',       label: '风味底图' },
 ]
@@ -90,6 +139,7 @@ const showDropdown  = ref(false)
 const query         = ref('')
 const results       = ref([])
 const searchEl      = ref(null)
+const userMenuOpen  = ref(false)
 let debounceTimer   = null
 
 async function toggleSearch() {
@@ -118,9 +168,8 @@ async function onInput() {
   if (!query.value.trim()) { results.value = []; showDropdown.value = false; return }
   debounceTimer = setTimeout(async () => {
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query.value)}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      results.value = await res.json()
+      const data = await api(`/api/search?q=${encodeURIComponent(query.value)}`)
+      results.value = Array.isArray(data) ? data : []
       showDropdown.value = results.value.length > 0
     } catch (err) {
       console.warn('[Navbar search]', err.message)
@@ -139,25 +188,24 @@ function select(item) {
 </script>
 
 <style scoped>
+/* KEPT: backdrop-filter vendor prefixes, page-conditional styles, gradients, composite shadows, animations, Vue transitions */
+
 .navbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: var(--navbar-h);
-  z-index: 100;
   background: rgba(250, 247, 241, 0.78);
-  border-bottom: 1px solid rgba(110, 92, 68, 0.12);
+  border-bottom-color: rgba(110, 92, 68, 0.12);
   backdrop-filter: blur(22px) saturate(1.08);
   -webkit-backdrop-filter: blur(22px) saturate(1.08);
-  transition: background 400ms ease, border-color 400ms ease;
 }
 
-/* On the home page: fully transparent so the particle canvas shows through */
 .navbar.is-home {
   background: rgba(250, 247, 241, 0.24);
   border-bottom-color: rgba(110, 92, 68, 0.08);
 }
+.navbar.is-home .nav-link { color: rgba(90,83,78,0.75); }
+.navbar.is-home .nav-link:hover { color: var(--text-mid); background: rgba(255,255,255,0.15); }
+.navbar.is-home .nav-link.active { color: var(--earth); background: rgba(139, 94, 52, 0.08); box-shadow: inset 0 0 0 1px rgba(139, 94, 52, 0.12); }
+.navbar.is-home .logo-sans { color: rgba(90,83,78,0.75); }
 
-/* On the map page: slightly more translucent so map shows */
 .navbar.is-map {
   background: rgba(248, 244, 239, 0.82);
 }
@@ -167,107 +215,28 @@ function select(item) {
   border-bottom-color: rgba(116, 92, 62, 0.14);
 }
 
-.navbar-inner {
-  max-width: 1500px;
-  margin: 0 auto;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  padding: 0 32px;
-  gap: 28px;
-}
-
-/* Logo */
 .navbar-logo {
-  text-decoration: none;
-  display: flex;
-  align-items: baseline;
-  gap: 0;
-  flex-shrink: 0;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 999px;
   background: rgba(255, 252, 247, 0.56);
   box-shadow: inset 0 0 0 1px rgba(110, 92, 68, 0.1);
-  letter-spacing: 0.04em;
-}
-.logo-serif {
-  font-family: var(--font-serif);
-  font-size: 17px; font-weight: 500;
-  color: var(--earth);
-}
-.logo-sans {
-  font-family: var(--font-sans);
-  font-size: 14px; font-weight: 300;
-  color: var(--text-mid);
-  letter-spacing: 0.1em;
 }
 
-/* Nav links */
 .nav-links {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1;
-  justify-content: center;
-  height: 38px;
-  padding: 4px;
-  border: 1px solid rgba(110, 92, 68, 0.11);
-  border-radius: 999px;
   background: rgba(255, 252, 247, 0.48);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.62);
 }
 
-.nav-link {
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-mid);
-  letter-spacing: 0.02em;
-  padding: 6px 15px;
-  border-radius: 999px;
-  transition: all var(--transition);
-  position: relative;
-  white-space: nowrap;
-}
 .nav-link:hover {
   color: var(--text);
   background: rgba(94, 123, 80, 0.08);
 }
 .nav-link.active {
-  color: #fffaf2;
-  background: linear-gradient(135deg, var(--earth), var(--leaf));
+  color: var(--earth);
+  background: rgba(139, 94, 52, 0.08);
   font-weight: 600;
-  box-shadow: 0 6px 18px rgba(67, 92, 60, 0.16);
-}
-
-/* On home page: white text for contrast against dark particle canvas */
-.navbar.is-home .nav-link { color: rgba(90,83,78,0.75); }
-.navbar.is-home .nav-link:hover { color: var(--text-mid); background: rgba(255,255,255,0.15); }
-.navbar.is-home .nav-link.active { color: #fffaf2; background: linear-gradient(135deg, var(--earth), var(--leaf)); }
-.navbar.is-home .logo-sans { color: rgba(90,83,78,0.75); }
-
-/* Search */
-.navbar-search {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(139, 94, 52, 0.12);
 }
 
 .search-input {
-  width: 220px;
-  height: 34px;
-  background: rgba(255,252,248,0.85);
-  border: 1px solid var(--glass-border);
-  border-radius: 17px;
-  padding: 0 16px;
-  font-family: var(--font-sans);
-  font-size: 12px; font-weight: 300;
-  color: var(--text); letter-spacing: 0.02em;
-  outline: none;
-  transition: all var(--transition);
   animation: fadeRight 200ms ease;
 }
 .search-input:focus {
@@ -283,16 +252,6 @@ function select(item) {
   to   { opacity: 1; width: 220px; }
 }
 
-.search-btn {
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  border: 1px solid var(--glass-border);
-  background: transparent;
-  cursor: pointer; color: var(--text-mid);
-  display: flex; align-items: center; justify-content: center;
-  transition: all var(--transition);
-  flex-shrink: 0;
-}
 .search-btn:hover, .search-btn.open {
   background: var(--amber-soft);
   border-color: rgba(232,169,23,0.3);
@@ -300,30 +259,17 @@ function select(item) {
 }
 
 .search-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 320px;
-  background: rgba(255,252,248,0.96);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-md);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
-  overflow: hidden;
-  z-index: 110;
 }
-.search-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px; cursor: pointer;
-  transition: background var(--transition);
-}
-.search-item:hover { background: var(--amber-soft); }
-.item-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.item-label { font-size: 13px; color: var(--text); }
-.item-sub { font-size: 11px; color: var(--text-muted); margin-left: 4px; }
-.item-tag { margin-left: auto; font-size: 10px; color: var(--amber); opacity: 0.8; }
 
 .dropdown-enter-active, .dropdown-leave-active { transition: opacity 150ms ease; }
 .dropdown-enter-from, .dropdown-leave-to { opacity: 0; }
+
+.auth-btn {
+  white-space: nowrap;
+}
+.shadow-app-md {
+  box-shadow: var(--shadow-md);
+}
 </style>

@@ -1,0 +1,23 @@
+{
+  "purpose": "DeepSeek text analysis tests for spatial brand asset generator",
+  "note": "All product documents are synthetic and intended for internal testing.",
+  "score_bands": {
+    "low": "vague claims, weak evidence, high risk",
+    "mid": "usable business material with partial evidence",
+    "high": "structured evidence, origin nodes, process steps, visualization-ready data"
+  },
+  "cases": [
+    { "id": "low-01", "file": "low-score/low-01-flash-coconut-coffee.md", "expected_visualization_fit": 25 },
+    { "id": "low-02", "file": "low-score/low-02-zero-sugar-soda.md", "expected_visualization_fit": 30 },
+    { "id": "low-03", "file": "low-score/low-03-beauty-herbal-tea.md", "expected_visualization_fit": 22 },
+    { "id": "low-04", "file": "low-score/low-04-trendy-spicy-snack.md", "expected_visualization_fit": 28 },
+    { "id": "mid-01", "file": "mid-score/mid-01-citrus-jasmine-tea.md", "expected_visualization_fit": 58 },
+    { "id": "mid-02", "file": "mid-score/mid-02-original-leaf-milk-tea.md", "expected_visualization_fit": 64 },
+    { "id": "mid-03", "file": "mid-score/mid-03-freeze-dried-coffee.md", "expected_visualization_fit": 61 },
+    { "id": "mid-04", "file": "mid-score/mid-04-protein-yogurt-bowl.md", "expected_visualization_fit": 55 },
+    { "id": "high-01", "file": "high-score/high-01-jasmine-tea-latte.md", "expected_visualization_fit": 90 },
+    { "id": "high-02", "file": "high-score/high-02-raw-coconut-cold-brew.md", "expected_visualization_fit": 88 },
+    { "id": "high-03", "file": "high-score/high-03-yunnan-specialty-coffee.md", "expected_visualization_fit": 92 },
+    { "id": "high-04", "file": "high-score/high-04-sparkling-tea-origin-pack.md", "expected_visualization_fit": 86 }
+  ]
+}

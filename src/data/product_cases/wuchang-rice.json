@@ -1,0 +1,38 @@
+{
+  "id": "wuchang-rice",
+  "name": "五常大米",
+  "category": "粮食",
+  "province": "黑龙江省",
+  "heroImage": "/ingredients/originals/水稻.png",
+  "origin": "黑龙江五常 · 寒地黑土",
+  "colors": { "primary": "#4B6342", "accent": "#B57A3C" },
+  "marketing": {
+    "spatial": {
+      "nodes": [
+        { "short": "五常", "coord": [127.1676, 44.9192], "desc": "拉林河流域原粮抽检" },
+        { "short": "哈尔滨", "coord": [126.6331, 45.7422], "desc": "温湿度及碎米率监控" },
+        { "short": "长三角", "coord": [121.4737, 31.2304], "desc": "鲜米直达复检" }
+      ],
+      "evidence": [
+        { "label": "产地积温", "value": "2700℃" },
+        { "label": "直链淀粉", "value": "17.2%" },
+        { "label": "胶稠度", "value": "≥ 70mm" }
+      ]
+    },
+    "creative": {
+      "desc": { "default": "拉林河流域寒地黑土 · 140天单季熟成", "type": "text", "maxLength": 60 },
+      "poeticLine": { "default": "时间凝结的纯粹，出走半生归来仍是稻香。", "type": "text", "maxLength": 40 },
+      "narrative": { "default": "原产于 <span class=\"hl\">黑龙江省</span>，经 <span class=\"hl\">五常 → 哈尔滨 → 长三角</span> 锁鲜运送。", "type": "rich-text", "maxLength": 300 },
+      "theme": { "default": "nature", "type": "select", "options": ["nature", "heritage", "indigo"] },
+      "copy": {
+        "xiaohongshu": { "default": "五常大米，黑龙江寒地黑土孕育，140天超长熟成，直链淀粉17.2%造就极致软糯口感，吃一口就回不去了。", "type": "text", "maxLength": 200 },
+        "ecommerce": { "default": "【产地直供】五常大米·国家地理标志保护产品。拉林河流域寒地黑土，单季熟成，胶稠度≥70mm，软糯香甜。", "type": "text", "maxLength": 200 }
+      }
+    }
+  },
+  "studio": {
+    "brandScenario": "地方农产品品牌化 / 粮油供应链 / 地理标志",
+    "recommendedOutputs": ["poster", "archive", "display", "spread"],
+    "brandName": "五常大米"
+  }
+}

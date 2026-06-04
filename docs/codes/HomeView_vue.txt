@@ -1,0 +1,642 @@
+<template>
+  <main class="home-page">
+    <section class="hero-map-section" aria-labelledby="home-title">
+      <div class="map-backdrop" aria-hidden="true">
+        <img v-show="!useDrawnMap" :src="homeMapImage" alt="" @error="useDrawnMap = true" />
+        <svg v-if="useDrawnMap" class="drawn-map" viewBox="0 0 1400 760" role="img" aria-label="国风中国风味地图">
+          <defs>
+            <filter id="paperNoise">
+              <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="3" stitchTiles="stitch" />
+              <feColorMatrix type="saturate" values="0" />
+              <feComponentTransfer>
+                <feFuncA type="table" tableValues="0 0.12" />
+              </feComponentTransfer>
+            </filter>
+            <linearGradient id="seaWash" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#dbe7dd" stop-opacity="0.25" />
+              <stop offset="1" stop-color="#7da7a9" stop-opacity="0.72" />
+            </linearGradient>
+          </defs>
+          <rect width="1400" height="760" fill="#efe7d7" />
+          <rect width="1400" height="760" filter="url(#paperNoise)" />
+          <path class="sea-shape" d="M515 565 C644 486 780 514 910 470 C1074 414 1238 390 1400 346 L1400 760 L332 760 C374 680 428 614 515 565Z" />
+          <path class="china-shape" d="M484 180 C570 118 677 114 760 143 C815 90 927 91 1003 133 C1081 176 1086 242 1169 262 C1230 276 1225 348 1162 374 C1104 397 1086 437 1114 492 C1142 550 1082 603 1013 577 C943 551 903 592 839 613 C755 642 684 606 627 622 C553 644 488 592 502 522 C421 516 378 470 407 404 C331 388 324 314 399 286 C387 240 421 202 484 180Z" />
+          <g class="rivers">
+            <path d="M555 270 C666 318 728 268 815 300 C912 336 960 282 1060 324" />
+            <path d="M668 392 C760 368 806 424 882 413 C955 402 986 448 1044 430" />
+            <path d="M596 488 C706 458 765 504 872 484" />
+          </g>
+          <g class="mountains">
+            <path v-for="ridge in mountainRidges" :key="ridge" :d="ridge" />
+          </g>
+          <g class="ships">
+            <path d="M958 678 l70 -20 l-24 32 h-64z M995 608 v62 M995 608 l42 50 h-42z M995 617 l-36 48 h36z" />
+            <path d="M1244 315 l60 -18 l-20 28 h-54z M1274 260 v54 M1274 260 l36 44 h-36z" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="route-overlay" aria-hidden="true">
+        <svg viewBox="0 0 1400 760">
+          <path class="route route-red" d="M612 232 C700 282 792 260 823 344 C855 432 946 438 1016 478 C1081 515 1102 585 1164 628" />
+          <path class="route route-green" d="M952 198 C938 286 870 315 889 404 C907 492 1010 487 1088 438" />
+          <g v-for="node in routeNodes" :key="node.label" class="route-node" :transform="`translate(${node.x} ${node.y})`">
+            <circle r="9" />
+            <circle r="4" />
+            <text v-if="node.label" :x="node.dx || 0" :y="node.dy || -18">{{ node.label }}</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="hero-copy">
+        <p class="seal-kicker">寻味地理</p>
+        <h1 id="home-title">
+          <span>寻味</span>
+          <strong>地理</strong>
+        </h1>
+        <p class="english-title">FLAVOR ATLAS<br />OF CHINA</p>
+        <p class="hero-slogan">把地方风味写成一部可漫游的地理志</p>
+
+        <div class="capability-row" aria-label="核心能力">
+          <div v-for="item in capabilities" :key="item.title" class="capability-item">
+            <span class="capability-icon">{{ item.icon }}</span>
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.desc }}</small>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <button class="primary-action" type="button" @click="router.push('/map')">
+            开始寻味之旅
+            <span>→</span>
+          </button>
+          <button class="secondary-action" type="button" @click="router.push('/brand')">
+            探索风味地图
+            <span>▷</span>
+          </button>
+        </div>
+      </div>
+
+      <aside class="quick-tools" aria-label="快捷入口">
+        <button v-for="tool in quickTools" :key="tool.label" type="button" @click="router.push(tool.path)">
+          <span>{{ tool.icon }}</span>
+          {{ tool.label }}
+        </button>
+      </aside>
+
+      <article class="feature-card">
+        <div>
+          <h2>茉莉花茶</h2>
+          <p>福建茶坯 × 广西花潮<br />七窨一生 只闻花香</p>
+        </div>
+        <img src="/cases/cover-jasmine.jpg" alt="茉莉花茶案例" />
+        <footer>
+          <span>01</span>
+          <i></i>
+          <span>05</span>
+          <button type="button" aria-label="上一个案例">←</button>
+          <button type="button" aria-label="下一个案例">→</button>
+        </footer>
+      </article>
+    </section>
+
+    <section class="portal-band" aria-label="首页模块入口">
+      <article v-for="card in portalCards" :key="card.title" class="portal-card" @click="router.push(card.path)">
+        <div>
+          <h2>{{ card.title }}</h2>
+          <p>{{ card.desc }}</p>
+        </div>
+        <img :src="card.image" :alt="card.title" />
+        <button type="button" aria-label="进入模块">→</button>
+      </article>
+    </section>
+
+    <section class="metric-strip" aria-label="平台数据概览">
+      <div v-for="metric in metrics" :key="metric.label" class="metric-item">
+        <span>{{ metric.icon }}</span>
+        <strong>{{ metric.value }}</strong>
+        <small>{{ metric.label }}</small>
+      </div>
+    </section>
+  </main>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const useDrawnMap = ref(false)
+const homeMapImage = '/home/atlas-map.png'
+
+const capabilities = [
+  { icon: '⌖', title: '食材溯源', desc: '追溯风味根源' },
+  { icon: '♧', title: '工艺文明', desc: '解码匠心技艺' },
+  { icon: '⌁', title: '路线迁徙', desc: '重现风味流动' },
+  { icon: '▤', title: '品牌叙事', desc: '讲述风味故事' }
+]
+
+const quickTools = [
+  { icon: '⌖', label: '风味路径', path: '/spread' },
+  { icon: '◴', label: '时空探索', path: '/map' },
+  { icon: '◎', label: '数据可视化', path: '/archive' }
+]
+
+const routeNodes = [
+  { x: 612, y: 232, label: '新疆', dx: -24, dy: -24 },
+  { x: 720, y: 294 },
+  { x: 823, y: 344, label: '河西走廊', dx: 16, dy: -18 },
+  { x: 780, y: 430, label: '四川', dx: -34, dy: 3 },
+  { x: 890, y: 500, label: '云南', dx: -34, dy: 22 },
+  { x: 1016, y: 478, label: '江南', dx: 18, dy: -10 },
+  { x: 1088, y: 438, label: '福建', dx: 20, dy: -6 },
+  { x: 1164, y: 628, label: '广东', dx: -12, dy: 30 },
+  { x: 952, y: 198, label: '北京', dx: 20, dy: -10 },
+  { x: 888, y: 404 }
+]
+
+const portalCards = [
+  { title: '风味地图', desc: '探索中国风味版图', path: '/map', image: '/cases/cover-rice.jpg' },
+  { title: '食材溯源', desc: '追溯食材的起源与流动', path: '/spread', image: '/cases/cover-pepper.jpg' },
+  { title: '工艺文明', desc: '解码传统工艺的智慧', path: '/archive', image: '/cases/jasmine-craft-2.jpg' },
+  { title: '品牌故事', desc: '聆听品牌背后的风味叙事', path: '/marketing', image: '/cases/cover-jasmine.jpg' },
+  { title: '产业链溯源', desc: '从田间到餐桌的全链路追溯', path: '/brand', image: '/cases/cover-coconut.png' }
+]
+
+const metrics = [
+  { icon: '♧', value: '2000+', label: '风味食材' },
+  { icon: '⌖', value: '5000+', label: '溯源产地' },
+  { icon: '⚗', value: '10000+', label: '工艺非遗' },
+  { icon: '⌁', value: '300+', label: '风味路线' },
+  { icon: '▥', value: '1000+', label: '品牌故事' },
+  { icon: '◉', value: '50万+', label: '数据节点' }
+]
+
+const mountainRidges = [
+  'M480 245 l36 -64 l42 80 l28 -46 l44 88',
+  'M612 202 l42 -82 l54 116 l38 -62 l58 112',
+  'M790 188 l46 -84 l62 120 l34 -56 l54 104',
+  'M438 410 l46 -78 l50 96 l40 -64 l54 104',
+  'M640 486 l38 -66 l48 90 l38 -52 l44 82',
+  'M934 446 l34 -58 l40 78 l28 -44 l40 72',
+  'M1024 250 l38 -72 l58 108 l42 -62 l52 98'
+]
+</script>
+
+<style scoped>
+.home-page {
+  min-height: 100vh;
+  padding-top: var(--navbar-h);
+  background: #f4efe4;
+  color: #2d2a20;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+.hero-map-section {
+  position: relative;
+  min-height: min(760px, calc(100vh - var(--navbar-h)));
+  padding: 64px clamp(36px, 5vw, 86px) 36px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(80, 68, 48, 0.12);
+}
+
+.hero-map-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(246, 241, 229, 0.98) 0%, rgba(246, 241, 229, 0.82) 27%, rgba(246, 241, 229, 0.18) 58%, rgba(246, 241, 229, 0.02) 100%),
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.68), transparent 34%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.map-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #efe7d7;
+}
+
+.map-backdrop img,
+.drawn-map {
+  position: absolute;
+  inset: 0 0 auto auto;
+  width: min(1180px, 78vw);
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
+  opacity: 0.96;
+}
+
+.map-backdrop img:not([src]),
+.map-backdrop img[src=''] {
+  display: none;
+}
+
+.drawn-map { filter: saturate(0.9) contrast(0.96); }
+.sea-shape { fill: url(#seaWash); }
+.china-shape { fill: rgba(210, 191, 151, 0.42); stroke: rgba(107, 91, 62, 0.38); stroke-width: 2; }
+.rivers path { fill: none; stroke: rgba(82, 139, 151, 0.42); stroke-width: 3; stroke-linecap: round; }
+.mountains path { fill: none; stroke: rgba(43, 69, 57, 0.36); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.ships path { fill: none; stroke: rgba(117, 91, 57, 0.48); stroke-width: 3; stroke-linejoin: round; }
+
+.route-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.route-overlay svg {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: min(1180px, 78vw);
+  height: 100%;
+}
+
+.route {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 8 8;
+  filter: drop-shadow(0 2px 1px rgba(255,255,255,0.7));
+}
+
+.route-red { stroke: #a64a2e; }
+.route-green { stroke: #516737; }
+.route-node circle:first-child { fill: #fff8e9; stroke: #a64a2e; stroke-width: 4; }
+.route-node circle:nth-child(2) { fill: #a64a2e; }
+.route-node text {
+  font-family: var(--font-serif);
+  font-size: 23px;
+  fill: #8b4b31;
+  writing-mode: vertical-rl;
+  paint-order: stroke;
+  stroke: rgba(250, 245, 232, 0.92);
+  stroke-width: 5;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 4;
+  width: min(520px, 39vw);
+}
+
+.seal-kicker {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #9e4c2c;
+  border-radius: 50%;
+  color: #9e4c2c;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.1;
+  writing-mode: vertical-rl;
+  margin: 0 0 22px;
+}
+
+.hero-copy h1 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  line-height: 0.88;
+  letter-spacing: 0.04em;
+}
+
+.hero-copy h1 span,
+.hero-copy h1 strong {
+  display: block;
+  font-size: clamp(92px, 8.4vw, 154px);
+}
+
+.hero-copy h1 span { color: #3f4b2f; }
+.hero-copy h1 strong { color: #a4482c; margin-left: 70px; font-weight: 700; }
+
+.english-title {
+  position: absolute;
+  left: min(285px, 22vw);
+  top: 130px;
+  margin: 0;
+  color: #554a35;
+  font-family: Georgia, serif;
+  font-size: 18px;
+  line-height: 1.5;
+  letter-spacing: 0.1em;
+}
+
+.hero-slogan {
+  margin: 34px 0 30px;
+  color: #4d503f;
+  font-family: var(--font-serif);
+  font-size: clamp(22px, 2vw, 30px);
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.capability-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(78px, 1fr));
+  gap: 20px;
+  max-width: 520px;
+  margin-bottom: 34px;
+}
+
+.capability-item {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  color: #4b5538;
+}
+
+.capability-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 20px;
+}
+
+.capability-item strong {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.capability-item small {
+  color: rgba(75, 85, 56, 0.62);
+  font-size: 11px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.primary-action,
+.secondary-action {
+  height: 56px;
+  border-radius: 10px;
+  padding: 0 28px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.primary-action {
+  border: none;
+  color: #fff6e8;
+  background: linear-gradient(180deg, #b45a35, #9e3f24);
+  box-shadow: 0 14px 30px rgba(138, 63, 35, 0.22);
+}
+
+.secondary-action {
+  border: 1px solid rgba(112, 92, 59, 0.34);
+  color: #4c412e;
+  background: rgba(250, 246, 236, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.quick-tools {
+  position: absolute;
+  z-index: 5;
+  right: 28px;
+  top: 148px;
+  display: grid;
+  gap: 18px;
+  padding: 18px 14px;
+  border-radius: 26px;
+  background: rgba(249, 246, 237, 0.78);
+  border: 1px solid rgba(92, 76, 53, 0.12);
+  box-shadow: 0 18px 45px rgba(86, 68, 42, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.quick-tools button {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  border: none;
+  background: transparent;
+  color: #4c553b;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.quick-tools span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 18px;
+}
+
+.feature-card {
+  position: absolute;
+  z-index: 5;
+  right: clamp(72px, 6vw, 120px);
+  bottom: 46px;
+  width: 300px;
+  min-height: 250px;
+  padding: 28px 26px 18px;
+  border-radius: 16px;
+  background: rgba(251, 247, 238, 0.86);
+  border: 1px solid rgba(118, 94, 62, 0.12);
+  box-shadow: 0 20px 50px rgba(77, 58, 34, 0.18);
+  overflow: hidden;
+}
+
+.feature-card h2 {
+  margin: 0 0 10px;
+  color: #4b5538;
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.feature-card p {
+  margin: 0;
+  color: #665b49;
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+.feature-card img {
+  position: absolute;
+  right: -28px;
+  bottom: 20px;
+  width: 180px;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 8px solid rgba(241, 226, 202, 0.8);
+  box-shadow: 0 14px 28px rgba(68, 52, 35, 0.2);
+}
+
+.feature-card footer {
+  position: absolute;
+  left: 26px;
+  right: 20px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #5b513f;
+  font-size: 12px;
+}
+
+.feature-card footer i {
+  width: 24px;
+  height: 1px;
+  background: rgba(91, 81, 63, 0.35);
+}
+
+.feature-card footer button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  color: #fff7e8;
+  background: #9c4a2c;
+  cursor: pointer;
+}
+
+.feature-card footer button:first-of-type {
+  margin-left: auto;
+  background: #8b835f;
+}
+
+.portal-band {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px;
+  padding: 34px clamp(36px, 5vw, 86px) 22px;
+  background: #f7f2e8;
+}
+
+.portal-card {
+  position: relative;
+  height: 158px;
+  padding: 18px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #eee5d6;
+  border: 1px solid rgba(105, 83, 52, 0.14);
+  box-shadow: 0 10px 28px rgba(82, 61, 34, 0.08);
+  cursor: pointer;
+}
+
+.portal-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(248, 243, 232, 0.94), rgba(248, 243, 232, 0.52), rgba(248, 243, 232, 0.1));
+}
+
+.portal-card h2,
+.portal-card p,
+.portal-card button {
+  position: relative;
+  z-index: 2;
+}
+
+.portal-card h2 {
+  margin: 0 0 6px;
+  color: #2f2b22;
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.portal-card p {
+  margin: 0;
+  color: #6d6250;
+  font-size: 13px;
+}
+
+.portal-card img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.7;
+}
+
+.portal-card button {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #465a2d;
+  color: #fff7e8;
+  cursor: pointer;
+}
+
+.metric-strip {
+  margin: 0 clamp(36px, 5vw, 86px) 28px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border: 1px solid rgba(105, 83, 52, 0.14);
+  border-radius: 8px;
+  background: rgba(251, 247, 238, 0.78);
+  box-shadow: 0 12px 28px rgba(82, 61, 34, 0.06);
+}
+
+.metric-item {
+  min-height: 70px;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  justify-content: center;
+  align-content: center;
+  column-gap: 10px;
+  border-right: 1px solid rgba(105, 83, 52, 0.1);
+}
+
+.metric-item:last-child { border-right: none; }
+.metric-item span { grid-row: 1 / 3; color: #465a2d; font-size: 26px; align-self: center; }
+.metric-item strong { color: #2d2a20; font-size: 23px; font-family: Georgia, serif; font-weight: 500; line-height: 1; }
+.metric-item small { color: #77705f; font-size: 12px; }
+
+@media (max-width: 1180px) {
+  .hero-copy { width: min(520px, 48vw); }
+  .portal-band { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .metric-strip { grid-template-columns: repeat(3, 1fr); }
+  .metric-item:nth-child(3) { border-right: none; }
+  .feature-card { display: none; }
+}
+
+@media (max-width: 820px) {
+  .hero-map-section { min-height: auto; padding-top: 38px; }
+  .hero-copy { width: 100%; }
+  .map-backdrop img,
+  .drawn-map,
+  .route-overlay svg { width: 1200px; opacity: 0.4; }
+  .english-title { position: static; margin-top: 10px; }
+  .hero-slogan { white-space: normal; }
+  .capability-row { grid-template-columns: repeat(2, 1fr); }
+  .hero-actions { flex-direction: column; align-items: flex-start; }
+  .quick-tools { display: none; }
+  .portal-band { grid-template-columns: 1fr; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .metric-item { border-right: none; border-bottom: 1px solid rgba(105, 83, 52, 0.1); }
+}
+</style>

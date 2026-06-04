@@ -57,7 +57,8 @@ onMounted(async () => {
   position: fixed;
   top: var(--navbar-h); left: 0; right: 0; bottom: 0;
   background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 48px 0;
   overflow-y: auto;
 }
 .about-glass {

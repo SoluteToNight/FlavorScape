@@ -87,10 +87,11 @@ function goToMap(d) {
   padding: 16px 60px;
   z-index: 20;
   display: flex; align-items: center; gap: 20px;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--glass-border);
 }
 .lib-title { font-family: var(--font-serif); font-size: 16px; font-weight: 500; letter-spacing: 0.08em; }
-.filter-bar { display: flex; gap: 8px; }
+.filter-bar { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-btn {
   padding: 5px 16px; border-radius: 14px;
   font-size: 11px; letter-spacing: 0.06em;
@@ -111,6 +112,12 @@ function goToMap(d) {
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: 20px;
   padding: 24px 60px 60px;
+}
+
+@media (max-width: 860px) {
+  .lib-header { padding: 16px 28px; }
+  .lib-count { margin-left: 0; }
+  .lib-grid { padding: 22px 28px 48px; }
 }
 
 .flavor-card {

@@ -8,6 +8,10 @@
         <p>基于原产地遥感与第三方实验室实证的品质看板</p>
       </header>
 
+      <div class="archive-actions">
+        <button type="button" @click="printDossier">打印 / 导出 PDF</button>
+      </div>
+
       <!-- 样本切换：无框极简标签 -->
       <nav class="product-tabs">
         <button
@@ -173,6 +177,64 @@ const dossiers = [
     flavorScores: [0.08, 0.04, 0.18, 0.06, 0.54, 0.46],
     flavorSummary: '入口回甘伴随清淡的植物甜香，米粒形态和咀嚼质感极度稳定。',
     reports: [ { org: 'SGS 通标标准技术', result: '全量农残：未检出', code: 'SGS-WC-2605-011' }, { org: '谱尼测试 PONY', result: '真菌毒素：符合国标', code: 'PONY-WC-2605-016' } ]
+  },
+  {
+    id: 'jasmine',
+    name: '七窨茉莉翠芽茶底',
+    origin: '广西横县 · 福建茶坯双城窨制',
+    province: '广西壮族自治区',
+    color: '#2F6B54',
+    accent: '#C49A4A',
+    stationCode: 'HX-JAS-2605',
+    metrics: [
+      { label: '窨制周期', value: '近20天', note: '七次换花与通花散热' },
+      { label: '换花次数', value: '7窨', note: '只闻花香不见花影' },
+      { label: '香气指纹', value: 'GC-MS', note: '芳樟醇/乙酸苄酯追踪' },
+      { label: '溯源采样点', value: '15 处', note: '茶坯/花源/窨制/仓储' }
+    ],
+    nodes: [
+      { short: '宁德茶坯', desc: '清明前高山茶坯抽样', coord: [119.5479, 27.2489] },
+      { short: '横县花源', desc: '午后伏花精油浓度监测', coord: [109.2679, 22.6799] },
+      { short: '窨制工坊', desc: '堆窨温控与起花记录', coord: [109.2458, 22.6874] },
+      { short: '配方供应链仓', desc: '充氮防潮批次留样', coord: [113.7518, 23.0207] }
+    ],
+    originPoint: { name: '广西壮族自治区·南宁市横州市', coord: [109.2679, 22.6799], precision: '茉莉花源与窨制核心坐标' },
+    climate: { rain: [42, 51, 72, 126, 188, 226, 206, 176, 92, 48, 36, 28], temp: [13.8, 15.6, 19.1, 23.3, 26.4, 28.4, 29.1, 28.7, 27.1, 23.5, 19.2, 15.2] },
+    heat: [ { stage: '茶坯清选', value: 180 }, { stage: '伏花采收', value: 360 }, { stage: '一窨', value: 520 }, { stage: '四窨', value: 980 }, { stage: '七窨', value: 1380 } ],
+    benchmark: [132, 145, 112, 136, 128],
+    benchmarkLabels: ['芳樟醇', '乙酸苄酯', '含水率', '温控稳定', '茶汤纯净'],
+    flavorScores: [0.12, 0.04, 0.94, 0.18, 0.22, 0.46],
+    flavorSummary: '花香高扬但茶汤清爽，核心不是添加香气，而是让茶坯在反复窨制中吸收夏夜茉莉精油。',
+    reports: [ { org: 'GC-MS 香气指纹留样', result: '芳樟醇/乙酸苄酯峰值稳定', code: 'FS-HX-JAS-2605-007' }, { org: '窨制温控批次记录', result: '通花散热曲线完整', code: 'FS-HX-JAS-2605-012' } ]
+  },
+  {
+    id: 'coconut',
+    name: '文昌生椰',
+    origin: '海南文昌 · 东郊椰林',
+    province: '海南省',
+    color: '#2D7B67',
+    accent: '#C9A05A',
+    stationCode: 'WC-COC-2605',
+    metrics: [
+      { label: '冷榨窗口', value: '1小时', note: '破壳到生榨闭环' },
+      { label: 'HPP 锁鲜', value: '600MPa', note: '超高压冷杀菌' },
+      { label: '冷链温度', value: '-18°C', note: '跨海冷链分拨' },
+      { label: '溯源采样点', value: '10 处', note: '椰林/工厂/HPP/冷链' }
+    ],
+    nodes: [
+      { short: '东郊椰林', desc: '黄金树龄老椰原料抽样', coord: [110.8783, 19.6286] },
+      { short: '零度生榨工厂', desc: '1小时破壳到冷榨记录', coord: [110.7792, 19.5433] },
+      { short: 'HPP锁鲜中心', desc: '600MPa冷杀菌验证', coord: [110.3312, 20.0311] },
+      { short: '跨海冷链仓', desc: '-18°C温控与批次留样', coord: [113.2644, 23.1291] }
+    ],
+    originPoint: { name: '海南省·文昌市东郊椰林', coord: [110.8783, 19.6286], precision: '核心椰林原料基准坐标' },
+    climate: { rain: [22, 31, 48, 86, 154, 202, 214, 238, 260, 206, 88, 38], temp: [18.9, 20.1, 22.4, 25.3, 27.2, 28.3, 28.6, 28.3, 27.5, 25.6, 22.6, 19.8] },
+    heat: [ { stage: '老椰现采', value: 260 }, { stage: '破壳分离', value: 390 }, { stage: '低温生榨', value: 620 }, { stage: 'HPP锁鲜', value: 860 }, { stage: '冷链分拨', value: 1120 } ],
+    benchmark: [136, 128, 146, 132, 122],
+    benchmarkLabels: ['鲜椰香', '乳化稳定', '微生物控制', '冷链温控', '复配表现'],
+    flavorScores: [0.08, 0.12, 0.24, 0.14, 0.78, 0.36],
+    flavorSummary: '鲜椰香与轻乳脂感并存，HPP冷杀菌避免高温熟化味，是咖啡和茶汤复配中的植物基清爽底色。',
+    reports: [ { org: 'HPP 工艺验证留样', result: '600MPa压力批次记录完整', code: 'FS-WC-COC-2605-004' }, { org: '冷链微生物筛查', result: '菌落与霉酵母控制达标', code: 'FS-WC-COC-2605-009' } ]
   }
 ]
 
@@ -193,6 +255,10 @@ const cssVars = computed(() => ({
 const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
 
 function formatCoord(coord) { return `${coord[0].toFixed(4)}°E, ${coord[1].toFixed(4)}°N` }
+
+function printDossier() {
+  window.print()
+}
 
 // ================= ECharts 矢量化风格配置 =================
 // 风格核心：细线、无背景、高通透感
@@ -319,8 +385,8 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
   background: #F4F3ED; /* 高级画册纸张底色 */
   color: #332F2A;
   display: grid;
-  grid-template-columns: 320px 1fr 300px; /* 三栏布局 */
-  overflow: hidden;
+  grid-template-columns: 320px minmax(420px, 1fr) 300px; /* 三栏布局 */
+  overflow: auto;
   font-family: -apple-system, "PingFang SC", sans-serif;
 }
 
@@ -341,9 +407,21 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
 .atlas-header h1 { font-family: "Noto Serif SC", "Songti SC", serif; font-size: 28px; margin: 4px 0 8px; color: #1A1815; font-weight: 600; letter-spacing: 2px; }
 .atlas-header p { font-size: 12px; color: #666; line-height: 1.6; }
 .kicker { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--theme-main); font-weight: bold; }
+.archive-actions button {
+  width: 100%;
+  border: 1px solid rgba(0,0,0,0.16);
+  background: #1A1815;
+  color: #F4F3ED;
+  padding: 11px 14px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.archive-actions button:hover { background: var(--theme-main); border-color: var(--theme-main); }
 
 /* ================= 标签页 (无框极简) ================= */
-.product-tabs { display: flex; gap: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 8px; }
+.product-tabs { display: flex; flex-wrap: wrap; gap: 10px 14px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 8px; }
 .product-tabs button {
   background: none; border: none; padding: 0 0 6px 0; font-size: 15px; cursor: pointer;
   color: #888; position: relative; font-family: "Noto Serif SC", serif; transition: 0.3s;
@@ -364,7 +442,7 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
 .chart-box { width: 100%; height: 200px; } /* ECharts 容器 */
 
 /* ================= 中央地图舞台 ================= */
-.atlas-center-map { position: relative; width: 100%; height: 100%; }
+.atlas-center-map { position: relative; width: 100%; min-height: 100%; }
 .terrain-map-layer { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* 地图上的悬浮统计条 */
@@ -419,12 +497,69 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); climateC
 
 /* ================= 响应式调整 ================= */
 @media (max-width: 1200px) {
-  .archive-atlas-page { grid-template-columns: 280px 1fr 280px; }
+  .archive-atlas-page { grid-template-columns: 280px minmax(380px, 1fr) 280px; }
   .floating-metrics-strip { flex-wrap: wrap; justify-content: center; width: 80%; padding: 16px; gap: 16px; bottom: 20px; }
+}
+@media (max-height: 760px) {
+  .archive-atlas-page { min-height: 720px; }
 }
 @media (max-width: 860px) {
   .archive-atlas-page { grid-template-columns: 1fr; overflow-y: auto; position: static; height: auto; display: flex; flex-direction: column; }
   .atlas-center-map { height: 50vh; min-height: 400px; order: -1; }
   .atlas-sidebar { border: none; padding: 20px; }
+}
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+
+  body { background: #fff !important; }
+  .archive-atlas-page {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: 260px 1fr 260px !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .atlas-sidebar {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 14px !important;
+    gap: 18px !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .archive-actions,
+  .product-tabs,
+  .terrain-map-layer,
+  :global(.navbar) {
+    display: none !important;
+  }
+  .atlas-center-map {
+    min-height: 560px !important;
+    height: auto !important;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+  }
+  .floating-metrics-strip,
+  .floating-map-legend {
+    position: static !important;
+    transform: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    margin: 12px !important;
+  }
+  .floating-metrics-strip {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    width: auto !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+  .chart-box { height: 150px !important; }
+  .atlas-header h1 { font-size: 22px !important; }
 }
 </style>

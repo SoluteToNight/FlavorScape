@@ -308,6 +308,130 @@ let sceneTransitionPrepTimer = 0
 let sceneTransitionToken = 0
 let sceneSnapshotTimer = 0
 
+const FALLBACK_FLAVORS = [
+  {
+    id: 'chengdu-mala',
+    city: '成都',
+    dish: '川蜀麻辣',
+    dish_family: '火锅',
+    region: '四川盆地',
+    eco: '亚热带常绿阔叶林',
+    scores: [0.9, 0.95, 0.65, 0.3, 0.2, 0.7],
+    primary: ['麻', '辣'],
+    vals: [0.9, 0.95],
+    color: '#E5394E',
+    cat: '辛辣',
+    ingredients: ['花椒', '朝天椒', '郫县豆瓣', '井盐'],
+    coordinates: [104.1, 30.7],
+    description: '四川盆地的湿润气候与复合辛香，塑造麻辣风味的空间原点。',
+  },
+  {
+    id: 'shunde-rawfish',
+    city: '顺德',
+    dish: '顺德鱼生',
+    dish_family: null,
+    region: '珠三角河网',
+    eco: '南亚热带常绿林',
+    scores: [0.05, 0.1, 0.55, 0.25, 0.35, 0.95],
+    primary: ['鲜', '清'],
+    vals: [0.95, 0.35],
+    color: '#0FB89A',
+    cat: '鲜甜',
+    ingredients: ['淡水鱼', '米酒', '陈皮', '姜丝'],
+    coordinates: [113.3, 22.8],
+    description: '珠三角水网与细腻刀工，共同形成清鲜爽脆的岭南风味。',
+  },
+  {
+    id: 'lanzhou-beef-noodle',
+    city: '兰州',
+    dish: '兰州牛肉面',
+    dish_family: null,
+    region: '黄土高原',
+    eco: '温带草原',
+    scores: [0.2, 0.3, 0.8, 0.45, 0.1, 0.75],
+    primary: ['咸', '鲜'],
+    vals: [0.8, 0.75],
+    color: '#E8A917',
+    cat: '咸香',
+    ingredients: ['蓬灰', '牛肉', '白萝卜', '辣子'],
+    coordinates: [103.8, 36.1],
+    description: '西北交通节点上的面食工艺，将汤、面、肉、辣连接成线性风味。',
+  },
+  {
+    id: 'beijing-roast-duck',
+    city: '北京',
+    dish: '北京烤鸭',
+    dish_family: '烤鸭',
+    region: '华北平原',
+    eco: '暖温带落叶阔叶林',
+    scores: [0.1, 0.25, 0.8, 0.2, 0.3, 0.65],
+    primary: ['咸', '香'],
+    vals: [0.8, 0.65],
+    color: '#8B6A3E',
+    cat: '咸香',
+    ingredients: ['黄豆酱', '鸭胚', '葱白', '大料'],
+    coordinates: [116.4, 39.9],
+    description: '都城消费与炉火工艺沉淀出烤鸭的焦香、脂香与仪式感。',
+  },
+  {
+    id: 'hangzhou-longjing',
+    city: '杭州',
+    dish: '龙井东坡肉',
+    dish_family: null,
+    region: '太湖流域',
+    eco: '中亚热带常绿林',
+    scores: [0.1, 0.15, 0.6, 0.3, 0.75, 0.8],
+    primary: ['甜', '鲜'],
+    vals: [0.75, 0.8],
+    color: '#0FB89A',
+    cat: '鲜甜',
+    ingredients: ['龙井茶', '东坡肉', '绍酒', '桂花'],
+    coordinates: [120.2, 30.3],
+    description: '江南水乡与文人饮食传统，让茶香、酒香和脂香形成柔和层次。',
+  },
+  {
+    id: 'yunnan-stone-tofu',
+    city: '云南',
+    dish: '石屏豆腐',
+    dish_family: null,
+    region: '横断山区',
+    eco: '亚热带山地植被',
+    scores: [0.55, 0.65, 0.55, 0.6, 0.45, 0.65],
+    primary: ['酸', '鲜'],
+    vals: [0.65, 0.65],
+    color: '#7FA961',
+    cat: '酸鲜',
+    ingredients: ['石屏豆腐', '酸笋', '野菌', '蘸水'],
+    coordinates: [102.7, 25.0],
+    description: '山地生态与发酵经验叠加，形成云南酸鲜与菌香风味。',
+  },
+].map(item => ({
+  ...item,
+  bubbleImage: createFallbackFlavorImage(item.color),
+  bubbleImageSource: null,
+}))
+
+const FALLBACK_ROUTES = [
+  {
+    name: '辣椒传播路线',
+    color: '#E5394E',
+    type: 'sea',
+    path: [[-99.1, 19.4], [-5.9, 37.4], [73.8, 15.5], [113.3, 23.1], [104.1, 30.7]],
+  },
+  {
+    name: '大运河茶食北行',
+    color: '#E8A917',
+    type: 'land',
+    path: [[120.2, 30.3], [119.4, 32.4], [117.2, 34.3], [116.4, 39.9]],
+  },
+  {
+    name: '香料群岛东传',
+    color: '#7FA961',
+    type: 'sea',
+    path: [[128.2, -0.6], [115.0, 2.0], [107.0, 16.0], [113.3, 23.1], [116.7, 23.4]],
+  },
+]
+
 const POLAR_CAPS_GEOJSON = {
   type: 'FeatureCollection',
   features: [
@@ -2081,11 +2205,56 @@ function createMapScene(kind, container) {
   return scene
 }
 
-onMounted(async () => {
-  const [fRes, rRes] = await Promise.all([fetch('/api/flavors'), fetch('/api/routes')])
-  flavors = await fRes.json()
-  routes = await rRes.json()
+function createFallbackFlavorImage(color = '#E8A917') {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#fff4e8"/>
+        </linearGradient>
+        <radialGradient id="plate" cx="50%" cy="45%" r="60%">
+          <stop offset="0%" stop-color="#fffdf9"/>
+          <stop offset="75%" stop-color="#f1e6d7"/>
+          <stop offset="100%" stop-color="#dbc8b0"/>
+        </radialGradient>
+      </defs>
+      <rect width="240" height="160" rx="28" fill="url(#bg)"/>
+      <circle cx="120" cy="86" r="54" fill="url(#plate)" opacity="0.95"/>
+      <circle cx="120" cy="86" r="36" fill="${color}" opacity="0.24"/>
+      <circle cx="96" cy="74" r="9" fill="${color}" opacity="0.62"/>
+      <circle cx="126" cy="92" r="12" fill="${color}" opacity="0.48"/>
+      <circle cx="146" cy="76" r="8" fill="${color}" opacity="0.58"/>
+      <path d="M50 123c28-14 112-14 140 0" stroke="rgba(111,82,61,0.22)" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+  `.trim()
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
+async function fetchJsonOrFallback(url, fallback, label) {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const data = await response.json()
+    return Array.isArray(data) && data.length ? data : fallback
+  } catch (err) {
+    console.warn(`[MapView] ${label} fallback:`, err.message)
+    return fallback
+  }
+}
+
+async function loadMapData() {
+  const [loadedFlavors, loadedRoutes] = await Promise.all([
+    fetchJsonOrFallback('/api/flavors', FALLBACK_FLAVORS, 'flavors'),
+    fetchJsonOrFallback('/api/routes', FALLBACK_ROUTES, 'routes'),
+  ])
+  flavors = loadedFlavors
+  routes = loadedRoutes
   appStore.setFlavors(flavors)
+}
+
+onMounted(async () => {
+  await loadMapData()
 
   fetch('/tiles/status')
     .then(r => r.json())
@@ -2134,6 +2303,7 @@ function setMapLayerVisibility(id, visible, scene = null) {
   const targets = scene ? [scene] : sceneList()
 
   targets.forEach(target => {
+    if (!target?.map?.getLayer(id)) return
     try {
       target.map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
     } catch (_) {

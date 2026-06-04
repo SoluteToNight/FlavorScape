@@ -134,10 +134,12 @@ function drawMiniMap() {
 
 <style scoped>
 .narrative-page {
-  position: fixed;
-  top: var(--navbar-h); left: 0; right: 0; bottom: 0;
+  position: relative;
+  min-height: calc(100vh - var(--navbar-h));
+  margin-top: var(--navbar-h);
   background: var(--bg);
   display: flex;
+  overflow: auto;
 }
 
 .left-nav {
@@ -168,7 +170,21 @@ function drawMiniMap() {
 .chapter-dot.active .dot-label { color: var(--text); }
 .chapter-dot:hover .dot-label { color: var(--text-mid); }
 
-.right-content { flex: 1; display: flex; flex-direction: column; padding: 40px 60px 40px 20px; overflow: hidden; }
+.right-content { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 40px 60px 40px 20px; overflow: visible; }
+
+@media (max-width: 860px) {
+  .narrative-page { flex-direction: column; }
+  .left-nav {
+    width: 100%;
+    padding: 24px 28px 0;
+    flex-direction: row;
+    gap: 22px;
+    overflow-x: auto;
+  }
+  .spine { display: none; }
+  .chapter-dot { margin-bottom: 20px; flex-shrink: 0; }
+  .right-content { padding: 24px 28px 36px; }
+}
 .mini-map-wrap { flex: 0 0 260px; border-radius: var(--radius); overflow: hidden; background: #EDE5D8; margin-bottom: 28px; box-shadow: var(--shadow-sm); }
 .mini-canvas { width: 100%; height: 260px; display: block; }
 
