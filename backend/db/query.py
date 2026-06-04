@@ -8,7 +8,7 @@ import json
 from urllib.parse import quote
 
 from backend.db.connection import get_conn
-from backend.data.app_data import FLAVOR_MEDIA
+from backend.data.app_data import FLAVORS as APP_FLAVORS, ROUTES as APP_ROUTES, FLAVOR_MEDIA
 
 SCORE_KEYS = ["spicy", "numbing", "salty", "sour", "sweet", "umami"]
 PRIMARY_CN = {
@@ -77,6 +77,22 @@ def _build_flavor_image(db_obj: dict) -> str:
     return f"data:image/svg+xml;charset=UTF-8,{quote(svg)}"
 
 
+def _fallback_flavors() -> list[dict]:
+    results = []
+    for item in APP_FLAVORS:
+        row = dict(item)
+        media = FLAVOR_MEDIA.get(row.get("id"), {})
+        row["bubbleImage"] = media.get("bubbleImage") or _build_flavor_image({
+            "color_hex": row.get("color"),
+            "ingredients": row.get("ingredients") or [],
+        })
+        row["bubbleImageSource"] = media.get("bubbleImageSource")
+        row.setdefault("description", f"{row.get('region') or '地方风土'}中的{row.get('eco') or '自然环境'}塑造出{row.get('dish') or '地方风味'}。")
+        return_row = row
+        results.append(return_row)
+    return results
+
+
 def fetch_flavors() -> list[dict]:
     """返回风味节点，shape 与原 FLAVORS 兼容。"""
     sql = """
@@ -104,36 +120,40 @@ def fetch_flavors() -> list[dict]:
          FROM dish
          ORDER BY dish_id
     """
-    results = []
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-            cols = [d.name for d in cur.description]
-            for row in cur.fetchall():
-                db_obj = dict(zip(cols, row))
-                scores = _scores_from_genome_vector(db_obj["flavor_genotype"])
-                media = FLAVOR_MEDIA.get(db_obj["node_key"], {})
-                results.append({
-                    "id": db_obj["node_key"],
-                    "city": db_obj["city_name"],
-                    "dish": db_obj["dish_name"],
-                    "dish_family": db_obj["dish_family"],
-                    "region": db_obj["region_label"],
-                    "eco": db_obj["eco_label"],
-                    "eco_name_ref": db_obj["eco_name_ref"],
-                    "scores": scores,
-                    "primary": list(db_obj["primary_labels"] or []),
-                    "vals": [float(v) for v in (db_obj["primary_values"] or [])],
-                    "color": db_obj["color_hex"],
-                    "cat": db_obj["category"],
-                    "ingredients": list(db_obj["ingredients"] or []),
-                    "coordinates": [float(db_obj["lon"]), float(db_obj["lat"])],
-                    "genome_vector": db_obj["flavor_genotype"],
-                    "description": _build_flavor_description(db_obj, scores),
-                    "bubbleImage": media.get("bubbleImage") or _build_flavor_image(db_obj),
-                    "bubbleImageSource": media.get("bubbleImageSource"),
-                })
-    return results
+    try:
+        results = []
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                cols = [d.name for d in cur.description]
+                for row in cur.fetchall():
+                    db_obj = dict(zip(cols, row))
+                    scores = _scores_from_genome_vector(db_obj["flavor_genotype"])
+                    media = FLAVOR_MEDIA.get(db_obj["node_key"], {})
+                    results.append({
+                        "id": db_obj["node_key"],
+                        "city": db_obj["city_name"],
+                        "dish": db_obj["dish_name"],
+                        "dish_family": db_obj["dish_family"],
+                        "region": db_obj["region_label"],
+                        "eco": db_obj["eco_label"],
+                        "eco_name_ref": db_obj["eco_name_ref"],
+                        "scores": scores,
+                        "primary": list(db_obj["primary_labels"] or []),
+                        "vals": [float(v) for v in (db_obj["primary_values"] or [])],
+                        "color": db_obj["color_hex"],
+                        "cat": db_obj["category"],
+                        "ingredients": list(db_obj["ingredients"] or []),
+                        "coordinates": [float(db_obj["lon"]), float(db_obj["lat"])],
+                        "genome_vector": db_obj["flavor_genotype"],
+                        "description": _build_flavor_description(db_obj, scores),
+                        "bubbleImage": media.get("bubbleImage") or _build_flavor_image(db_obj),
+                        "bubbleImageSource": media.get("bubbleImageSource"),
+                    })
+        return results or _fallback_flavors()
+    except Exception as err:
+        print(f"[query.fetch_flavors] database fallback: {err}")
+        return _fallback_flavors()
 
 
 def fetch_routes() -> list[dict]:
@@ -143,21 +163,25 @@ def fetch_routes() -> list[dict]:
         FROM dispersal_event d
         ORDER BY d.display_order, d.event_id
     """
-    results = []
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-            rows = cur.fetchall()
-    for route_name, route_color, route_type, geojson_str in rows:
-        gj = json.loads(geojson_str) if geojson_str else {}
-        path = gj.get("coordinates", [])
-        results.append({
-            "name": route_name,
-            "color": route_color,
-            "type": route_type,
-            "path": path,
-        })
-    return results
+    try:
+        results = []
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                rows = cur.fetchall()
+        for route_name, route_color, route_type, geojson_str in rows:
+            gj = json.loads(geojson_str) if geojson_str else {}
+            path = gj.get("coordinates", [])
+            results.append({
+                "name": route_name,
+                "color": route_color,
+                "type": route_type,
+                "path": path,
+            })
+        return results or [dict(item) for item in APP_ROUTES]
+    except Exception as err:
+        print(f"[query.fetch_routes] database fallback: {err}")
+        return [dict(item) for item in APP_ROUTES]
 
 
 def fetch_chapters() -> list[dict]:

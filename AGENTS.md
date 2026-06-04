@@ -24,6 +24,12 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 - Save development screenshots in `dev/screenshots/`; do not leave generated PNGs in the repo root.
 - Playwright validation screenshots and map UI review captures should use `dev/screenshots/` as the default output folder.
 
+## Git and repository operations
+
+- Do not automatically run `git commit`, `git push`, `git pull`, `git clone`, or upload project changes unless the user explicitly asks for that Git/upload action in the current request.
+- It is OK to inspect Git state with read-only commands such as `git status`, `git diff`, `git log`, and `git remote -v` when needed.
+- When the user asks to upload or sync with GitHub, confirm the target branch/repository from local context and report what was committed or pushed.
+
 ## Product scope
 
 - Desktop-only product scope: do not design, implement, review, or screenshot mobile layouts unless the user explicitly asks for mobile work in that request.

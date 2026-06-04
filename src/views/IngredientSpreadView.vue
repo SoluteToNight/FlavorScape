@@ -1,52 +1,36 @@
 <template>
-  <div class="spread-page fixed top-navbar inset-x-0 bottom-0" :class="{ 'sidebar-open': !sidebarCollapsed }">
-    <div ref="mapContainer" class="w-full h-full" />
+  <div class="spread-page" :class="{ 'sidebar-open': !sidebarCollapsed }">
+    <div ref="mapContainer" class="spread-map" />
+    <div class="spread-vignette spread-vignette-top" aria-hidden="true" />
+    <div class="spread-vignette spread-vignette-bottom" aria-hidden="true" />
 
-    <div v-if="loadError && !hasAnyData" class="fixed inset-0 top-navbar z-30 flex flex-col items-center justify-center gap-5 bg-[rgba(245,239,229,0.92)] backdrop-blur-sm">
-      <div class="text-center max-w-[420px] px-6">
-        <div class="text-2xs tracking-[0.14em] uppercase text-text-muted mb-2">数据加载失败</div>
-        <div class="font-serif text-xl text-earth mb-2">无法载入食材传播数据</div>
-        <p class="text-sm text-text-muted leading-[1.6] mb-6">{{ loadError }}</p>
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 h-9 px-5 border border-earth/30 rounded-md bg-earth text-[#fffaf3] text-xs font-bold cursor-pointer hover:bg-earth/90 transition-colors"
-          @click="retryLoad"
-        >
-          重新加载
-        </button>
-      </div>
+    <div class="map-overlay-info" v-if="hasAnyData">
+      <div class="overlay-kicker">{{ isOverview ? '食材传播总览' : '传播路径总览' }}</div>
+      <div class="overlay-year" :style="{ color: activeColor }">{{ displayedYearRange }}</div>
+      <div class="overlay-location">{{ overlayTitle }}</div>
     </div>
 
-    <div class="spread-vignette spread-vignette-top fixed left-0 right-0 pointer-events-none z-[2]" aria-hidden="true" />
-    <div class="spread-vignette spread-vignette-bottom fixed left-0 right-0 pointer-events-none z-[2]" aria-hidden="true" />
-
-    <div class="fixed top-[calc(var(--navbar-h)+24px)] left-6 z-10 pointer-events-none" v-if="hasAnyData">
-      <div class="overlay-kicker text-2xs tracking-[0.16em] uppercase mb-1.5">{{ isOverview ? '食材传播总览' : '传播路径总览' }}</div>
-      <div class="overlay-year font-serif text-[40px] font-medium leading-[1.08]" :style="{ color: activeColor }">{{ displayedYearRange }}</div>
-      <div class="text-lg text-[rgba(36,28,20,0.82)] mt-1">{{ overlayTitle }}</div>
-    </div>
-
-    <div class="spread-route-caption fixed left-6 bottom-7 z-10 w-[min(430px,calc(100vw-468px))] px-4 py-3.5 pb-[15px] border-l-2 border-[rgba(93,74,48,0.28)] pointer-events-none" v-if="hasAnyData">
-      <div class="text-2xs text-[rgba(87,83,78,0.52)] tracking-[0.16em] uppercase mb-1.5">{{ isOverview ? 'Overview' : (currentEvent ? `历史 ${activeEventIndex + 1} / ${timeline.length}` : 'Route') }}</div>
-      <div class="font-serif text-xl leading-[1.35] text-[rgba(28,25,23,0.86)]">
+    <div class="spread-route-caption" v-if="hasAnyData">
+      <div class="caption-kicker">{{ isOverview ? 'Overview' : (currentEvent ? `历史 ${activeEventIndex + 1} / ${timeline.length}` : 'Route') }}</div>
+      <div class="caption-title">
         {{ isOverview ? `${shownIngredients.length} 种食材传播线同时显示` : captionTitle }}
       </div>
-      <div class="mt-1.5 text-xs leading-[1.55] tracking-[0.03em]" :style="{ color: activeColor }">
+      <div class="caption-route" :style="{ color: activeColor }">
         {{ isOverview ? '点击食材卡片或地图节点查看单条传播路径' : captionRoute }}
       </div>
     </div>
 
-    <button class="sidebar-toggle fixed top-1/2 right-0 -translate-y-1/2 z-[25] flex flex-col items-center gap-1 py-3.5 px-2 border border-[rgba(180,165,140,0.28)] border-r-0 rounded-l-[10px] text-[rgba(70,48,28,0.72)] text-xs cursor-pointer" @click="toggleSidebar" :class="{ open: !sidebarCollapsed }" :title="sidebarCollapsed ? '展开面板' : '收起面板'">
-      <span class="toggle-icon text-[13px] leading-none">{{ sidebarCollapsed ? '◀' : '▶' }}</span>
-      <span class="toggle-label text-2xs tracking-[0.08em]">{{ sidebarCollapsed ? '展开' : '收起' }}</span>
+    <button class="sidebar-toggle" @click="toggleSidebar" :class="{ open: !sidebarCollapsed }" :title="sidebarCollapsed ? '展开面板' : '收起面板'">
+      <span class="toggle-icon">{{ sidebarCollapsed ? '◀' : '▶' }}</span>
+      <span class="toggle-label">{{ sidebarCollapsed ? '展开' : '收起' }}</span>
     </button>
 
-    <aside class="spread-sidebar fixed top-navbar right-0 bottom-0 w-[420px] flex flex-col border-l border-glass-border overflow-hidden z-20" :class="{ collapsed: sidebarCollapsed }">
-      <div class="sidebar-header relative px-6 py-6 pb-[18px] border-b border-glass-border">
-        <button class="absolute top-4 right-4 w-7 h-7 flex items-center justify-center border border-[rgba(180,165,140,0.22)] rounded-full bg-[rgba(255,252,248,0.6)] text-[rgba(87,78,68,0.6)] text-xs cursor-pointer transition-all z-[5]" @click="sidebarCollapsed = true" title="收起面板">✕</button>
-        <div class="flex gap-1.5 mb-4 flex-wrap" v-if="ingredients.length">
+    <aside class="spread-sidebar" :class="{ collapsed: sidebarCollapsed }">
+      <div class="sidebar-header">
+        <button class="sidebar-close-btn" @click="sidebarCollapsed = true" title="收起面板">✕</button>
+        <div class="ingredient-selector" v-if="ingredients.length">
           <button
-            class="ing-tab px-3.5 py-[5px] rounded-2xl border border-glass-border bg-transparent font-sans text-xs text-text-mid cursor-pointer transition-all"
+            class="ing-tab overview-tab"
             :class="{ active: isOverview }"
             @click="selectOverview"
           >
@@ -55,7 +39,7 @@
           <button
             v-for="ing in ingredients"
             :key="ing.ingredient_id"
-            class="ing-tab px-3.5 py-[5px] rounded-2xl border border-glass-border bg-transparent font-sans text-xs text-text-mid cursor-pointer transition-all"
+            class="ing-tab"
             :class="{ active: activeId === ing.ingredient_id }"
             :style="{ '--ing-color': ing.color }"
             @click="selectIngredient(ing.ingredient_id)"
@@ -65,8 +49,8 @@
         </div>
 
         <template v-if="isOverview">
-          <div class="grid grid-cols-[76px_1fr] gap-4 items-center mb-3.5">
-            <div class="overview-emblem relative w-[76px] h-[76px] rounded-xl flex items-center justify-center overflow-hidden">
+          <div class="overview-profile">
+            <div class="overview-emblem">
               <img
                 v-for="ing in shownIngredients.slice(0, 3)"
                 :key="ing.ingredient_id"
@@ -74,9 +58,9 @@
                 :alt="ing.name"
               />
             </div>
-            <div class="min-w-0">
-              <div class="font-serif text-[28px] font-medium tracking-[0.06em] text-[rgba(70,48,28,0.9)] mb-1">食材传播图谱</div>
-              <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-2 text-xs text-text-muted tracking-[0.06em]">
+            <div class="ingredient-title">
+              <div class="ing-name overview-name">食材传播图谱</div>
+              <div class="ing-meta">
                 <span>多食材总览</span>
                 <span>{{ overviewStats.uniqueNodes }} 个首传节点</span>
               </div>
@@ -86,101 +70,101 @@
         </template>
 
         <template v-else-if="activeData">
-          <div class="grid grid-cols-[76px_1fr] gap-4 items-center mb-3.5">
-            <div class="ingredient-image relative w-[76px] h-[76px] rounded-xl flex items-center justify-center overflow-hidden" :style="{ '--ing-color': activeColor }">
+          <div class="ingredient-profile">
+            <div class="ingredient-image" :style="{ '--ing-color': activeColor }">
               <img v-if="ingredientImageUrl" :src="ingredientImageUrl" :alt="activeData.name" @error="onIngredientImageError" />
-              <div v-else class="ingredient-image-fallback font-serif text-[32px]" :style="{ color: activeColor }">{{ activeData.name?.slice(0, 1) }}</div>
+              <div v-else class="ingredient-image-fallback">{{ activeData.name?.slice(0, 1) }}</div>
             </div>
-            <div class="min-w-0">
-              <div class="font-serif text-[28px] font-medium tracking-[0.06em] mb-1" :style="{ color: activeColor }">{{ activeData.name }}</div>
-              <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-2 text-xs text-text-muted tracking-[0.06em]">
-                <span>{{ activeData.name_en }}</span>
-                <span class="text-xs text-text-muted italic">{{ activeData.species }}</span>
+            <div class="ingredient-title">
+              <div class="ing-name" :style="{ color: activeColor }">{{ activeData.name }}</div>
+              <div class="ing-meta">
+                <span class="ing-name-en">{{ activeData.name_en }}</span>
+                <span class="ing-species">{{ activeData.species }}</span>
               </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-[auto_1fr_auto_auto] gap-x-2.5 gap-y-2 items-baseline py-2.5 mb-2 border-y border-[rgba(180,165,140,0.22)]">
-            <span class="text-[9px] tracking-[0.14em] text-text-muted uppercase">Origin</span>
-            <strong class="min-w-0 text-xs font-medium text-[rgba(28,25,23,0.78)]">{{ activeData.origin }}</strong>
-            <span class="text-[9px] tracking-[0.14em] text-text-muted uppercase">Nodes</span>
-            <strong class="text-xs font-medium text-[rgba(28,25,23,0.78)]">{{ uniqueEvents.length }} / {{ timeline.length }}</strong>
+          <div class="specimen-record">
+            <span>Origin</span>
+            <strong>{{ activeData.origin }}</strong>
+            <span>Nodes</span>
+            <strong>{{ uniqueEvents.length }} / {{ timeline.length }}</strong>
           </div>
-          <p class="text-sm leading-[1.85] text-text-mid font-light tracking-[0.03em]">{{ activeData.summary }}</p>
+          <p class="ing-summary">{{ activeData.summary }}</p>
         </template>
       </div>
 
-      <div class="overview-section flex-1 flex flex-col overflow-hidden" v-if="isOverview">
-        <div class="flex items-center justify-between gap-3 px-6 py-4 pb-2">
-          <span class="text-xs text-text-muted tracking-[0.1em]">可视化图层</span>
-          <button class="route-fit-btn border border-[rgba(180,165,140,0.32)] rounded-2xl px-3 py-[5px] bg-[rgba(255,252,248,0.56)] text-[rgba(58,42,24,0.74)] text-xs cursor-pointer transition-all" @click="focusFullRoute">查看全图</button>
+      <div class="overview-section" v-if="isOverview">
+        <div class="timeline-header">
+          <span class="section-label">可视化图层</span>
+          <button class="route-fit-btn" @click="focusFullRoute">查看全图</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-6 pb-6 grid gap-2.5 content-start">
+        <div class="ingredient-overview-list">
           <button
             v-for="detail in shownIngredients"
             :key="detail.ingredient_id"
-            class="overview-card grid grid-cols-[56px_1fr] gap-[13px] items-center text-left border border-[rgba(180,165,140,0.22)] bg-[rgba(255,252,248,0.58)] rounded-lg p-3 cursor-pointer"
+            class="overview-card"
             :style="{ '--ing-color': detail.color }"
             @click="selectIngredient(detail.ingredient_id)"
           >
-            <span class="overview-card-image w-14 h-14 rounded-full flex items-center justify-center">
+            <span class="overview-card-image">
               <img :src="ingredientImage(detail)" :alt="detail.name" />
             </span>
-            <span class="min-w-0 grid gap-1">
-              <span class="overview-card-title font-serif text-lg">{{ detail.name }}</span>
-              <span class="text-xs text-[rgba(87,83,78,0.62)]">{{ formatIngredientRange(detail) }} · {{ uniqueEventsFor(detail).length }} 个首传节点</span>
-              <span class="overview-card-summary text-xs leading-[1.55] text-[rgba(58,50,42,0.76)]">{{ detail.summary }}</span>
+            <span class="overview-card-body">
+              <span class="overview-card-title">{{ detail.name }}</span>
+              <span class="overview-card-meta">{{ formatIngredientRange(detail) }} · {{ uniqueEventsFor(detail).length }} 个首传节点</span>
+              <span class="overview-card-summary">{{ detail.summary }}</span>
             </span>
           </button>
         </div>
       </div>
 
-      <div class="timeline-section flex-1 flex flex-col overflow-hidden" v-else-if="activeData">
-        <div class="flex items-center justify-between gap-3 px-6 py-4 pb-2">
-          <span class="text-xs text-text-muted tracking-[0.1em]">首传节点</span>
-          <button class="route-fit-btn border border-[rgba(180,165,140,0.32)] rounded-2xl px-3 py-[5px] bg-[rgba(255,252,248,0.56)] text-[rgba(58,42,24,0.74)] text-xs cursor-pointer transition-all" @click="focusFullRoute">查看全路径</button>
+      <div class="timeline-section" v-else-if="activeData">
+        <div class="timeline-header">
+          <span class="section-label">首传节点</span>
+          <button class="route-fit-btn" @click="focusFullRoute">查看全路径</button>
         </div>
 
 
-        <div class="flex-1 overflow-y-auto px-6 pb-6 scroll-smooth" ref="eventListEl">
+        <div class="event-list" ref="eventListEl">
           <div
             v-for="(evt, i) in timeline"
             :key="stableEventKey(evt)"
             :ref="el => { if (el) eventCardRefs[i] = el }"
-            class="event-card relative cursor-pointer opacity-[0.84] transition-opacity"
+            class="event-card"
             :class="{ active: stableEventKey(evt) === currentEventKey, duplicate: isDuplicateEvent(evt) }"
             @click="focusEvent(evt, i)"
           >
-            <div class="flex gap-3.5 py-2.5 rounded-lg transition-all">
-              <div class="event-left-rail flex flex-col items-center w-6 shrink-0 pt-[3px]">
-                <div class="event-dot w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold overflow-hidden" :style="{ '--ing-color': activeColor }">
+            <div class="event-card-inner">
+              <div class="event-left-rail">
+                <div class="event-dot" :style="{ '--ing-color': activeColor }">
                   <img v-if="ingredientImageUrl" :src="ingredientImageUrl" :alt="activeData.name" />
                   <span v-else>{{ mapOrderForEvent(evt) || i + 1 }}</span>
                 </div>
-                <div class="w-px flex-1 bg-glass-border mt-[5px]" v-if="i < timeline.length - 1" />
+                <div class="event-line" v-if="i < timeline.length - 1" />
               </div>
-              <div class="flex-1 min-w-0 pb-2">
-                <div class="flex items-baseline gap-2">
-                  <span class="font-serif text-lg font-medium" :style="{ color: activeColor }">{{ formatYear(evt.year) }}</span>
-                  <span class="text-xs text-text-muted">{{ evt.dynasty }}</span>
+              <div class="event-content">
+                <div class="event-top-row">
+                  <span class="event-year" :style="{ color: activeColor }">{{ formatYear(evt.year) }}</span>
+                  <span class="event-dynasty">{{ evt.dynasty }}</span>
                 </div>
-                <div class="text-base font-normal text-text mt-0.5">{{ evt.location }}</div>
-                <div class="inline-block text-2xs px-2 py-[1px] rounded-lg border mt-1.5 tracking-[0.06em]" :style="{ borderColor: activeColor + '66', color: activeColor }">
+                <div class="event-location">{{ evt.location }}</div>
+                <div class="event-type-badge" :style="{ borderColor: activeColor + '66', color: activeColor }">
                   {{ evt.event_type }}
                 </div>
-                <div class="inline-flex mt-1.5 px-2 py-0.5 rounded-lg bg-[rgba(120,93,62,0.08)] text-[rgba(87,83,78,0.68)] text-xs leading-[1.5]" v-if="isDuplicateEvent(evt)">
+                <div class="event-map-note" v-if="isDuplicateEvent(evt)">
                   同一地区后续记录，地图中并入首次传入节点
                 </div>
-                <div class="mt-1.5 text-[rgba(87,83,78,0.68)] text-xs leading-[1.55]" v-if="evt.historical_name?.length">
+                <div class="event-names" v-if="evt.historical_name?.length">
                   {{ evt.historical_name.join(' · ') }}
                 </div>
-                <div class="flex items-center gap-[5px] mt-[7px] text-xs leading-[1.55]" v-if="evt.route" :style="{ color: activeColor }">
-                  <span class="text-[13px]">→</span>
+                <div class="event-route" v-if="evt.route" :style="{ color: activeColor }">
+                  <span class="route-arrow">→</span>
                   {{ evt.route }}
                 </div>
-                <p class="mt-[7px] mb-0 text-[rgba(45,38,30,0.78)] text-xs leading-[1.75] font-light">{{ evt.notes }}</p>
-                <div class="mt-1.5 text-[rgba(87,83,78,0.56)] text-xs leading-[1.55]" v-if="evt.source_literature">—— {{ evt.source_literature }}</div>
+                <p class="event-notes">{{ evt.notes }}</p>
+                <div class="event-source" v-if="evt.source_literature">—— {{ evt.source_literature }}</div>
               </div>
             </div>
           </div>
@@ -192,9 +176,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { addPhysicalVectorLayers } from '../map/baseLayers.js'
-import { createMap, addMapControls, maplibregl, removeMap } from '../map/maplibre.js'
-import { createHypRasterStyle } from '../map/mapStyle.js'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 
 const mapContainer = ref(null)
 const eventListEl = ref(null)
@@ -209,7 +192,6 @@ const activeId = ref(OVERVIEW_ID)
 const currentEventKey = ref('')
 const imageLoadFailed = ref(false)
 const sidebarCollapsed = ref(true)
-const loadError = ref(null)
 
 let map = null
 let flowFrame = 0
@@ -252,21 +234,35 @@ const SPREAD_SOURCES = {
   clusterRoutes: 'spread-cluster-routes',
 }
 
-const MAP_STYLE = createHypRasterStyle({
+const MAP_STYLE = {
+  version: 8,
   projection: { type: 'mercator' },
-  backgroundColor: '#C8DDE8',
-  rasterSource: {
-    maxzoom: RASTER_MAX_ZOOM,
-    attribution: 'Natural Earth',
+  sources: {
+    'hyp-tiles': {
+      type: 'raster',
+      tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: RASTER_MAX_ZOOM,
+      attribution: 'Natural Earth',
+    },
   },
-  rasterPaint: {
-    'raster-saturation': -0.08,
-    'raster-contrast': 0.22,
-    'raster-brightness-min': 0.02,
-    'raster-brightness-max': 1,
-    'raster-opacity': 1,
-  },
-})
+  layers: [
+    { id: 'bg', type: 'background', paint: { 'background-color': '#C8DDE8' } },
+    {
+      id: 'hyp',
+      type: 'raster',
+      source: 'hyp-tiles',
+      paint: {
+        'raster-saturation': -0.08,
+        'raster-contrast': 0.22,
+        'raster-brightness-min': 0.02,
+        'raster-brightness-max': 1,
+        'raster-opacity': 1,
+      },
+    },
+  ],
+}
 
 const isOverview = computed(() => activeId.value === OVERVIEW_ID)
 const activeData = computed(() => isOverview.value ? null : ingredientDetails.value[activeId.value])
@@ -1549,10 +1545,16 @@ function syncPointMarkers() {
 }
 
 async function addVectorLayers() {
-  addPhysicalVectorLayers(map, {
-    coastlinePaint: { 'line-color': '#8A7560', 'line-width': 0.6, 'line-opacity': 0.58 },
-    riversPaint: { 'line-color': '#5BA0B8', 'line-width': 0.45, 'line-opacity': 0.62 },
-  })
+  const physLayers = [
+    { id: 'coastline', url: '/tiles/vector/coastline', type: 'line', paint: { 'line-color': '#8A7560', 'line-width': 0.6, 'line-opacity': 0.58 } },
+    { id: 'rivers', url: '/tiles/vector/rivers', type: 'line', paint: { 'line-color': '#5BA0B8', 'line-width': 0.45, 'line-opacity': 0.62 } },
+  ]
+  for (const layer of physLayers) {
+    try {
+      map.addSource(layer.id, { type: 'geojson', data: layer.url })
+      map.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: layer.paint })
+    } catch (_) {}
+  }
 }
 
 function routeBounds() {
@@ -1661,18 +1663,9 @@ async function loadIngredients() {
     currentEventKey.value = ''
     eventCardRefs.value = {}
     updateNativeSpreadLayers()
-    loadError.value = null
   } catch (err) {
-    loadError.value = err?.message || '网络请求失败，请确认后端已启动'
     console.warn('[IngredientSpread] load failed:', err)
   }
-}
-
-async function retryLoad() {
-  loadError.value = null
-  await loadIngredients()
-  await nextTick()
-  if (!map) initMap()
 }
 
 async function selectOverview() {
@@ -1712,7 +1705,7 @@ async function selectIngredient(id, options = {}) {
 function initMap() {
   if (!mapContainer.value) return
 
-  map = createMap({
+  map = new maplibregl.Map({
     container: mapContainer.value,
     style: MAP_STYLE,
     center: DEFAULT_MAP_CENTER,
@@ -1723,9 +1716,7 @@ function initMap() {
     attributionControl: false,
   })
 
-  addMapControls(map, [
-    { type: 'navigation', options: { showCompass: true }, position: 'bottom-right' },
-  ])
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right')
 
   map.on('load', () => {
     addVectorLayers()
@@ -1751,115 +1742,343 @@ onUnmounted(() => {
   }
   clearPointMarkers()
   hidePointPopup()
-  removeMap(map)
+  map?.remove()
   map = null
 })
 </script>
 
 <style scoped>
-/* KEPT: gradients, color-mix(), backdrop-filter vendor prefixes, :deep() overrides, media queries, transitions, -webkit-line-clamp, writing-mode */
-
 .spread-page {
+  position: fixed;
+  top: var(--navbar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
   background:
     linear-gradient(90deg, rgba(93, 74, 48, 0.045) 1px, transparent 1px),
     linear-gradient(180deg, rgba(93, 74, 48, 0.035) 1px, transparent 1px),
     #f5efe5;
   background-size: 44px 44px;
+  overflow: auto;
 }
 
-.spread-map { background: #d9e7ec; }
+.spread-map {
+  width: 100%;
+  height: 100%;
+  min-width: 1024px;
+  min-height: 680px;
+  background: #d9e7ec;
+}
+
+.spread-vignette {
+  position: fixed;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 2;
+}
 
 .spread-vignette-top {
   top: var(--navbar-h);
   height: 88px;
   background: linear-gradient(180deg, rgba(249, 245, 238, 0.35) 0%, rgba(249, 245, 238, 0) 100%);
 }
+
 .spread-vignette-bottom {
   bottom: 0;
   height: 88px;
   background: linear-gradient(180deg, rgba(42, 34, 24, 0) 0%, rgba(42, 34, 24, 0.22) 100%);
 }
 
-/* :deep() overrides for MapLibre */
+:deep(.maplibregl-canvas) {
+  outline: none;
+}
+
 :deep(.maplibregl-ctrl-bottom-right) {
-  right: 18px; bottom: 18px;
+  right: 18px;
+  bottom: 18px;
   transition: right 0.38s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.spread-page.sidebar-open :deep(.maplibregl-ctrl-bottom-right) { right: 438px; }
+
+.spread-page.sidebar-open :deep(.maplibregl-ctrl-bottom-right) {
+  right: 438px;
+}
 
 :deep(.spread-point-popup .maplibregl-popup-content) {
-  padding: 0; border-radius: 10px; overflow: hidden;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
   background: rgba(255, 252, 248, 0.96);
   border: 1px solid rgba(120, 93, 62, 0.18);
   box-shadow: 0 18px 46px rgba(52, 35, 20, 0.18);
   backdrop-filter: blur(12px);
 }
-:deep(.spread-popup-card) { padding: 14px 15px 13px; color: rgba(33, 28, 23, 0.88); border-top: 3px solid var(--popup-color, #e5394e); }
-:deep(.popup-heading) { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; margin-bottom: 7px; }
+
+:deep(.spread-popup-card) {
+  padding: 14px 15px 13px;
+  color: rgba(33, 28, 23, 0.88);
+  border-top: 3px solid var(--popup-color, #e5394e);
+}
+
+:deep(.popup-heading) {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 7px;
+}
+
 :deep(.popup-order) {
-  width: 30px; height: 30px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: color-mix(in srgb, var(--popup-color, #e5394e) 14%, #fff8ea);
   color: var(--popup-color, #e5394e);
-  font-size: 11px; font-weight: 700;
+  font-size: 11px;
+  font-weight: 700;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--popup-color, #e5394e) 32%, transparent);
 }
-:deep(.popup-title) { font-family: var(--font-serif); font-size: 17px; line-height: 1.35; margin-bottom: 3px; }
-:deep(.popup-type) { display: inline-block; margin-bottom: 7px; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(120, 93, 62, 0.2); color: rgba(80, 64, 48, 0.76); font-size: 10px; letter-spacing: 0.08em; }
-:deep(.popup-alias), :deep(.popup-route), :deep(.popup-source) { color: rgba(87, 78, 68, 0.72); font-size: 11px; line-height: 1.55; }
-:deep(.popup-notes) { margin-top: 7px; color: rgba(45, 38, 30, 0.82); font-size: 12px; line-height: 1.75; }
 
-:deep(.spread-image-marker) {
-  width: var(--marker-size, 32px); height: var(--marker-size, 32px);
-  border: 0; border-radius: 50%; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  appearance: none; background: transparent; box-shadow: none;
-  cursor: pointer; transform: translateZ(0);
-  transition: width 160ms ease, height 160ms ease, filter 160ms ease, transform 160ms ease;
+:deep(.popup-title) {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.35;
+  margin-bottom: 3px;
 }
-:deep(.spread-image-marker img) { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 5px 7px rgba(52, 35, 20, 0.26)); }
-:deep(.spread-image-marker.origin) { background: transparent; }
-:deep(.spread-image-marker.selected), :deep(.spread-image-marker:hover) { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ing-color, #c9a646) 54%, transparent)); transform: translateZ(0) scale(1.08); }
 
-/* overlay text shadows */
-.overlay-kicker { text-shadow: 0 1px 0 rgba(255,255,255,0.78); }
-.overlay-year { text-shadow: 0 1px 0 rgba(255,255,255,0.78), 0 14px 28px rgba(70, 48, 28, 0.12); }
-.overlay-location { text-shadow: 0 1px 0 rgba(255,255,255,0.72); }
+:deep(.popup-type) {
+  display: inline-block;
+  margin-bottom: 7px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 93, 62, 0.2);
+  color: rgba(80, 64, 48, 0.76);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
 
-/* route caption */
+:deep(.popup-alias),
+:deep(.popup-route),
+:deep(.popup-source) {
+  color: rgba(87, 78, 68, 0.72);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+:deep(.popup-notes) {
+  margin-top: 7px;
+  color: rgba(45, 38, 30, 0.82);
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.map-overlay-info {
+  position: fixed;
+  top: calc(var(--navbar-h) + 24px);
+  left: 24px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.overlay-kicker {
+  color: rgba(36, 28, 20, 0.54);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.78);
+}
+
+.overlay-year {
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.08;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.78), 0 14px 28px rgba(70, 48, 28, 0.12);
+}
+
+.overlay-location {
+  font-size: 16px;
+  color: rgba(36, 28, 20, 0.82);
+  margin-top: 4px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.72);
+}
+
 .spread-route-caption {
+  position: fixed;
+  left: 24px;
+  bottom: 28px;
+  z-index: 10;
+  width: min(430px, calc(100vw - 468px));
+  padding: 14px 16px 15px;
+  border-left: 2px solid rgba(93, 74, 48, 0.28);
   background: rgba(255, 252, 248, 0.72);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 18px 42px rgba(58, 42, 24, 0.09);
+  pointer-events: none;
 }
 
-/* sidebar */
+.caption-kicker {
+  font-size: 10px;
+  color: rgba(87,83,78,0.52);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.caption-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.35;
+  color: rgba(28,25,23,0.86);
+}
+
+.caption-route {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.55;
+  letter-spacing: 0.03em;
+}
+
 .spread-sidebar {
+  position: fixed;
+  top: var(--navbar-h);
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--glass-border);
   background: linear-gradient(180deg, rgba(255, 252, 248, 0.96) 0%, rgba(246, 238, 226, 0.92) 100%);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
+  overflow: hidden;
+  z-index: 20;
   transform: translateX(0);
   transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: -8px 0 32px rgba(42, 34, 24, 0.12);
 }
-.spread-sidebar.collapsed { transform: translateX(100%); box-shadow: none; }
+
+.spread-sidebar.collapsed {
+  transform: translateX(100%);
+  box-shadow: none;
+}
 
 .sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  border: 1px solid rgba(180, 165, 140, 0.28);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
   background: rgba(255, 252, 248, 0.88);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  color: rgba(70, 48, 28, 0.72);
+  font-size: 11px;
+  cursor: pointer;
   transition: all 0.28s ease;
   box-shadow: -2px 0 18px rgba(42, 34, 24, 0.08);
 }
-.sidebar-toggle:hover { color: rgba(70, 48, 28, 0.92); background: rgba(255, 252, 248, 0.96); border-color: rgba(180, 165, 140, 0.42); padding-right: 12px; }
-.sidebar-toggle.open { right: 420px; }
-.sidebar-toggle .toggle-label { writing-mode: vertical-rl; }
 
-.sidebar-close-btn:hover { background: rgba(255, 252, 248, 0.9); color: rgba(45, 38, 30, 0.8); border-color: rgba(180, 165, 140, 0.36); }
+.sidebar-toggle:hover {
+  color: rgba(70, 48, 28, 0.92);
+  background: rgba(255, 252, 248, 0.96);
+  border-color: rgba(180, 165, 140, 0.42);
+  padding-right: 12px;
+}
 
-/* ingredient tabs */
-.ing-tab:hover { background: var(--amber-soft); border-color: rgba(200, 150, 15, 0.3); }
+.sidebar-toggle.open {
+  right: 420px;
+}
+
+@media (max-width: 900px) {
+  .spread-route-caption {
+    width: min(430px, calc(100vw - 48px));
+  }
+  .sidebar-toggle.open {
+    right: min(420px, calc(100vw - 32px));
+  }
+}
+
+.sidebar-toggle .toggle-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sidebar-toggle .toggle-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl;
+}
+
+.sidebar-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(180, 165, 140, 0.22);
+  border-radius: 50%;
+  background: rgba(255, 252, 248, 0.6);
+  color: rgba(87, 78, 68, 0.6);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+
+.sidebar-close-btn:hover {
+  background: rgba(255, 252, 248, 0.9);
+  color: rgba(45, 38, 30, 0.8);
+  border-color: rgba(180, 165, 140, 0.36);
+}
+
+.sidebar-header {
+  position: relative;
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.ingredient-selector {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.ing-tab {
+  padding: 5px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.ing-tab:hover {
+  background: var(--amber-soft);
+  border-color: rgba(200, 150, 15, 0.3);
+}
+
 .ing-tab.active {
   background: color-mix(in srgb, var(--ing-color, var(--amber)) 12%, transparent);
   border-color: var(--ing-color, var(--amber));
@@ -1867,27 +2086,202 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-/* ingredient image - color-mix backgrounds */
-.ingredient-image, .overview-emblem {
+.overview-tab {
+  --ing-color: #8b6a3e;
+}
+
+.ingredient-profile,
+.overview-profile {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.ingredient-image,
+.overview-emblem {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   background:
     radial-gradient(circle at 30% 22%, rgba(255,255,255,0.98), rgba(255,255,255,0.42) 30%, transparent 58%),
     color-mix(in srgb, var(--ing-color, #e5394e) 16%, #fff8ea);
   border: 1px solid color-mix(in srgb, var(--ing-color, #e5394e) 42%, rgba(180,165,140,0.24));
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.64), 0 16px 34px rgba(70, 48, 28, 0.15);
 }
-.ingredient-image img { width: 94%; height: 94%; object-fit: contain; filter: drop-shadow(0 5px 9px rgba(52, 35, 20, 0.26)); }
-.overview-emblem img { width: 42px; height: 42px; object-fit: contain; margin-left: -16px; filter: drop-shadow(0 4px 10px rgba(70,48,28,0.18)); }
-.overview-emblem img:first-child { margin-left: 0; }
 
-/* overview cards */
-.overview-card { transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition), background var(--transition); }
+.ingredient-image img {
+  width: 94%;
+  height: 94%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 9px rgba(52, 35, 20, 0.26));
+}
+
+.overview-emblem img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  margin-left: -16px;
+  filter: drop-shadow(0 4px 10px rgba(70,48,28,0.18));
+}
+
+.overview-emblem img:first-child {
+  margin-left: 0;
+}
+
+.ingredient-image-fallback {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  color: var(--ing-color, #e5394e);
+}
+
+.ingredient-title {
+  min-width: 0;
+}
+
+.ing-name {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.overview-name {
+  color: rgba(70, 48, 28, 0.9);
+}
+
+.ing-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+
+.ing-species {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.specimen-record {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 8px 10px;
+  align-items: baseline;
+  padding: 10px 0;
+  margin-bottom: 8px;
+  border-top: 1px solid rgba(180, 165, 140, 0.22);
+  border-bottom: 1px solid rgba(180, 165, 140, 0.22);
+}
+
+.specimen-record span {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.specimen-record strong {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(28,25,23,0.78);
+}
+
+.ing-summary {
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--text-mid);
+  font-weight: 300;
+  letter-spacing: 0.03em;
+}
+
+.timeline-section,
+.overview-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px 8px;
+}
+
+.section-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.route-fit-btn {
+  border: 1px solid rgba(180, 165, 140, 0.32);
+  border-radius: 16px;
+  padding: 5px 12px;
+  background: rgba(255,252,248,0.56);
+  color: rgba(58, 42, 24, 0.74);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.route-fit-btn:hover {
+  color: var(--text);
+  border-color: rgba(120, 93, 62, 0.36);
+  background: rgba(255,252,248,0.86);
+}
+
+.ingredient-overview-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.overview-card {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 13px;
+  align-items: center;
+  text-align: left;
+  border: 1px solid rgba(180, 165, 140, 0.22);
+  background: rgba(255,252,248,0.58);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition), background var(--transition);
+}
+
 .overview-card:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--ing-color, #c9a646) 42%, rgba(180,165,140,0.22));
   background: rgba(255,252,248,0.82);
   box-shadow: 0 14px 30px rgba(70, 48, 28, 0.09);
 }
+
 .overview-card-image {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background:
     radial-gradient(circle at 35% 25%, rgba(255,255,255,0.9), transparent 58%),
     color-mix(in srgb, var(--ing-color, #c9a646) 18%, #fff8ea);
@@ -1895,38 +2289,309 @@ onUnmounted(() => {
     inset 0 0 0 1px color-mix(in srgb, var(--ing-color, #c9a646) 38%, transparent),
     0 8px 18px rgba(70, 48, 28, 0.12);
 }
-.overview-card-image img { width: 84%; height: 84%; object-fit: contain; filter: drop-shadow(0 4px 7px rgba(52, 35, 20, 0.24)); }
-.overview-card-title { color: color-mix(in srgb, var(--ing-color, #9b6a2f) 82%, #2e241a); }
-.overview-card-summary { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* route-fit button hover */
-.route-fit-btn:hover { color: var(--text); border-color: rgba(120, 93, 62, 0.36); background: rgba(255,252,248,0.86); }
+.overview-card-image img {
+  width: 84%;
+  height: 84%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 7px rgba(52, 35, 20, 0.24));
+}
 
-/* event cards */
-.event-card.duplicate { opacity: 0.63; }
-.event-card:hover, .event-card.active { opacity: 1; }
+.overview-card-body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.overview-card-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: color-mix(in srgb, var(--ing-color, #9b6a2f) 82%, #2e241a);
+}
+
+.overview-card-meta {
+  font-size: 11px;
+  color: rgba(87,83,78,0.62);
+}
+
+.overview-card-summary {
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(58, 50, 42, 0.76);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.event-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+  scroll-behavior: smooth;
+}
+
+.event-card {
+  position: relative;
+  cursor: pointer;
+  opacity: 0.84;
+  transition: opacity var(--transition);
+}
+
+.event-card.duplicate {
+  opacity: 0.63;
+}
+
+.event-card:hover,
+.event-card.active {
+  opacity: 1;
+}
+
+.event-card-inner {
+  display: flex;
+  gap: 14px;
+  padding: 10px 0;
+  border-radius: 8px;
+  transition: background var(--transition), padding var(--transition), box-shadow var(--transition);
+}
+
 .event-card.active .event-card-inner,
-.event-card:hover .event-card-inner { padding: 10px 12px; background: rgba(255,252,248,0.66); box-shadow: inset 0 0 0 1px rgba(180,165,140,0.18); }
+.event-card:hover .event-card-inner {
+  padding: 10px 12px;
+  background: rgba(255,252,248,0.66);
+  box-shadow: inset 0 0 0 1px rgba(180,165,140,0.18);
+}
+
+.event-left-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 24px;
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+
 .event-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   background: color-mix(in srgb, var(--ing-color, var(--amber)) 13%, #fff8ea);
   color: var(--ing-color, var(--amber));
+  flex-shrink: 0;
   transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--ing-color, var(--amber)) 12%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--ing-color, var(--amber)) 38%, transparent);
+  overflow: hidden;
 }
-.event-dot img { width: 90%; height: 90%; object-fit: contain; }
-.event-card.active .event-dot { box-shadow: 0 0 0 6px color-mix(in srgb, var(--ing-color, var(--amber)) 20%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--ing-color, var(--amber)) 48%, transparent); }
+
+.event-dot img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+}
+
+.event-card.active .event-dot {
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ing-color, var(--amber)) 20%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--ing-color, var(--amber)) 48%, transparent);
+}
+
+.event-line {
+  width: 1px;
+  flex: 1;
+  background: var(--glass-border);
+  margin-top: 5px;
+}
+
+.event-content {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 8px;
+}
+
+.event-top-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.event-year {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.event-dynasty {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.event-location {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.event-type-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 8px;
+  border-radius: 8px;
+  border: 1px solid;
+  margin-top: 6px;
+  letter-spacing: 0.06em;
+}
+
+.event-map-note {
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(120, 93, 62, 0.08);
+  color: rgba(87,83,78,0.68);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.event-names {
+  margin-top: 6px;
+  color: rgba(87,83,78,0.68);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.event-route {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.route-arrow {
+  font-size: 13px;
+}
+
+.event-notes {
+  margin: 7px 0 0;
+  color: rgba(45,38,30,0.78);
+  font-size: 12px;
+  line-height: 1.75;
+  font-weight: 300;
+}
+
+.event-source {
+  margin-top: 6px;
+  color: rgba(87,83,78,0.56);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+:deep(.spread-image-marker) {
+  width: var(--marker-size, 32px);
+  height: var(--marker-size, 32px);
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  transform: translateZ(0);
+  transition: width 160ms ease, height 160ms ease, filter 160ms ease, transform 160ms ease;
+}
+
+:deep(.spread-image-marker img) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 5px 7px rgba(52, 35, 20, 0.26));
+}
+
+:deep(.spread-image-marker.origin) {
+  background: transparent;
+}
+
+:deep(.spread-image-marker.selected),
+:deep(.spread-image-marker:hover) {
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ing-color, #c9a646) 54%, transparent));
+  transform: translateZ(0) scale(1.08);
+}
 
 @media (max-width: 900px) {
-  .spread-sidebar { width: 100%; height: 48vh; top: auto; bottom: 0; border-left: none; border-top: 1px solid var(--glass-border); border-radius: 16px 16px 0 0; transform: translateY(100%); }
-  .spread-sidebar.collapsed { transform: translateY(100%); box-shadow: none; }
-  .spread-sidebar:not(.collapsed) { transform: translateY(0); }
-  .sidebar-toggle { top: auto; bottom: 16px; right: 16px; flex-direction: row; padding: 10px 16px; border: 1px solid rgba(180, 165, 140, 0.28); border-radius: 20px; }
-  .sidebar-toggle.open { right: 16px; bottom: calc(48vh + 16px); }
-  .sidebar-toggle .toggle-label { writing-mode: horizontal-tb; }
-  :deep(.maplibregl-ctrl-bottom-right) { right: 16px; bottom: 76px; }
-  .spread-page.sidebar-open :deep(.maplibregl-ctrl-bottom-right) { right: 16px; bottom: calc(48vh + 72px); }
-  .spread-route-caption { display: none; }
-  .map-overlay-info { top: calc(var(--navbar-h) + 14px); left: 14px; right: 14px; }
-  .overlay-year { font-size: 28px; }
+  .spread-vignette {
+    right: 0;
+  }
+
+  .spread-sidebar {
+    width: 100%;
+    height: 48vh;
+    top: auto;
+    bottom: 0;
+    border-left: none;
+    border-top: 1px solid var(--glass-border);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+  }
+
+  .spread-sidebar.collapsed {
+    transform: translateY(100%);
+    box-shadow: none;
+  }
+
+  .spread-sidebar:not(.collapsed) {
+    transform: translateY(0);
+  }
+
+  .sidebar-toggle {
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+    flex-direction: row;
+    padding: 10px 16px;
+    border: 1px solid rgba(180, 165, 140, 0.28);
+    border-radius: 20px;
+  }
+
+  .sidebar-toggle.open {
+    right: 16px;
+    bottom: calc(48vh + 16px);
+  }
+
+  .sidebar-toggle .toggle-label {
+    writing-mode: horizontal-tb;
+  }
+
+  :deep(.maplibregl-ctrl-bottom-right) {
+    right: 16px;
+    bottom: 76px;
+  }
+
+  .spread-page.sidebar-open :deep(.maplibregl-ctrl-bottom-right) {
+    right: 16px;
+    bottom: calc(48vh + 72px);
+  }
+
+  .spread-route-caption {
+    display: none;
+  }
+
+  .map-overlay-info {
+    top: calc(var(--navbar-h) + 14px);
+    left: 14px;
+    right: 14px;
+  }
+
+  .overlay-year {
+    font-size: 28px;
+  }
 }
 </style>

@@ -1,9 +1,13 @@
-import os
 from pathlib import Path
+import os
+
+from dotenv import load_dotenv
 
 BASE_DIR     = Path(__file__).parent
 PROJECT_DIR  = BASE_DIR.parent
 DATA_DIR     = PROJECT_DIR / "data"
+
+load_dotenv(PROJECT_DIR / ".env")
 
 # Raster
 RASTER_ZIP   = DATA_DIR / "HYP_HR_SR_W_DR.zip"
@@ -11,7 +15,6 @@ RASTER_ZIP_ENTRY = "HYP_HR_SR_W_DR.tif"
 EXTRACTED_DIR = DATA_DIR / "extracted"
 RASTER_COG    = EXTRACTED_DIR / "HYP_HR_SR_W_DR_cog.tif"
 RASTER_TIF    = RASTER_COG   # COG with internal overviews — fast tile rendering
-MBTILES_PATH  = DATA_DIR / "tiles" / "hyp.mbtiles"  # Pre-sliced MBTiles — even faster than COG
 
 # Vector ZIPs
 PHYSICAL_ZIP = DATA_DIR / "10m_physical.zip"
@@ -23,19 +26,24 @@ TEOW_WGS84   = EXTRACTED_DIR / "wwf_terr_ecos_wgs84.shp"
 TEOW_MERGED  = EXTRACTED_DIR / "wwf_terr_ecos_merged.shp"
 
 # Tile cache
-TILE_CACHE_SIZE = int(os.getenv("TILE_CACHE_SIZE", "2048"))
+TILE_CACHE_SIZE = 512
 TILE_SIZE = int(os.getenv("TILE_SIZE", "256"))
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
+# Auth
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRE_MINUTES = 60 * 24  # 24 hours
+JWT_EXPIRE_MINUTES = 60 * 24
 
 # CORS origins (Vite dev + production)
 PORT = 8001
 
 CORS_ORIGINS = [
-    "http://localhost:3002", "http://127.0.0.1:3002",  # Vite dev
+    "http://localhost:5173", "http://127.0.0.1:5173",  # Vite dev
     "http://localhost:3001", "http://127.0.0.1:3001",  # Express production
     "http://localhost:4173", "http://127.0.0.1:4173",  # Vite preview
 ]
+
+# DeepSeek
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro")

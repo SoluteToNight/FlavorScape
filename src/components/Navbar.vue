@@ -121,7 +121,7 @@ const authStore = useAuthStore()
 
 const isHome = computed(() => route.name === 'home')
 const isMap  = computed(() => route.name === 'map')
-const isProduct = computed(() => ['brand', 'spread', 'marketing', 'archive', 'studio'].includes(route.name))
+const isProduct = computed(() => ['brand', 'spread', 'marketing', 'archive', 'studio', 'import'].includes(route.name))
 
 const navItems = [
   { name: 'studio',    path: '/studio',    label: '创作工作台' },
@@ -129,6 +129,7 @@ const navItems = [
   { name: 'brand',     path: '/brand',     label: '智慧大屏' },
   { name: 'marketing', path: '/marketing', label: '营销海报' },
   { name: 'archive',   path: '/archive',   label: '实证白皮书' },
+  { name: 'import',    path: '/import',    label: '资产导入' },
   { name: 'spread',    path: '/spread',    label: '传播图谱' },
   { name: 'map',       path: '/map',       label: '风味底图' },
 ]

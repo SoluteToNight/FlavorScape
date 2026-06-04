@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full relative overflow-hidden">
+  <div class="app-root">
     <Navbar />
     <RouterView v-slot="{ Component }">
       <Transition name="page" mode="out-in">
@@ -22,3 +22,12 @@ onMounted(() => {
   authStore.init()
 })
 </script>
+
+<style scoped>
+.app-root {
+  width: 100%;
+  min-height: 100%;
+  position: relative;
+  overflow-x: hidden;
+}
+</style>

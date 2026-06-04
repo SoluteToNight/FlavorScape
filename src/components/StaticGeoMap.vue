@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full h-full min-w-0 min-h-0 grid place-items-center overflow-hidden contain-[layout_paint]">
-    <svg viewBox="-15 -15 350 350" width="100%" height="100%" class="block w-full h-full max-w-full max-h-full overflow-visible text-[var(--t-primary)]">
+  <div class="static-geo-map">
+    <svg viewBox="-15 -15 350 350" width="100%" height="100%" class="carto-svg-viewport">
       <g class="carto-grid-mesh" opacity="0.15">
         <line v-for="n in 5" :key="'h-'+n" x1="0" :y1="n * 60" x2="320" :y2="n * 60" stroke="currentColor" stroke-width="0.5" />
         <line v-for="n in 5" :key="'v-'+n" :x1="n * 60" y1="0" :x2="n * 60" y2="320" stroke="currentColor" stroke-width="0.5" />
@@ -16,8 +16,8 @@
 
       <path v-if="curvedPath" :d="curvedPath" class="vector-flow-arc" />
 
-      <g v-for="(node, index) in projectedNodes" :key="index" :transform="'translate(' + node.x + ',' + node.y + ')'">
-        <circle v-if="index === 0" r="7" class="origin-target-halo" />
+      <g v-for="(node, i) in projectedNodes" :key="i" :transform="'translate(' + node.x + ',' + node.y + ')'">
+        <circle v-if="i === 0" r="7" class="origin-target-halo" />
         <circle r="3" class="node-core-dot" />
         <text y="-8" class="node-micro-code">{{ node.code }}</text>
       </g>
@@ -56,27 +56,26 @@ const curvedPath = computed(() => {
   return projectedNodes.value.map((node, index) => {
     if (index === 0) return `M ${node.x},${node.y}`
     const prev = projectedNodes.value[index - 1]
-    // 按节点间距缩放贝塞尔曲线偏移量，避免近距离节点曲线过度扭曲
-    const dx = node.x - prev.x
-    const dy = node.y - prev.y
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1
-    const scale = Math.min(1.5, Math.max(0.4, dist / 80))
-    const cx = (prev.x + node.x) / 2 - 12 * scale
-    const cy = (prev.y + node.y) / 2 - 20 * scale
+    const cx = (prev.x + node.x) / 2 - 12
+    const cy = (prev.y + node.y) / 2 - 20
     return `Q ${cx},${cy} ${node.x},${node.y}`
   }).join(' ')
 })
 </script>
 
 <style scoped>
-/* ═══════════════════════════════════════════════════════════════
-   KEPT — SVG presentation attributes cannot be expressed
-   as Tailwind utilities: fill, stroke, stroke-width,
-   stroke-dasharray, text-anchor, filter: drop-shadow(),
-   dynamic CSS variable theming
-   ═══════════════════════════════════════════════════════════════ */
+.static-geo-map {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
 
-/* KEPT: SVG province fill/stroke — dynamic CSS variable theming */
+.carto-svg-viewport {
+  overflow: visible;
+  color: var(--t-primary);
+}
+
 .map-province-path {
   fill: var(--map-base-fill, rgba(40, 35, 30, 0.04));
   stroke: var(--map-base-stroke, rgba(0, 0, 0, 0.15));
@@ -84,15 +83,13 @@ const curvedPath = computed(() => {
   transition: all 0.4s ease;
 }
 
-/* KEPT: SVG active state — dynamic CSS vars + drop-shadow filter */
 .map-province-path.is-target-active {
   fill: var(--map-active-fill, var(--t-primary));
   stroke: var(--map-active-stroke, var(--t-accent));
   stroke-width: 1.4;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.06));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.06));
 }
 
-/* KEPT: SVG stroke presentation attributes */
 .vector-flow-arc {
   fill: none;
   stroke: var(--t-accent);
@@ -100,12 +97,10 @@ const curvedPath = computed(() => {
   stroke-dasharray: 4 3;
 }
 
-/* KEPT: SVG fill — dynamic CSS variable */
 .node-core-dot {
   fill: var(--t-accent);
 }
 
-/* KEPT: SVG stroke — dynamic CSS variable */
 .origin-target-halo {
   fill: none;
   stroke: var(--t-accent);
@@ -113,7 +108,6 @@ const curvedPath = computed(() => {
   opacity: 0.5;
 }
 
-/* KEPT: SVG text presentation attributes */
 .node-micro-code {
   fill: var(--t-text);
   font-size: 7px;

@@ -1,0 +1,14 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#F4F1E8"/>
+  <rect x="72" y="72" width="1056" height="756" rx="24" fill="#E8F2E3"/>
+  <path d="M780 132C894 216 958 357 925 489C890 628 748 731 582 731C427 731 289 640 247 506C205 372 271 222 397 132C503 56 676 55 780 132Z" fill="#CFE6C5"/>
+  <path d="M593 238C711 238 806 334 806 452C806 570 711 665 593 665C475 665 379 570 379 452C379 334 475 238 593 238Z" fill="#9C6B3E"/>
+  <path d="M596 279C690 279 765 355 765 449C765 543 690 619 596 619C502 619 426 543 426 449C426 355 502 279 596 279Z" fill="#F7F1E4"/>
+  <path d="M594 329C663 329 719 385 719 454C719 523 663 579 594 579C525 579 469 523 469 454C469 385 525 329 594 329Z" fill="#FFFDF5"/>
+  <path d="M405 580C366 537 348 481 355 423C362 362 394 309 446 276" stroke="#36563B" stroke-width="22" stroke-linecap="round"/>
+  <path d="M774 291C825 337 850 401 840 469C831 532 793 586 737 618" stroke="#36563B" stroke-width="22" stroke-linecap="round"/>
+  <path d="M541 173C515 108 472 73 402 53C512 45 584 84 622 164C571 139 562 143 541 173Z" fill="#5F8C57"/>
+  <path d="M638 166C673 85 743 53 851 60C779 84 735 124 707 180C681 162 664 159 638 166Z" fill="#466F48"/>
+  <text x="600" y="778" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, Arial, sans-serif" font-size="44" font-weight="700" fill="#29442F">文昌生椰</text>
+  <text x="600" y="824" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" letter-spacing="6" fill="#6B7B65">WENCHANG COCONUT</text>
+</svg>

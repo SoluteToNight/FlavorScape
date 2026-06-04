@@ -1,41 +1,39 @@
 """
-寻味地理 — FastAPI 后端
-Usage:
-  cd Food
-  uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+FlavorScape FastAPI backend.
+
+Dev command:
+  .venv/Scripts/python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8001 --reload
 """
 
+import asyncio
+import logging
 import os
-import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
+from time import perf_counter
 
-# Fix PROJ library conflict: PostgreSQL 16 ships an old proj.db that breaks rasterio.
-# Force rasterio to use its own bundled PROJ data directory.
+# PostgreSQL can ship an old proj.db that conflicts with rasterio. Prefer the
+# rasterio-bundled PROJ data when it exists in the local virtual environment.
 _venv_site = Path(__file__).resolve().parents[1] / ".venv" / "Lib" / "site-packages"
 _proj_data = _venv_site / "rasterio" / "proj_data"
 if _proj_data.exists():
     os.environ["PROJ_LIB"] = str(_proj_data)
-
-import logging
-import asyncio
-from contextlib import asynccontextmanager
-from time import perf_counter
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 from .config import CORS_ORIGINS
-from .db.connection import init_pool, close_pool
-from .routers import api, tiles
-from .routers.ingredient_spread import router as ingredient_router
+from .db.connection import close_pool, init_pool
+from .routers import api, assets, tiles
 from .routers.auth import router as auth_router
+from .routers.ingredient_spread import router as ingredient_router
 from .routers.studio import router as studio_router
-from .startup import run_startup, load_ecoregions_from_db
+from .startup import load_ecoregions_from_db, run_startup
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s  %(levelname)-7s  %(name)s — %(message)s",
+    format="%(asctime)s  %(levelname)-7s  %(name)s - %(message)s",
     datefmt="%H:%M:%S",
 )
 log = logging.getLogger("main")
@@ -57,26 +55,29 @@ def _timed_sync(label: str, fn):
     return result
 
 
+def _ensure_user_tables():
+    from backend.db.auth_queries import create_user_table
+    from backend.db.connection import get_conn
+    from backend.db.studio_queries import create_studio_project_table
+
+    with get_conn() as conn:
+        create_user_table(conn)
+        create_studio_project_table(conn)
+        conn.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("═" * 60)
-    log.info("  寻味地理 API  —  starting up")
-    log.info("═" * 60)
-    # Run blocking startup (extract TIF + load shapefiles) in thread pool
+    log.info("=" * 60)
+    log.info("FlavorScape API starting up")
+    log.info("=" * 60)
+
     loop = asyncio.get_running_loop()
     await _timed_async("startup data preparation", loop.run_in_executor(None, run_startup))
     _timed_sync("PostgreSQL pool init", init_pool)
-    # 确保认证表存在（幂等建表，首次启动时创建 app_user）
-    from backend.db.connection import get_conn
-    from backend.db.auth_queries import create_user_table
-    from backend.db.studio_queries import create_studio_project_table
-    def _ensure_user_tables():
-        with get_conn() as conn:
-            create_user_table(conn)
-            create_studio_project_table(conn)
-            conn.commit()
     _timed_sync("user tables check", _ensure_user_tables)
     _timed_sync("ecoregions load", load_ecoregions_from_db)
+
     log.info("PostgreSQL connection pool initialized.")
     yield
     close_pool()
@@ -84,26 +85,25 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="寻味地理 API",
-    description="风味博物志后端：业务数据 + Natural Earth 底图瓦片 + WWF TEOW 生态区边界",
+    title="FlavorScape API",
+    description="FlavorScape backend: business data, raster tiles, vector layers, auth, and Studio APIs.",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
-# ── Middleware ─────────────────────────────────────────────────────────────────
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(api.router)
+app.include_router(assets.router)
 app.include_router(tiles.router)
 app.include_router(ingredient_router)
 app.include_router(auth_router)
@@ -112,8 +112,9 @@ app.include_router(studio_router)
 
 @app.get("/health")
 async def health():
-    from .startup import vector_data
     from .config import RASTER_TIF
+    from .startup import vector_data
+
     return {
         "status": "ok",
         "raster_ready": RASTER_TIF.exists(),
