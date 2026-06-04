@@ -1,3 +1,9 @@
+<!--
+  NOTE: 本文件模板中的颜色（如 text-[#666]、text-[#888] 等）
+  直接使用原始十六进制值而非项目设计令牌（text-mid、text-muted）。
+  这是档案页的视觉差异化设计，独立于全局令牌体系。
+  修改项目整体色调时，本页需单独评估。
+-->
 <template>
   <main class="archive-atlas-page fixed top-navbar inset-x-0 bottom-0 grid grid-cols-[320px_1fr_300px] overflow-hidden" :style="cssVars">
     <!-- 左侧：环境与气候基因 -->

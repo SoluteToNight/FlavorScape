@@ -32,7 +32,7 @@
           </p>
         </div>
 
-        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5" style="margin-top:16px">食材基因</div>
+        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5 mt-4">食材基因</div>
         <div class="panel-card rounded-[18px] border border-[rgba(180,165,140,0.16)]">
           <div class="chips flex flex-wrap gap-2 p-3">
             <span
@@ -50,7 +50,7 @@
         </div>
 
         <template v-if="siblings.length">
-          <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5" style="margin-top:16px">同族成品 · {{ selectedNode.dish_family }}</div>
+          <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5 mt-4">同族成品 · {{ selectedNode.dish_family }}</div>
           <div class="panel-card rounded-[18px] border border-[rgba(180,165,140,0.16)]">
             <div class="chips flex flex-wrap gap-2 p-3">
               <span
@@ -75,16 +75,16 @@
 
         <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5">生境概况</div>
         <div class="eco-biome-badge inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[20px] border bg-[rgba(200,180,150,0.08)] mb-0.5" :style="{ borderColor: biomePalette[selectedEcozone.biome] || biomePaletteFallback }">
-          <span class="font-['Inter',sans-serif] text-xs text-text-muted">{{ selectedEcozone.eco_code }}</span>
+          <span class="font-sans text-xs text-text-muted">{{ selectedEcozone.eco_code }}</span>
           <span class="text-xs text-text-mid">{{ selectedEcozone.biome_cn || selectedEcozone.biome }}</span>
         </div>
 
-        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5" style="margin-top:16px">气候特征（模拟示意）</div>
+        <div class="section-label text-2xs text-text-muted tracking-[0.12em] uppercase mb-2.5 mt-4">气候特征（模拟示意）</div>
         <div class="panel-card rounded-[18px] border border-[rgba(180,165,140,0.16)]">
           <div ref="climateEl" class="echart-climate w-full h-[130px] py-2.5 px-0" />
         </div>
 
-        <div v-if="selectedEcozone.realm" class="text-2xs text-text-muted tracking-[0.06em]" style="margin-top:16px">
+        <div v-if="selectedEcozone.realm" class="text-2xs text-text-muted tracking-[0.06em] mt-4">
           生物地理界：{{ selectedEcozone.realm }}
         </div>
         </div>

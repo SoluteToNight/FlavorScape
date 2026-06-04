@@ -4,11 +4,9 @@
  * DESIGN TOKENS — Synced with src/styles/global.css :root.
  * Update BOTH files when changing a token value.
  *
- * backgroundColor / borderColor 使用直接赋值而非 extend：
- * 因为 preflight: false（保留浏览器默认样式），同时设计系统只需要
- * 项目定义的语义色（glass、earth、leaf 等），标准 Tailwind 色板
- * 如 bg-white、bg-red-500 不在本项目的设计语言中，禁用它们可以
- * 避免非设计令牌的颜色意外混入。
+ * 所有自定义配置均放在 extend 下，追加到 Tailwind 默认值。
+ * preflight: false 保留了浏览器默认样式，自定义色板（glass、
+ * earth、leaf 等）通过 extend.colors 追加到标准色板之后。
  */
 
 export default {
