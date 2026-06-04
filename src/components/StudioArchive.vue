@@ -1,5 +1,5 @@
 <template>
-  <article class="archive-canvas" :style="{ transform: `scale(${scale})`, transformOrigin: 'top center' }">
+  <article class="archive-canvas" :style="{ transform: `scale(${scale})`, transformOrigin: 'top left' }">
     <header class="archive-head">
       <span>PROVENANCE DOSSIER</span>
       <h1>{{ archiveData.title }}</h1>

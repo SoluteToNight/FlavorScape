@@ -18,7 +18,7 @@ log = logging.getLogger("auth")
 
 
 async def get_current_user(
-    authorization: str = Header(..., description="Bearer <JWT token>"),
+    authorization: str | None = Header(None, description="Bearer <JWT token>"),
     conn=Depends(get_db),
 ) -> dict:
     """从 Authorization 头解析 JWT 并返回当前用户。
@@ -33,6 +33,8 @@ async def get_current_user(
             return {"ok": True, "data": user}
     """
     # ── 解析 Bearer token ──
+    if not authorization:
+        raise HTTPException(401, "缺少 Bearer token")
     scheme, _, token = authorization.partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise HTTPException(401, "缺少 Bearer token")

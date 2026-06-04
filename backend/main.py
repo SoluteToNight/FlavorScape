@@ -30,6 +30,7 @@ from .db.connection import init_pool, close_pool
 from .routers import api, tiles
 from .routers.ingredient_spread import router as ingredient_router
 from .routers.auth import router as auth_router
+from .routers.studio import router as studio_router
 from .startup import run_startup, load_ecoregions_from_db
 
 logging.basicConfig(
@@ -68,10 +69,13 @@ async def lifespan(app: FastAPI):
     # 确保认证表存在（幂等建表，首次启动时创建 app_user）
     from backend.db.connection import get_conn
     from backend.db.auth_queries import create_user_table
-    def _ensure_auth_table():
+    from backend.db.studio_queries import create_studio_project_table
+    def _ensure_user_tables():
         with get_conn() as conn:
             create_user_table(conn)
-    _timed_sync("auth table check", _ensure_auth_table)
+            create_studio_project_table(conn)
+            conn.commit()
+    _timed_sync("user tables check", _ensure_user_tables)
     _timed_sync("ecoregions load", load_ecoregions_from_db)
     log.info("PostgreSQL connection pool initialized.")
     yield
@@ -103,6 +107,7 @@ app.include_router(api.router)
 app.include_router(tiles.router)
 app.include_router(ingredient_router)
 app.include_router(auth_router)
+app.include_router(studio_router)
 
 
 @app.get("/health")

@@ -2,7 +2,7 @@
   <article
     class="marketing-poster relative"
     :class="[themeLayout, themeFont]"
-    :style="{ ...cssVars, transform: `scale(${scale})`, transformOrigin: 'top center' }"
+    :style="{ ...cssVars, transform: `scale(${scale})`, transformOrigin: 'top left' }"
   >
     <div class="canvas-hairline-frame" />
     <div class="poster-layout-container relative z-[5] flex flex-col h-full px-8 py-10 gap-8">

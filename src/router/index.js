@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
-  { path: '/studio', name: 'studio', component: () => import('../views/StudioView.vue') },
+  { path: '/studio', name: 'studio', component: () => import('../views/StudioView.vue'), meta: { requiresAuth: true } },
   { path: '/brand', name: 'brand', component: () => import('../views/GeoAtlasView.vue') }, // 智慧大屏 / 地理志
   { path: '/marketing', name: 'marketing', component: () => import('../views/MarketingView.vue') }, // 🌟 【新增】商业营销海报生成器
   { path: '/archive', name: 'archive', component: () => import('../views/ArchiveView.vue') },
@@ -32,7 +32,9 @@ router.beforeEach((to, _from) => {
   const token = localStorage.getItem('auth_token')
 
   // 需要登录的页面 → 未登录则重定向到登录页
-  if (to.meta.requiresAuth && !token) {
+  const needsAuth = to.meta.requiresAuth || (to.name === 'brand' && typeof to.query.project === 'string' && to.query.project)
+
+  if (needsAuth && !token) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 

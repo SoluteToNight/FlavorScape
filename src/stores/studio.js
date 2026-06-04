@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useProductCases } from '../composables/useProductCases'
+import { api } from '../utils/api.js'
 
-const STORAGE_KEY = 'xunwei-studio:v1'
+const UI_STORAGE_KEY = 'xunwei-studio:ui'
 const STORAGE_VERSION = 4
 const OUTPUT_TYPES = ['poster', 'archive', 'display']
 const DEFAULT_OUTPUT_TYPE = 'poster'
@@ -170,6 +171,8 @@ function normalizeProject(project, getById) {
     activeOutput: outputType,
     createdAt: project.createdAt || nowIso(),
     updatedAt: project.updatedAt || project.createdAt || nowIso(),
+    version: project.version || 1,
+    _localRevision: project._localRevision || 0,
     outputs: {
       poster: {
         ...normalizeOutput('poster', {
@@ -205,7 +208,12 @@ export const useStudioStore = defineStore('studio', () => {
   const projects = ref([])
   const activeProjectId = ref(null)
   const hydrated = ref(false)
+  const remoteLoaded = ref(false)
+  const loading = ref(false)
   const lastError = ref(null)
+  const syncStatus = ref('idle')
+  const lastSyncedAt = ref(null)
+  const saveTimers = new Map()
 
   const activeProject = computed(() =>
     projects.value.find(p => p.id === activeProjectId.value) || null
@@ -359,14 +367,13 @@ export const useStudioStore = defineStore('studio', () => {
     }
   })
 
-  function persist() {
+  function saveUiState() {
     const win = safeWindow()
     if (!win || !hydrated.value) return
     try {
-      win.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      win.localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({
         version: STORAGE_VERSION,
         activeProjectId: activeProjectId.value,
-        projects: projects.value,
       }))
       lastError.value = null
     } catch (e) {
@@ -383,19 +390,9 @@ export const useStudioStore = defineStore('studio', () => {
     }
 
     try {
-      const raw = win.localStorage.getItem(STORAGE_KEY)
-      if (!raw) {
-        hydrated.value = true
-        return
-      }
-      const parsed = JSON.parse(raw)
-      const list = Array.isArray(parsed.projects) ? parsed.projects : []
-      projects.value = list
-        .map(project => normalizeProject(project, getById))
-        .filter(Boolean)
-      activeProjectId.value = projects.value.some(p => p.id === parsed.activeProjectId)
-        ? parsed.activeProjectId
-        : projects.value[0]?.id || null
+      const ui = JSON.parse(win.localStorage.getItem(UI_STORAGE_KEY) || '{}')
+      activeProjectId.value = ui.activeProjectId || null
+
       lastError.value = null
     } catch (e) {
       lastError.value = e?.message || '无法读取本地项目'
@@ -412,12 +409,151 @@ export const useStudioStore = defineStore('studio', () => {
     if (project.outputs?.[type]) project.outputs[type].updatedAt = stamp
   }
 
+  function projectPayload(project) {
+    const payload = JSON.parse(JSON.stringify(project))
+    delete payload._localRevision
+    return payload
+  }
+
+  function applyServerProject(project) {
+    const normalized = normalizeProject(project, getById)
+    if (!normalized) return null
+    normalized.version = project.version || normalized.version || 1
+    const index = projects.value.findIndex(item => item.id === normalized.id)
+    if (index === -1) projects.value.unshift(normalized)
+    else projects.value[index] = normalized
+    lastSyncedAt.value = nowIso()
+    syncStatus.value = 'saved'
+    lastError.value = null
+    return normalized
+  }
+
+  function applyServerMetadata(id, serverProject) {
+    const project = projects.value.find(item => item.id === id)
+    if (!project) return null
+    project.version = serverProject.version || project.version || 1
+    project.createdAt = serverProject.createdAt || project.createdAt
+    project.updatedAt = serverProject.updatedAt || project.updatedAt
+    lastSyncedAt.value = nowIso()
+    syncStatus.value = 'saved'
+    lastError.value = null
+    return project
+  }
+
+  function markDirty(project) {
+    if (!project) return
+    project._localRevision = (project._localRevision || 0) + 1
+  }
+
+  function scheduleSave(project) {
+    if (!project?.id || !remoteLoaded.value) return
+    syncStatus.value = 'saving'
+    clearTimeout(saveTimers.get(project.id))
+    saveTimers.set(project.id, setTimeout(() => saveProject(project.id), 600))
+  }
+
+  async function saveProject(id) {
+    const project = projects.value.find(item => item.id === id)
+    if (!project?.version) return
+    const revisionAtSend = project._localRevision || 0
+    syncStatus.value = 'saving'
+    try {
+      const res = await api(`/api/studio/projects/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          version: project.version,
+          project: projectPayload(project),
+        }),
+      })
+      if (!res.ok) throw new Error(res.error || '项目保存失败')
+      const current = projects.value.find(item => item.id === id)
+      if (current && (current._localRevision || 0) !== revisionAtSend) {
+        applyServerMetadata(id, res.data.project)
+        scheduleSave(current)
+      } else {
+        applyServerProject(res.data.project)
+      }
+    } catch (e) {
+      syncStatus.value = 'error'
+      lastError.value = e?.message || '项目保存失败'
+    }
+  }
+
+  async function loadRemoteProjects() {
+    if (loading.value) return
+    loading.value = true
+    syncStatus.value = 'loading'
+    try {
+      const res = await api('/api/studio/projects')
+      if (!res.ok) throw new Error(res.error || '项目加载失败')
+      projects.value = Array.isArray(res.data.projects)
+        ? res.data.projects.map(project => normalizeProject(project, getById)).filter(Boolean).map(project => {
+          const source = res.data.projects.find(item => item.id === project.id)
+          return { ...project, version: source?.version || 1 }
+        })
+        : []
+      activeProjectId.value = projects.value.some(project => project.id === activeProjectId.value)
+        ? activeProjectId.value
+        : projects.value[0]?.id || null
+      remoteLoaded.value = true
+      syncStatus.value = 'saved'
+      lastSyncedAt.value = nowIso()
+      lastError.value = null
+    } catch (e) {
+      syncStatus.value = 'error'
+      lastError.value = e?.message || '项目加载失败'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadProject(id) {
+    if (!id) return null
+    const existing = projects.value.find(project => project.id === id)
+    if (existing) {
+      remoteLoaded.value = true
+      activeProjectId.value = id
+      return existing
+    }
+    try {
+      const res = await api(`/api/studio/projects/${encodeURIComponent(id)}`)
+      if (!res.ok) throw new Error(res.error || '项目加载失败')
+      const project = applyServerProject(res.data.project)
+      remoteLoaded.value = true
+      if (project) activeProjectId.value = project.id
+      return project
+    } catch (e) {
+      lastError.value = e?.message || '项目加载失败'
+      syncStatus.value = 'error'
+      return null
+    }
+  }
+
   function createProject(productId, options = {}) {
     const product = getById(productId)
     if (!product) return null
     const project = createProjectState(product, options.initialOutput)
+    project._localRevision = 0
     projects.value.unshift(project)
     activeProjectId.value = project.id
+    const revisionAtSend = project._localRevision || 0
+    syncStatus.value = 'saving'
+    api('/api/studio/projects', {
+      method: 'POST',
+      body: JSON.stringify({ project: projectPayload(project) }),
+    }).then(res => {
+      if (!res.ok) throw new Error(res.error || '项目创建失败')
+      const current = projects.value.find(item => item.id === project.id)
+      if (current && (current._localRevision || 0) !== revisionAtSend) {
+        applyServerMetadata(project.id, res.data.project)
+        scheduleSave(current)
+      } else {
+        applyServerProject(res.data.project)
+      }
+    }).catch(e => {
+      syncStatus.value = 'error'
+      lastError.value = e?.message || '项目创建失败'
+    })
     return project.id
   }
 
@@ -431,6 +567,9 @@ export const useStudioStore = defineStore('studio', () => {
     if (project.outputType && project.outputType !== type) return
     project.outputType = type
     project.activeOutput = type
+    project.updatedAt = nowIso()
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function chooseOutput(type) {
@@ -441,6 +580,8 @@ export const useStudioStore = defineStore('studio', () => {
     project.outputType = type
     project.activeOutput = type
     project.updatedAt = nowIso()
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function updateContentModule(type, key, enabled) {
@@ -458,6 +599,8 @@ export const useStudioStore = defineStore('studio', () => {
     }
     output.contentConfirmed = false
     project.updatedAt = nowIso()
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function confirmContent(type) {
@@ -470,6 +613,8 @@ export const useStudioStore = defineStore('studio', () => {
     }
     output.contentConfirmed = true
     touchOutput(project, type)
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function renameProject(id, name) {
@@ -478,13 +623,22 @@ export const useStudioStore = defineStore('studio', () => {
     if (!project || !next) return
     project.name = next.slice(0, 40)
     project.updatedAt = nowIso()
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function deleteProject(id) {
     const index = projects.value.findIndex(p => p.id === id)
     if (index === -1) return
+    const project = projects.value[index]
     projects.value.splice(index, 1)
     if (activeProjectId.value === id) activeProjectId.value = projects.value[0]?.id || null
+    if (project.version) {
+      api(`/api/studio/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(e => {
+        lastError.value = e?.message || '项目删除失败'
+        syncStatus.value = 'error'
+      })
+    }
   }
 
   function duplicateProject(id) {
@@ -496,9 +650,29 @@ export const useStudioStore = defineStore('studio', () => {
     clone.name = `${source.name} 副本`.slice(0, 40)
     clone.createdAt = stamp
     clone.updatedAt = stamp
+    clone.version = null
+    clone._localRevision = 0
     clone.exports = []
     projects.value.unshift(clone)
     activeProjectId.value = clone.id
+    const revisionAtSend = clone._localRevision || 0
+    syncStatus.value = 'saving'
+    api('/api/studio/projects', {
+      method: 'POST',
+      body: JSON.stringify({ project: projectPayload(clone) }),
+    }).then(res => {
+      if (!res.ok) throw new Error(res.error || '项目复制失败')
+      const current = projects.value.find(item => item.id === clone.id)
+      if (current && (current._localRevision || 0) !== revisionAtSend) {
+        applyServerMetadata(clone.id, res.data.project)
+        scheduleSave(current)
+      } else {
+        applyServerProject(res.data.project)
+      }
+    }).catch(e => {
+      syncStatus.value = 'error'
+      lastError.value = e?.message || '项目复制失败'
+    })
     return clone.id
   }
 
@@ -507,6 +681,8 @@ export const useStudioStore = defineStore('studio', () => {
     if (!project || !project.outputs?.[type] || !(field in project.outputs[type])) return
     project.outputs[type][field] = value
     touchOutput(project, type)
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function resetOutputField(type, field) {
@@ -516,6 +692,8 @@ export const useStudioStore = defineStore('studio', () => {
     const defaults = createOutputDefaults(product)[type]
     project.outputs[type][field] = defaults[field]
     touchOutput(project, type)
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function resetOutput(type) {
@@ -525,6 +703,8 @@ export const useStudioStore = defineStore('studio', () => {
     project.outputs[type] = createOutputDefaults(product)[type]
     if (activeOutput.value === type) project.outputs[type].contentConfirmed = false
     project.updatedAt = nowIso()
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function updatePosterField(field, value) {
@@ -553,6 +733,8 @@ export const useStudioStore = defineStore('studio', () => {
     project.exports.unshift(record)
     project.exports = project.exports.slice(0, 20)
     project.updatedAt = record.createdAt
+    markDirty(project)
+    scheduleSave(project)
   }
 
   function projectSnapshot() {
@@ -575,19 +757,17 @@ export const useStudioStore = defineStore('studio', () => {
   }
 
   hydrate()
-  let persistTimer = null
-  function debouncedPersist() {
-    if (!hydrated.value) return
-    clearTimeout(persistTimer)
-    persistTimer = setTimeout(() => persist(), 300)
-  }
-  watch([projects, activeProjectId], debouncedPersist, { deep: true })
+  watch(activeProjectId, () => saveUiState())
 
   return {
     projects,
     activeProjectId,
     hydrated,
+    remoteLoaded,
+    loading,
     lastError,
+    syncStatus,
+    lastSyncedAt,
     activeProject,
     activeOutput,
     activeContentConfirmed,
@@ -598,6 +778,9 @@ export const useStudioStore = defineStore('studio', () => {
     mergedPosterData,
     mergedArchiveData,
     mergedDisplayData,
+    loadRemoteProjects,
+    loadProject,
+    saveProject,
     createProject,
     switchProject,
     setActiveOutput,

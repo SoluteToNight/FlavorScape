@@ -1,6 +1,14 @@
 <template>
   <main class="studio-shell fixed top-navbar inset-x-0 bottom-0 bg-bg">
-    <section v-if="showCreationFlow" class="creation-shell">
+    <section v-if="waitingForProjects" class="creation-shell studio-loading">
+      <div>
+        <span class="ui-kicker">Xunwei Studio</span>
+        <h1>正在加载你的工作台</h1>
+        <p>项目、编辑状态和交付记录将从当前登录账号同步。</p>
+      </div>
+    </section>
+
+    <section v-else-if="showCreationFlow" class="creation-shell">
       <header class="creation-header">
         <div>
           <span class="ui-kicker">Xunwei Studio</span>
@@ -314,6 +322,7 @@ const activeProject = computed(() => store.activeProject)
 const activeProductName = computed(() => store.activeProductCase?.name || '未选择产品')
 const activeOutput = computed(() => store.activeOutput)
 const activeContentConfirmed = computed(() => store.activeContentConfirmed)
+const waitingForProjects = computed(() => store.loading && !store.remoteLoaded)
 const posterData = computed(() => store.mergedPosterData)
 const archiveData = computed(() => store.mergedArchiveData)
 const displayData = computed(() => store.mergedDisplayData)
@@ -369,7 +378,7 @@ const zoomOptions = [
 const defaultPreviewScales = {
   poster: 0.72,
   archive: 0.61,
-  display: 0.61,
+  display: 0.54,
 }
 
 const outputFrames = {
@@ -411,11 +420,13 @@ const exportLayerStyle = computed(() => ({
 }))
 
 const saveStateLabel = computed(() => {
-  if (store.lastError) return `本地保存失败：${store.lastError}`
+  if (store.lastError) return `保存失败：${store.lastError}`
+  if (store.syncStatus === 'loading') return '正在加载'
+  if (store.syncStatus === 'saving') return '保存中'
   const value = activeProject.value?.updatedAt
-  if (!value) return '已保存到本地'
+  if (!value) return '已保存'
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '已保存到本地'
+  if (Number.isNaN(date.getTime())) return '已保存'
   return `已保存 ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
 })
 
@@ -563,7 +574,8 @@ async function ensureDisplayRoute() {
   await loadRoute(displayData.value.selectedRouteId)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await store.loadRemoteProjects()
   loadRoutes()
   ensureDisplayRoute()
   previewScale.value = defaultPreviewScales[activeOutput.value] || 0.72
@@ -607,6 +619,25 @@ watch(
     linear-gradient(90deg, rgba(32, 27, 22, 0.026) 1px, transparent 1px),
     #f4f1ea;
   background-size: 30px 30px;
+}
+
+.studio-loading {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.studio-loading h1 {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 850;
+}
+
+.studio-loading p {
+  margin: 10px 0 0;
+  color: var(--text-mid);
+  font-size: 13px;
 }
 
 .creation-header,
@@ -1257,6 +1288,10 @@ watch(
 
 .poster-scroll {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   display: grid;

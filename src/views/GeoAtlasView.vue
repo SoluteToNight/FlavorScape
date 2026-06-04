@@ -159,8 +159,9 @@ const studioRouteData = computed(() => getRoute(studioDisplayData.value?.selecte
 
 async function applyStudioProject() {
   const id = studioProjectId.value
-  if (!id || !studioStore.projects.some(project => project.id === id)) return
-  studioStore.switchProject(id)
+  if (!id) return
+  const project = await studioStore.loadProject(id)
+  if (!project) return
   await loadRoutes()
   const routeId = studioStore.mergedDisplayData?.selectedRouteId
   if (routeId) await loadRoute(routeId)

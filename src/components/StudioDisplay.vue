@@ -1,5 +1,5 @@
 <template>
-  <article class="display-canvas" :style="{ transform: `scale(${scale})`, transformOrigin: 'top center' }">
+  <article class="display-canvas" :style="{ transform: `scale(${scale})`, transformOrigin: 'top left' }">
     <div class="display-bg" />
     <header class="display-head">
       <div>
