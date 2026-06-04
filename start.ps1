@@ -178,7 +178,7 @@ if ($ready) {
 }
 
 # 8. Start the frontend in a new PowerShell window.
-Write-Step "Starting Vite frontend at http://127.0.0.1:3002"
+Write-Step "Starting Vite frontend at http://127.0.0.1:5173"
 $frontendCommand = "Set-Location -LiteralPath $quotedRoot; " +
     "Write-Host '  [frontend] FlavorScape Vite Dev' -ForegroundColor Cyan; " +
     "& $quotedNpmCmd run dev"
@@ -195,7 +195,7 @@ Write-Host ""
 Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
 Write-Ok "Startup sequence completed"
 Write-Host ""
-Write-Host "    Frontend: http://127.0.0.1:3002" -ForegroundColor White
+Write-Host "    Frontend: http://127.0.0.1:5173" -ForegroundColor White
 Write-Host "    Backend:  http://localhost:8001" -ForegroundColor White
 Write-Host "    API docs: http://localhost:8001/docs" -ForegroundColor White
 Write-Host ""

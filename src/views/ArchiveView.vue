@@ -108,8 +108,8 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
-import maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import { createMap, maplibregl, removeMap } from '../map/maplibre.js'
+import { createHypRasterStyle } from '../map/mapStyle.js'
 import chinaGeoJson from '../assets/china.json'
 import FlavorRadar from '../components/FlavorRadar.vue'
 
@@ -178,6 +178,16 @@ const provinceFeature = computed(() => chinaGeoJson.features.find(f => f.propert
 
 const climateChartEl = ref(null), heatChartEl = ref(null), standardRadarEl = ref(null), terrainMapEl = ref(null)
 let climateChart, heatChart, standardRadar, terrainMap, originMarker
+
+const TERRAIN_MAP_STYLE = createHypRasterStyle({
+  backgroundLayerId: 'bg',
+  backgroundColor: '#F4F3ED',
+  rasterPaint: {
+    'raster-opacity': 0.6,
+    'raster-saturation': -0.8,
+    'raster-contrast': 0.1,
+  },
+})
 
 const cssVars = computed(() => ({
   '--theme-main': dossier.value.color,
@@ -248,16 +258,9 @@ function renderCharts() {
 
 function initTerrainMap() {
   if (terrainMap) return
-  terrainMap = new maplibregl.Map({
+  terrainMap = createMap({
     container: terrainMapEl.value,
-    style: {
-      version: 8,
-      sources: { 'hyp-tiles': { type: 'raster', tiles: ['/tiles/raster/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 8 } },
-      layers: [
-        { id: 'bg', type: 'background', paint: { 'background-color': '#F4F3ED' } },
-        { id: 'hyp', type: 'raster', source: 'hyp-tiles', paint: { 'raster-opacity': 0.6, 'raster-saturation': -0.8, 'raster-contrast': 0.1 } }
-      ]
-    },
+    style: TERRAIN_MAP_STYLE,
     center: dossier.value.originPoint.coord, zoom: 6,
     interactive: true, dragRotate: false, pitchWithRotate: false
   })
@@ -298,7 +301,7 @@ onMounted(() => {
   window.addEventListener('resize', handleResize)
 })
 watch(activeId, () => { nextTick(() => { renderCharts(); updateMapData(); }) })
-onUnmounted(() => { window.removeEventListener('resize', handleResize); climateChart?.dispose(); heatChart?.dispose(); standardRadar?.dispose(); terrainMap?.remove(); })
+onUnmounted(() => { window.removeEventListener('resize', handleResize); climateChart?.dispose(); heatChart?.dispose(); standardRadar?.dispose(); removeMap(terrainMap); })
 </script>
 
 <style scoped>

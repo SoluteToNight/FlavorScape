@@ -4,7 +4,6 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import * as echarts from 'echarts'
 
 const props = defineProps({
   scores: { type: Array, required: true },
@@ -16,6 +15,14 @@ const props = defineProps({
 const dims = ['麻', '辣', '咸', '酸', '甜', '鲜']
 const chartEl = ref(null)
 let chart = null
+let echartsModule = null
+
+async function getEcharts() {
+  if (!echartsModule) {
+    echartsModule = await import('echarts')
+  }
+  return echartsModule
+}
 
 function buildOption() {
   return {
@@ -54,7 +61,8 @@ function buildOption() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const echarts = await getEcharts()
   chart = echarts.init(chartEl.value, null, { renderer: 'canvas' })
   chart.setOption(buildOption())
 })

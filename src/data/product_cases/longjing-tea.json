@@ -1,0 +1,38 @@
+{
+  "id": "longjing-tea",
+  "name": "龙井茶",
+  "category": "茶饮",
+  "province": "浙江省",
+  "heroImage": "/ingredients/originals/茶.png",
+  "origin": "杭州 · 西湖龙井核心产区",
+  "colors": { "primary": "#5E7B50", "accent": "#8B5E34" },
+  "marketing": {
+    "spatial": {
+      "nodes": [
+        { "short": "杭州", "coord": [120.15, 30.27], "desc": "狮峰山明前茶核心产区" },
+        { "short": "绍兴", "coord": [120.58, 30.03], "desc": "茶叶加工与集散中心" },
+        { "short": "上海", "coord": [121.38, 31.11], "desc": "长三角主销市场" }
+      ],
+      "evidence": [
+        { "label": "氨基酸含量", "value": "≥ 4.5%" },
+        { "label": "茶多酚", "value": "≥ 18%" },
+        { "label": "产地认证", "value": "地理标志保护" }
+      ]
+    },
+    "creative": {
+      "desc": { "default": "西湖龙井 · 狮峰山明前茶，色绿香郁味甘形美", "type": "text", "maxLength": 60 },
+      "poeticLine": { "default": "狮峰山下，一盏江南春。", "type": "text", "maxLength": 40 },
+      "narrative": { "default": "源自浙江省杭州西湖龙井核心产区，经杭州 → 绍兴 → 上海全链路冷链直达。", "type": "rich-text", "maxLength": 300 },
+      "theme": { "default": "nature", "type": "select", "options": ["nature", "heritage", "indigo"] },
+      "copy": {
+        "xiaohongshu": { "default": "西湖龙井·明前头采，狮峰山核心产区，氨基酸含量≥4.5%，鲜爽甘醇。", "type": "text", "maxLength": 200 },
+        "ecommerce": { "default": "【产地直供】西湖龙井茶·狮峰山明前茶。地理标志保护产品，色绿香郁味甘形美，江南春味一口鲜。", "type": "text", "maxLength": 200 }
+      }
+    }
+  },
+  "studio": {
+    "brandScenario": "茶饮供应链 / 新消费品牌",
+    "recommendedOutputs": ["poster", "archive"],
+    "brandName": "龙井茶"
+  }
+}

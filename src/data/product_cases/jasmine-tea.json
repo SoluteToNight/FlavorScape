@@ -1,0 +1,38 @@
+{
+  "id": "jasmine-tea",
+  "name": "茉莉花茶",
+  "category": "茶饮",
+  "province": "福建省",
+  "heroImage": "/ingredients/originals/茶.png",
+  "origin": "福州 · 闽江流域",
+  "colors": { "primary": "#7FA961", "accent": "#C9A646" },
+  "marketing": {
+    "spatial": {
+      "nodes": [
+        { "short": "福州", "coord": [119.30, 26.08], "desc": "茉莉花核心种植区" },
+        { "short": "泉州", "coord": [118.58, 24.87], "desc": "茶叶集散中心" },
+        { "short": "上海", "coord": [121.38, 31.11], "desc": "长三角主销市场" }
+      ],
+      "evidence": [
+        { "label": "窨制次数", "value": "≥ 6 次" },
+        { "label": "花茶比例", "value": "1:3 黄金比" },
+        { "label": "农残检测", "value": "零检出" }
+      ]
+    },
+    "creative": {
+      "desc": { "default": "福州闽江流域 · 千年茉莉花茶窨制技艺", "type": "text", "maxLength": 60 },
+      "poeticLine": { "default": "一盏茉莉，半城花香。", "type": "text", "maxLength": 40 },
+      "narrative": { "default": "源于福建省福州，经福州 → 泉州 → 上海全链路冷链直达。", "type": "rich-text", "maxLength": 300 },
+      "theme": { "default": "nature", "type": "select", "options": ["nature", "heritage", "indigo"] },
+      "copy": {
+        "xiaohongshu": { "default": "福州茉莉花茶，千年窨制技艺，六次以上窨花，花香入骨。", "type": "text", "maxLength": 200 },
+        "ecommerce": { "default": "【产地直供】福州茉莉花茶·非遗窨制工艺。闽江流域核心产区，花香馥郁持久。", "type": "text", "maxLength": 200 }
+      }
+    }
+  },
+  "studio": {
+    "brandScenario": "茶饮供应链 / 新消费品牌",
+    "recommendedOutputs": ["poster", "archive"],
+    "brandName": "茉莉花茶"
+  }
+}

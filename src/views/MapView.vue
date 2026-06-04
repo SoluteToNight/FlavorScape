@@ -181,8 +181,9 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import MapInspector from '../components/MapInspector.vue'
-import maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import { addEcoregionLayer, addPhysicalVectorLayers, setLayerVisibility } from '../map/baseLayers.js'
+import { createMap, addMapControls, fitBoundsFromCoordinates, removeMap } from '../map/maplibre.js'
+import { createHypRasterStyle } from '../map/mapStyle.js'
 import { AmbientLight, DirectionalLight, LightingEffect } from '@deck.gl/core'
 import { MapboxOverlay } from '@deck.gl/mapbox'
 import { ScatterplotLayer, TextLayer } from '@deck.gl/layers'
@@ -336,8 +337,8 @@ const lightingEffect = new LightingEffect({
   rimLight,
 })
 
-const MAP_STYLE = {
-  version: 8,
+const MAP_STYLE = createHypRasterStyle({
+  backgroundColor: '#C8DDE8',
   sky: {
     'sky-color': '#D9E7EC',
     'sky-horizon-blend': 0.12,
@@ -356,32 +357,17 @@ const MAP_STYLE = {
       0,
     ],
   },
-  sources: {
-    'hyp-tiles': {
-      type: 'raster',
-      tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
-      tileSize: 512,
-      minzoom: 0,
-      maxzoom: 8,
-      bounds: [-180, -POLAR_TILE_LIMIT, 180, POLAR_TILE_LIMIT],
-      attribution: '© Natural Earth',
-    },
+  rasterSource: {
+    bounds: [-180, -POLAR_TILE_LIMIT, 180, POLAR_TILE_LIMIT],
+    attribution: '© Natural Earth',
   },
-  layers: [
-    { id: 'bg', type: 'background', paint: { 'background-color': '#C8DDE8' } },
-    {
-      id: 'hyp',
-      type: 'raster',
-      source: 'hyp-tiles',
-      paint: {
-        'raster-saturation': -0.18,
-        'raster-contrast': 0.08,
-        'raster-brightness-min': 0.05,
-        'raster-opacity': 1,
-      },
-    },
-  ],
-}
+  rasterPaint: {
+    'raster-saturation': -0.18,
+    'raster-contrast': 0.08,
+    'raster-brightness-min': 0.05,
+    'raster-opacity': 1,
+  },
+})
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
@@ -1239,11 +1225,7 @@ function selectBubbleNode(item) {
 
   const activeMap = getActiveMap()
   if (item.kind === 'cluster' && activeMap && item.coordinates?.length) {
-    const bounds = item.coordinates.reduce(
-      (acc, point) => acc.extend(point),
-      new maplibregl.LngLatBounds(item.coordinates[0], item.coordinates[0]),
-    )
-    activeMap.fitBounds(bounds, { padding: 120, maxZoom: 5.25, duration: 900, essential: true })
+    fitBoundsFromCoordinates(activeMap, item.coordinates, { padding: 120, maxZoom: 5.25, duration: 900, essential: true })
     return
   }
 
@@ -1426,26 +1408,18 @@ function syncGlobeNativeOverlayState() {
 
 async function addVectorLayers(scene) {
   const sceneMap = scene.map
-  const physLayers = [
-    { id: 'coastline', url: '/tiles/vector/coastline', type: 'line', paint: { 'line-color': '#8A7560', 'line-width': 0.6, 'line-opacity': 0.65 } },
-    { id: 'rivers', url: '/tiles/vector/rivers', type: 'line', paint: { 'line-color': '#5BA0B8', 'line-width': 0.4, 'line-opacity': 0.6 } },
-  ]
 
-  for (const layer of physLayers) {
-    try {
-      sceneMap.addSource(layer.id, { type: 'geojson', data: layer.url })
-      sceneMap.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: layer.paint })
-    } catch (err) {
-      console.warn(`Vector layer [${layer.id}] skipped:`, err.message)
-    }
+  try {
+    addPhysicalVectorLayers(sceneMap, {
+      coastlinePaint: { 'line-color': '#8A7560', 'line-width': 0.6, 'line-opacity': 0.65 },
+      riversPaint: { 'line-color': '#5BA0B8', 'line-width': 0.4, 'line-opacity': 0.6 },
+    })
+  } catch (err) {
+    console.warn('physical vector layers skipped:', err.message)
   }
 
   try {
-    sceneMap.addSource('ecoregions', { type: 'geojson', data: '/tiles/vector/ecoregions' })
-    sceneMap.addLayer({
-      id: 'ecoregions',
-      type: 'line',
-      source: 'ecoregions',
+    addEcoregionLayer(sceneMap, {
       paint: { 'line-color': L1_BOUNDARY_COLOR, 'line-width': 1.35, 'line-opacity': L1_OPACITY_WEAK },
     })
   } catch (err) {
@@ -1498,7 +1472,7 @@ function addPolarCapLayer(scene) {
 function createMapScene(kind, container) {
   const scene = {
     kind,
-    map: new maplibregl.Map({
+    map: createMap({
       container,
       style: createMapStyle(kind),
       center: INITIAL_MAP_CENTER,
@@ -1513,8 +1487,10 @@ function createMapScene(kind, container) {
   }
 
   scene.map.setRenderWorldCopies(kind === 'flat')
-  scene.map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-  scene.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+  addMapControls(scene.map, [
+    { type: 'attribution', options: { compact: true }, position: 'bottom-right' },
+    { type: 'navigation', options: { showCompass: false }, position: 'bottom-right' },
+  ])
 
   scene.map.on('load', async () => {
     scene.loaded = true
@@ -1594,8 +1570,8 @@ onUnmounted(() => {
   clearSceneTransitionPrep()
   hideSceneSnapshot()
   window.removeEventListener('keydown', handleWindowKeydown)
-  flatScene?.map.remove()
-  globeScene?.map.remove()
+  removeMap(flatScene?.map)
+  removeMap(globeScene?.map)
 })
 
 function setL1Strength(opacity, scene = null) {
@@ -1617,7 +1593,7 @@ function setMapLayerVisibility(id, visible, scene = null) {
 
   targets.forEach(target => {
     try {
-      target.map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
+      setLayerVisibility(target.map, id, visible)
     } catch (_) {
       // layer may not be added yet
     }
@@ -2222,29 +2198,10 @@ const layerToggles = computed(() => [
   background: linear-gradient(180deg, rgba(248, 244, 239, 0) 0%, rgba(248, 244, 239, 0.64) 100%);
 }
 
-:deep(.maplibregl-canvas) {
-  outline: none;
-}
-
-:deep(.maplibregl-ctrl-attrib) {
-  background: rgba(255, 252, 248, 0.7) !important;
-  border-radius: 4px !important;
-  font-size: 10px !important;
-}
-
 :deep(.maplibregl-ctrl-bottom-right) {
   left: 28px !important;
   right: auto !important;
   bottom: 84px !important;
-}
-
-:deep(.maplibregl-ctrl-group) {
-  background: rgba(255, 252, 248, 0.78) !important;
-  border: 1px solid rgba(180, 165, 140, 0.22) !important;
-  border-radius: 10px !important;
-  box-shadow: 0 10px 32px rgba(35, 25, 12, 0.08) !important;
-  backdrop-filter: var(--blur-sm) !important;
-  margin: 0 !important;
 }
 
 .legend-panel {

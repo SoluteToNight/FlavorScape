@@ -1,6 +1,22 @@
 <template>
   <div class="spread-page fixed top-navbar inset-x-0 bottom-0" :class="{ 'sidebar-open': !sidebarCollapsed }">
     <div ref="mapContainer" class="w-full h-full" />
+
+    <div v-if="loadError && !hasAnyData" class="fixed inset-0 top-navbar z-30 flex flex-col items-center justify-center gap-5 bg-[rgba(245,239,229,0.92)] backdrop-blur-sm">
+      <div class="text-center max-w-[420px] px-6">
+        <div class="text-2xs tracking-[0.14em] uppercase text-text-muted mb-2">数据加载失败</div>
+        <div class="font-serif text-xl text-earth mb-2">无法载入食材传播数据</div>
+        <p class="text-sm text-text-muted leading-[1.6] mb-6">{{ loadError }}</p>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 h-9 px-5 border border-earth/30 rounded-md bg-earth text-[#fffaf3] text-xs font-bold cursor-pointer hover:bg-earth/90 transition-colors"
+          @click="retryLoad"
+        >
+          重新加载
+        </button>
+      </div>
+    </div>
+
     <div class="spread-vignette spread-vignette-top fixed left-0 right-0 pointer-events-none z-[2]" aria-hidden="true" />
     <div class="spread-vignette spread-vignette-bottom fixed left-0 right-0 pointer-events-none z-[2]" aria-hidden="true" />
 
@@ -176,8 +192,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import { addPhysicalVectorLayers } from '../map/baseLayers.js'
+import { createMap, addMapControls, maplibregl, removeMap } from '../map/maplibre.js'
+import { createHypRasterStyle } from '../map/mapStyle.js'
 
 const mapContainer = ref(null)
 const eventListEl = ref(null)
@@ -192,6 +209,7 @@ const activeId = ref(OVERVIEW_ID)
 const currentEventKey = ref('')
 const imageLoadFailed = ref(false)
 const sidebarCollapsed = ref(true)
+const loadError = ref(null)
 
 let map = null
 let flowFrame = 0
@@ -234,35 +252,21 @@ const SPREAD_SOURCES = {
   clusterRoutes: 'spread-cluster-routes',
 }
 
-const MAP_STYLE = {
-  version: 8,
+const MAP_STYLE = createHypRasterStyle({
   projection: { type: 'mercator' },
-  sources: {
-    'hyp-tiles': {
-      type: 'raster',
-      tiles: ['/tiles/raster/{z}/{x}/{y}.png'],
-      tileSize: 512,
-      minzoom: 0,
-      maxzoom: RASTER_MAX_ZOOM,
-      attribution: 'Natural Earth',
-    },
+  backgroundColor: '#C8DDE8',
+  rasterSource: {
+    maxzoom: RASTER_MAX_ZOOM,
+    attribution: 'Natural Earth',
   },
-  layers: [
-    { id: 'bg', type: 'background', paint: { 'background-color': '#C8DDE8' } },
-    {
-      id: 'hyp',
-      type: 'raster',
-      source: 'hyp-tiles',
-      paint: {
-        'raster-saturation': -0.08,
-        'raster-contrast': 0.22,
-        'raster-brightness-min': 0.02,
-        'raster-brightness-max': 1,
-        'raster-opacity': 1,
-      },
-    },
-  ],
-}
+  rasterPaint: {
+    'raster-saturation': -0.08,
+    'raster-contrast': 0.22,
+    'raster-brightness-min': 0.02,
+    'raster-brightness-max': 1,
+    'raster-opacity': 1,
+  },
+})
 
 const isOverview = computed(() => activeId.value === OVERVIEW_ID)
 const activeData = computed(() => isOverview.value ? null : ingredientDetails.value[activeId.value])
@@ -1545,16 +1549,10 @@ function syncPointMarkers() {
 }
 
 async function addVectorLayers() {
-  const physLayers = [
-    { id: 'coastline', url: '/tiles/vector/coastline', type: 'line', paint: { 'line-color': '#8A7560', 'line-width': 0.6, 'line-opacity': 0.58 } },
-    { id: 'rivers', url: '/tiles/vector/rivers', type: 'line', paint: { 'line-color': '#5BA0B8', 'line-width': 0.45, 'line-opacity': 0.62 } },
-  ]
-  for (const layer of physLayers) {
-    try {
-      map.addSource(layer.id, { type: 'geojson', data: layer.url })
-      map.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: layer.paint })
-    } catch (_) {}
-  }
+  addPhysicalVectorLayers(map, {
+    coastlinePaint: { 'line-color': '#8A7560', 'line-width': 0.6, 'line-opacity': 0.58 },
+    riversPaint: { 'line-color': '#5BA0B8', 'line-width': 0.45, 'line-opacity': 0.62 },
+  })
 }
 
 function routeBounds() {
@@ -1663,9 +1661,18 @@ async function loadIngredients() {
     currentEventKey.value = ''
     eventCardRefs.value = {}
     updateNativeSpreadLayers()
+    loadError.value = null
   } catch (err) {
+    loadError.value = err?.message || '网络请求失败，请确认后端已启动'
     console.warn('[IngredientSpread] load failed:', err)
   }
+}
+
+async function retryLoad() {
+  loadError.value = null
+  await loadIngredients()
+  await nextTick()
+  if (!map) initMap()
 }
 
 async function selectOverview() {
@@ -1705,7 +1712,7 @@ async function selectIngredient(id, options = {}) {
 function initMap() {
   if (!mapContainer.value) return
 
-  map = new maplibregl.Map({
+  map = createMap({
     container: mapContainer.value,
     style: MAP_STYLE,
     center: DEFAULT_MAP_CENTER,
@@ -1716,7 +1723,9 @@ function initMap() {
     attributionControl: false,
   })
 
-  map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right')
+  addMapControls(map, [
+    { type: 'navigation', options: { showCompass: true }, position: 'bottom-right' },
+  ])
 
   map.on('load', () => {
     addVectorLayers()
@@ -1742,7 +1751,7 @@ onUnmounted(() => {
   }
   clearPointMarkers()
   hidePointPopup()
-  map?.remove()
+  removeMap(map)
   map = null
 })
 </script>
@@ -1772,7 +1781,6 @@ onUnmounted(() => {
 }
 
 /* :deep() overrides for MapLibre */
-:deep(.maplibregl-canvas) { outline: none; }
 :deep(.maplibregl-ctrl-bottom-right) {
   right: 18px; bottom: 18px;
   transition: right 0.38s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.38s cubic-bezier(0.4, 0, 0.2, 1);

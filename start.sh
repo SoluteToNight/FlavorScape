@@ -71,12 +71,12 @@ done
 [ $waited -ge $max ] && warn "后端在 ${max}s 内未响应，前端将继续（后端可能还在加载）"
 
 # 7. 启动前端（前台，Ctrl+C 停止）
-step "启动 Vite 前端 → http://127.0.0.1:3002"
+step "启动 Vite 前端 → http://127.0.0.1:5173"
 echo ""
 echo "  ─────────────────────────────────────────"
 ok "服务已全部启动"
 echo ""
-echo "    前端  →  http://127.0.0.1:3002"
+echo "    前端  →  http://127.0.0.1:5173"
 echo "    后端  →  http://localhost:8001"
 echo "    API   →  http://localhost:8001/docs"
 echo ""

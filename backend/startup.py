@@ -6,6 +6,8 @@
 import json
 import logging
 import os
+from contextlib import contextmanager
+from time import perf_counter
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -25,6 +27,41 @@ vector_data: dict[str, Any] = {}
 BIOME_NAMES = {num: cn for num, (en, cn) in BIOME_MAP.items()}
 
 SHP_EXTS = [".shp", ".dbf", ".shx", ".prj", ".cpg"]
+
+
+@contextmanager
+def _timed(label: str):
+    started = perf_counter()
+    log.info(f"{label} started.")
+    try:
+        yield
+    finally:
+        log.info(f"{label} finished in {(perf_counter() - started) * 1000:.1f} ms.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 依赖检查
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _check_dependencies() -> None:
+    """确保关键依赖在服务器接受请求前已安装。
+
+    提前失败比在请求路径中返回 500 更好。
+    """
+    missing = []
+    try:
+        import bcrypt  # noqa: F401
+    except ImportError:
+        missing.append("bcrypt")
+    try:
+        from jose import jwt  # noqa: F401
+    except ImportError:
+        missing.append("python-jose")
+    if missing:
+        raise RuntimeError(
+            f"认证依赖缺失: {', '.join(missing)}。"
+            f"请运行: pip install bcrypt python-jose"
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -141,13 +178,14 @@ def load_vector_layers() -> None:
         ("ne_10m_land",                    "land",      0.08, None),
     ]
     for name, key, tol, props in phys:
-        shp = _ensure_physical_shp(name)
-        if not shp:
-            continue
-        log.info(f"Loading [{key}] from {shp.name} (tol={tol}°)…")
-        gc = _load_shp(shp, tol, props)
-        vector_data[key] = gc
-        log.info(f"  {key}: {len(gc['features'])} features")
+        with _timed(f"vector layer [{key}]"):
+            shp = _ensure_physical_shp(name)
+            if not shp:
+                continue
+            log.info(f"Loading [{key}] from {shp.name} (tol={tol}°)…")
+            gc = _load_shp(shp, tol, props)
+            vector_data[key] = gc
+            log.info(f"  {key}: {len(gc['features'])} features")
 
     # TEOW ecoregions (L1) — loaded from PostgreSQL after init_pool()
     # See load_ecoregions_from_db() called in main.py lifespan
@@ -158,8 +196,12 @@ def load_vector_layers() -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_startup() -> None:
-    _ensure_raster()
-    load_vector_layers()
+    with _timed("dependency check"):
+        _check_dependencies()
+    with _timed("raster preparation"):
+        _ensure_raster()
+    with _timed("physical vector loading"):
+        load_vector_layers()
     log.info("✓ Startup complete (ecoregions deferred to DB).")
 
 
@@ -179,25 +221,26 @@ def load_ecoregions_from_db() -> None:
         WHERE boundary IS NOT NULL
     """
     features = []
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-            for eco_name, eco_name_cn, eco_code, realm, biome, biome_cn, geojson_str in cur:
-                if not geojson_str:
-                    continue
-                gj = _json.loads(geojson_str)
-                features.append({
-                    "type": "Feature",
-                    "geometry": gj,
-                    "properties": {
-                        "eco_name": eco_name,
-                        "eco_name_cn": eco_name_cn or "",
-                        "eco_code": eco_code or "",
-                        "realm": realm or "",
-                        "biome": biome or "",
-                        "biome_cn": biome_cn or "",
-                    },
-                })
+    with _timed("ecoregions DB loading"):
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                for eco_name, eco_name_cn, eco_code, realm, biome, biome_cn, geojson_str in cur:
+                    if not geojson_str:
+                        continue
+                    gj = _json.loads(geojson_str)
+                    features.append({
+                        "type": "Feature",
+                        "geometry": gj,
+                        "properties": {
+                            "eco_name": eco_name,
+                            "eco_name_cn": eco_name_cn or "",
+                            "eco_code": eco_code or "",
+                            "realm": realm or "",
+                            "biome": biome or "",
+                            "biome_cn": biome_cn or "",
+                        },
+                    })
     vector_data["ecoregions"] = {
         "type": "FeatureCollection",
         "features": features,

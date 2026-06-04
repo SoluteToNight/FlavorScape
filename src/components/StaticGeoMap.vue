@@ -56,8 +56,13 @@ const curvedPath = computed(() => {
   return projectedNodes.value.map((node, index) => {
     if (index === 0) return `M ${node.x},${node.y}`
     const prev = projectedNodes.value[index - 1]
-    const cx = (prev.x + node.x) / 2 - 12
-    const cy = (prev.y + node.y) / 2 - 20
+    // 按节点间距缩放贝塞尔曲线偏移量，避免近距离节点曲线过度扭曲
+    const dx = node.x - prev.x
+    const dy = node.y - prev.y
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1
+    const scale = Math.min(1.5, Math.max(0.4, dist / 80))
+    const cx = (prev.x + node.x) / 2 - 12 * scale
+    const cy = (prev.y + node.y) / 2 - 20 * scale
     return `Q ${cx},${cy} ${node.x},${node.y}`
   }).join(' ')
 })

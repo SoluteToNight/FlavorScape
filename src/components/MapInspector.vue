@@ -128,7 +128,6 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useAppStore } from '../stores/app.js'
 import FlavorRadar from './FlavorRadar.vue'
-import * as echarts from 'echarts'
 
 const appStore = useAppStore()
 const selectedNode   = computed(() => appStore.selectedNode)
@@ -146,6 +145,14 @@ const siblings = computed(() => {
 // ── ECharts instances ──────────────────────────────────────────────────────
 const climateEl = ref(null)
 let climateChart = null
+let echartsModule = null
+
+async function getEcharts() {
+  if (!echartsModule) {
+    echartsModule = await import('echarts')
+  }
+  return echartsModule
+}
 
 // ── Climate chart → ECharts dual-axis line ─────────────────────────────────
 const MONTHS = ['J','F','M','A','M','J','J','A','S','O','N','D']
@@ -196,8 +203,9 @@ function buildClimateOption(ecozone) {
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
-function ensureClimateChart() {
+async function ensureClimateChart() {
   if (!climateChart && climateEl.value) {
+    const echarts = await getEcharts()
     climateChart = echarts.init(climateEl.value, null, { renderer: 'canvas' })
   }
   return climateChart
@@ -205,7 +213,10 @@ function ensureClimateChart() {
 
 onMounted(async () => {
   await nextTick()
-  if (selectedEcozone.value) ensureClimateChart()?.setOption(buildClimateOption(selectedEcozone.value), true)
+  if (selectedEcozone.value) {
+    const chart = await ensureClimateChart()
+    chart?.setOption(buildClimateOption(selectedEcozone.value), true)
+  }
 })
 
 watch(selectedNode, async (node) => {
@@ -216,7 +227,8 @@ watch(selectedNode, async (node) => {
 watch(selectedEcozone, async (eco) => {
   if (!eco) return
   await nextTick()
-  ensureClimateChart()?.setOption(buildClimateOption(eco), true)
+  const chart = await ensureClimateChart()
+  chart?.setOption(buildClimateOption(eco), true)
 })
 
 onUnmounted(() => { climateChart?.dispose() })

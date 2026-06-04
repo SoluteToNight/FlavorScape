@@ -7,15 +7,15 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 - Windows one-shot: `.\start.ps1` from repo root; it creates `.venv`, installs deps, frees port 8001, starts FastAPI, waits on `/health`, then starts Vite.
 - Bash one-shot: `bash start.sh`; it writes backend logs to `.backend.log` and uses `python3` only to parse the health response.
 - Manual backend: `.venv/Scripts/python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8001 --reload`.
-- Manual frontend: `npm run dev`; this starts Vite on port 3002 (which proxies `/api` and `/tiles` to FastAPI).
+- Manual frontend: `npm run dev`; this starts Vite on port 5173 (which proxies `/api` and `/tiles` to FastAPI).
 - Python deps: `uv pip install --python .venv/Scripts/python.exe -r backend/requirements.txt`; do not let `uv` pick the system Python.
 - DB reset/seed: `.venv/Scripts/python.exe -m backend.db.run_migration` after `.env` has `DATABASE_URL` for a PostGIS database.
-- Production static build: `npm run build && npm run start`; `server.js` serves `dist/` but does not proxy Python `/tiles` or FastAPI data.
+- Production static build: `npm run build && npm run start`; `server.js` serves `dist/` and proxies `/api/*` and `/tiles/*` to FastAPI :8001.
 - No lint/test scripts are configured in `package.json`; use `npm run build`, `/health`, and `/tiles/status` as the focused smoke checks.
 
 ## Ports and stale sources
 
-- Current ports: FastAPI 8001, Vite dev 3002, Vite preview 4173, Express 3001.
+- Current ports: FastAPI 8001, Vite dev 5173, Vite preview 4173, Express 3001.
 - Ignore `backend/main.py`'s docstring command using port 8000; `backend/config.py`, scripts, and Vite proxy all use 8001.
 - `.claude/settings.local.json` also contains stale 8000 permission examples; do not copy them into new docs or commands.
 
@@ -31,9 +31,9 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 
 ## Architecture traps
 
-- Dev is two-process when fully running: FastAPI 8001 from `start.ps1`/`start.sh`, plus Vite 3002 from `npm run dev`.
+- Dev is two-process when fully running: FastAPI 8001 from `start.ps1`/`start.sh`, plus Vite 5173 from `npm run dev`.
 - The browser app in dev calls Vite, and Vite proxies `/api/*` and `/tiles/*` to FastAPI 8001.
-- In production, Express serves `dist/` and proxies `/api/*` and `/tiles/*` to FastAPI; a separate FastAPI backend is required for full WebGIS functionality.
+- In production, Express serves `dist/` and proxies `/api/*` and `/tiles/*` to FastAPI :8001 — full WebGIS works as long as FastAPI is running alongside.
 - FastAPI lifespan blocks all requests until `run_startup()` finishes raster extraction/vector loading and `init_pool()` opens PostgreSQL connections.
 - First backend start may spend minutes extracting `data/HYP_HR_SR_W_DR.zip` and loading shapefiles; `start.ps1` waits up to 300s on `/health`.
 
@@ -52,3 +52,11 @@ Compact OpenCode guidance for this repo. `CLAUDE.md` has the fuller architecture
 - MapLibre `map.addLayer(spec, beforeId)` inserts below/before `beforeId`; passing `beforeId: 'hyp'` would hide vectors under the raster.
 - `MapView.vue` appends coastline, rivers, and ecoregions above the HYP raster, then adds Deck.gl `MapboxOverlay({ interleaved: true })` with PathLayer, TripsLayer, and ScatterplotLayer.
 - Pinia selection state is mutually exclusive: selecting node, route, or ecozone clears the other two; only `selectedNode` triggers `map.flyTo()`.
+
+## Auth, styling, and other footguns
+
+- Design tokens live in BOTH `tailwind.config.js` AND `src/styles/global.css :root` — update both files when changing a token value.
+- `tailwind.config.js` has `preflight: false`; browser defaults are preserved. Complex CSS (radial-gradient, mask-image, `color-mix()`, pseudo-elements) belongs in scoped `<style>` blocks, not Tailwind.
+- JWT auth: `localStorage.getItem('auth_token')` on frontend, `Authorization: Bearer <token>` header via `src/utils/api.js` wrapper. Backend `auth_deps.py` decodes and looks up user.
+- `.env` holds `DATABASE_URL` and `JWT_SECRET`; `.env.example` is the template. Never commit real credentials.
+- Ingredient JSON files in `data/ingredient/` are cached in-memory with file-signature monitoring — changes are picked up without restart.

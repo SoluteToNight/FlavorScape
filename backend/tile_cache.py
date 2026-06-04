@@ -1,6 +1,8 @@
 import threading
 from collections import OrderedDict
 
+from .config import TILE_CACHE_SIZE
+
 
 class LRUTileCache:
     """Thread-safe in-memory LRU cache for PNG tile bytes."""
@@ -42,4 +44,4 @@ class LRUTileCache:
         return self.hits / total if total else 0.0
 
 
-tile_cache = LRUTileCache()
+tile_cache = LRUTileCache(TILE_CACHE_SIZE)

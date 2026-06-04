@@ -112,6 +112,7 @@ import { ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app.js'
 import { useAuthStore } from '../stores/auth.js'
+import { api } from '../utils/api.js'
 
 const route  = useRoute()
 const router = useRouter()
@@ -122,12 +123,11 @@ const isHome = computed(() => route.name === 'home')
 const isMap  = computed(() => route.name === 'map')
 const isProduct = computed(() => ['brand', 'spread', 'marketing', 'archive', 'studio'].includes(route.name))
 
-// 2. 更新导航数组
 const navItems = [
   { name: 'studio',    path: '/studio',    label: '创作工作台' },
   { name: 'home',      path: '/',          label: '产品入口' },
-  { name: 'brand',     path: '/brand',     label: '智慧大屏' }, // 名字更聚焦
-  { name: 'marketing', path: '/marketing', label: '营销海报' }, // 🌟 新增入口
+  { name: 'brand',     path: '/brand',     label: '智慧大屏' },
+  { name: 'marketing', path: '/marketing', label: '营销海报' },
   { name: 'archive',   path: '/archive',   label: '实证白皮书' },
   { name: 'spread',    path: '/spread',    label: '传播图谱' },
   { name: 'map',       path: '/map',       label: '风味底图' },
@@ -167,9 +167,8 @@ async function onInput() {
   if (!query.value.trim()) { results.value = []; showDropdown.value = false; return }
   debounceTimer = setTimeout(async () => {
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query.value)}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      results.value = await res.json()
+      const data = await api(`/api/search?q=${encodeURIComponent(query.value)}`)
+      results.value = Array.isArray(data) ? data : []
       showDropdown.value = results.value.length > 0
     } catch (err) {
       console.warn('[Navbar search]', err.message)

@@ -19,6 +19,7 @@ if _proj_data.exists():
 import logging
 import asyncio
 from contextlib import asynccontextmanager
+from time import perf_counter
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,6 +40,22 @@ logging.basicConfig(
 log = logging.getLogger("main")
 
 
+async def _timed_async(label: str, awaitable):
+    started = perf_counter()
+    log.info("%s started.", label)
+    result = await awaitable
+    log.info("%s finished in %.1f ms.", label, (perf_counter() - started) * 1000)
+    return result
+
+
+def _timed_sync(label: str, fn):
+    started = perf_counter()
+    log.info("%s started.", label)
+    result = fn()
+    log.info("%s finished in %.1f ms.", label, (perf_counter() - started) * 1000)
+    return result
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("═" * 60)
@@ -46,9 +63,16 @@ async def lifespan(app: FastAPI):
     log.info("═" * 60)
     # Run blocking startup (extract TIF + load shapefiles) in thread pool
     loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, run_startup)
-    init_pool()
-    load_ecoregions_from_db()
+    await _timed_async("startup data preparation", loop.run_in_executor(None, run_startup))
+    _timed_sync("PostgreSQL pool init", init_pool)
+    # 确保认证表存在（幂等建表，首次启动时创建 app_user）
+    from backend.db.connection import get_conn
+    from backend.db.auth_queries import create_user_table
+    def _ensure_auth_table():
+        with get_conn() as conn:
+            create_user_table(conn)
+    _timed_sync("auth table check", _ensure_auth_table)
+    _timed_sync("ecoregions load", load_ecoregions_from_db)
     log.info("PostgreSQL connection pool initialized.")
     yield
     close_pool()

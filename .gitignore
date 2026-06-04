@@ -22,6 +22,8 @@ data/*.zip
 data/110m_physical/
 data/extracted/
 !data/extracted/.gitkeep
+data/tiles/
+!data/tiles/.gitkeep
 
 # Logs
 *.log

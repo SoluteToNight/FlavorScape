@@ -1,12 +1,15 @@
 import asyncio
 import io
 import logging
+import sqlite3
+import threading
+from time import perf_counter
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, Response
 
-from ..config import RASTER_TIF, TILE_CACHE_SIZE
+from ..config import MBTILES_PATH, RASTER_TIF, TILE_CACHE_SIZE, TILE_SIZE
 from ..db.connection import get_conn
 from ..startup import vector_data
 from ..tile_cache import tile_cache
@@ -19,49 +22,100 @@ _pool = ThreadPoolExecutor(max_workers=6, thread_name_prefix="tile-worker")
 
 # Transparent 1×1 PNG fallback (for out-of-bounds tiles)
 _EMPTY_TILE: bytes | None = None
+_reader_local = threading.local()
 
 
 def _make_empty_tile() -> bytes:
     from PIL import Image
 
-    img = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+    img = Image.new("RGBA", (TILE_SIZE, TILE_SIZE), (0, 0, 0, 0))
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
 
 
-def _render_tile_sync(z: int, x: int, y: int) -> bytes:
+def _read_mbtiles_sync(z: int, x: int, y: int) -> tuple[bytes, str] | None:
+    """Try to read a tile from the pre-sliced MBTiles database.
+
+    MBTiles uses TMS row numbering (Y=0 at the bottom), while our API uses
+    XYZ (Y=0 at the top).  The conversion is ``tms_y = (1 << z) - 1 - y``.
+    Returns ``(tile_data, "mbtiles")`` on success, ``None`` if the tile
+    doesn't exist or the MBTiles file is missing.
     """
-    Blocking: fetch from cache → render with rio-tiler → store in cache.
+    if not MBTILES_PATH.exists():
+        return None
+
+    tms_y = (1 << z) - 1 - y
+    conn = None
+    try:
+        conn = sqlite3.connect(str(MBTILES_PATH))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT tile_data FROM tiles WHERE zoom_level=? AND tile_column=? AND tile_row=?",
+            (z, x, tms_y),
+        ).fetchone()
+        if row is not None:
+            return row[0], "mbtiles"
+    except Exception:
+        # If anything goes wrong with MBTiles, silently fall back to COG.
+        log.debug("MBTiles read failed %s/%s/%s", z, x, y, exc_info=True)
+    finally:
+        if conn is not None:
+            conn.close()
+    return None
+
+
+def _get_reader():
+    reader = getattr(_reader_local, "reader", None)
+    if reader is None:
+        from rio_tiler.io import Reader
+
+        reader = Reader(str(RASTER_TIF))
+        _reader_local.reader = reader
+    return reader
+
+
+def _render_tile_sync(z: int, x: int, y: int) -> tuple[bytes, str, float]:
+    """
+    Blocking: MBTiles → cache → COG+rio-tiler → store in cache.
     Runs inside a thread pool so it never blocks the event loop.
     """
     global _EMPTY_TILE
 
     cached = tile_cache.get(z, x, y)
     if cached is not None:
-        return cached
+        return cached, "hit", 0.0
 
+    started = perf_counter()
+
+    # ── 1. Try pre-sliced MBTiles (fast path) ──────────────────────────
+    mbtiles_result = _read_mbtiles_sync(z, x, y)
+    if mbtiles_result is not None:
+        content, source = mbtiles_result
+        tile_cache.set(z, x, y, content)
+        return content, source, perf_counter() - started
+
+    # ── 2. Fall back to COG + rio-tiler (slow path) ──────────────────
     try:
         from rio_tiler.errors import TileOutsideBounds
-        from rio_tiler.io import Reader  # rio-tiler ≥ 5.0 (COGReader alias)
 
-        with Reader(str(RASTER_TIF)) as cog:
-            img = cog.tile(x, y, z, tilesize=512)
-            # HYP is RGB (3-band), render as PNG
-            content = img.render(img_format="PNG")
+        cog = _get_reader()
+        img = cog.tile(x, y, z, tilesize=TILE_SIZE)
+        # HYP is RGB (3-band), render as PNG
+        content = img.render(img_format="PNG")
 
     except TileOutsideBounds:
         if _EMPTY_TILE is None:
             _EMPTY_TILE = _make_empty_tile()
-        return _EMPTY_TILE
+        return _EMPTY_TILE, "outside", perf_counter() - started
     except Exception as exc:
         log.warning(f"Tile render failed {z}/{x}/{y}: {exc}")
         if _EMPTY_TILE is None:
             _EMPTY_TILE = _make_empty_tile()
-        return _EMPTY_TILE
+        return _EMPTY_TILE, "error", perf_counter() - started
 
     tile_cache.set(z, x, y, content)
-    return content
+    return content, "cog-miss", perf_counter() - started
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -76,14 +130,23 @@ async def raster_tile(z: int, x: int, y: int):
     if not (0 <= z <= 10):
         raise HTTPException(400, "Zoom level must be 0–10.")
 
+    started = perf_counter()
     loop = asyncio.get_running_loop()
-    content = await loop.run_in_executor(_pool, _render_tile_sync, z, x, y)
+    content, cache_status, render_seconds = await loop.run_in_executor(_pool, _render_tile_sync, z, x, y)
+    total_seconds = perf_counter() - started
+    if cache_status != "hit" or total_seconds >= 0.25:
+        log.info(
+            "raster tile %s/%s/%s %s render=%.1fms total=%.1fms bytes=%s cache=%s/%s hit_rate=%s",
+            z, x, y, cache_status, render_seconds * 1000, total_seconds * 1000,
+            len(content), tile_cache.size, TILE_CACHE_SIZE, f"{tile_cache.hit_rate:.2%}",
+        )
 
     return Response(
         content,
         media_type="image/png",
         headers={
             "Cache-Control": "public, max-age=86400",
+            "X-Cache": cache_status,
             "X-Cache-Size": str(tile_cache.size),
             "X-Cache-HitRate": f"{tile_cache.hit_rate:.2%}",
         },
@@ -155,10 +218,17 @@ async def list_layers():
 async def tiles_status():
     return {
         "raster_ready": RASTER_TIF.exists(),
+        "raster_source": "mbtiles" if MBTILES_PATH.exists() else "cog",
+        "mbtiles": {
+            "path": str(MBTILES_PATH),
+            "available": MBTILES_PATH.exists(),
+            "size_mb": round(MBTILES_PATH.stat().st_size / (1024 * 1024), 1) if MBTILES_PATH.exists() else None,
+        },
         "vector_layers": list(vector_data.keys()),
         "tile_cache": {
             "size": tile_cache.size,
             "max": TILE_CACHE_SIZE,
             "hit_rate": f"{tile_cache.hit_rate:.2%}",
+            "tile_size": TILE_SIZE,
         },
     }
