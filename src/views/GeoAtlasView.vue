@@ -1,5 +1,15 @@
 <template>
-  <main class="exhibition-screen fixed top-navbar inset-x-0 bottom-0 overflow-hidden">
+  <BrandDisplayExperience
+    v-if="studioDisplayData"
+    :display-data="studioDisplayData"
+    :route-data="studioRouteData"
+    :route-options="routeOptions"
+    fullscreen
+    @select-event="selectStudioDisplayEvent"
+    @select-route="selectStudioDisplayRoute"
+  />
+
+  <main v-else class="exhibition-screen fixed top-navbar inset-x-0 bottom-0 overflow-hidden">
     <!-- 顶部隐形 HUD 控制栏 -->
     <header class="hud-top-bar absolute top-0 inset-x-0 z-50 px-10 py-6 flex justify-between items-start">
       <div>
@@ -123,9 +133,48 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
-import maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { createMap, removeMap } from '../map/maplibre.js'
+import { createHypRasterStyle } from '../map/mapStyle.js'
+import BrandDisplayExperience from '../components/BrandDisplayExperience.vue'
+import { useSpreadRoutes } from '../composables/useSpreadRoutes'
+import { useStudioStore } from '../stores/studio'
+
+const vueRoute = useRoute()
+const studioStore = useStudioStore()
+const { routeOptions, loadRoutes, loadRoute, getRoute } = useSpreadRoutes()
+
+const studioProjectId = computed(() => {
+  const value = vueRoute.query.project
+  return typeof value === 'string' ? value : ''
+})
+const studioDisplayData = computed(() => {
+  const id = studioProjectId.value
+  const project = studioStore.activeProject
+  if (!id || project?.id !== id || project.outputType !== 'display' || project.outputs?.display?.contentConfirmed !== true) return null
+  return studioStore.mergedDisplayData
+})
+const studioRouteData = computed(() => getRoute(studioDisplayData.value?.selectedRouteId))
+
+async function applyStudioProject() {
+  const id = studioProjectId.value
+  if (!id || !studioStore.projects.some(project => project.id === id)) return
+  studioStore.switchProject(id)
+  await loadRoutes()
+  const routeId = studioStore.mergedDisplayData?.selectedRouteId
+  if (routeId) await loadRoute(routeId)
+}
+
+function selectStudioDisplayEvent(key) {
+  studioStore.updateOutputField('display', 'selectedEventKey', key)
+}
+
+async function selectStudioDisplayRoute(id) {
+  studioStore.updateOutputField('display', 'selectedRouteId', id)
+  studioStore.updateOutputField('display', 'selectedEventKey', null)
+  await loadRoute(id)
+}
 
 const products = [
   { id: 'pepper', name: '汉源花椒', image: '/ingredients/pepper-realistic.png', species: '花椒 Zanthoxylum bungeanum' },
@@ -176,18 +225,20 @@ const currentIndex = computed(() => nodes.value.findIndex(n => n.id === selected
 
 function formatCoord(coord) { return `${Math.abs(coord[1]).toFixed(4)}°N, ${Math.abs(coord[0]).toFixed(4)}°E` }
 
-const MAP_STYLE = {
-  version: 8,
-  sources: { 'hyp-tiles': { type: 'raster', tiles: ['/tiles/raster/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 8 } },
-  layers: [
-    { id: 'trace-bg', type: 'background', paint: { 'background-color': '#060B10' } },
-    { id: 'hyp', type: 'raster', source: 'hyp-tiles', paint: { 'raster-saturation': -0.8, 'raster-contrast': 0.3, 'raster-brightness-min': 0.1, 'raster-opacity': 0.8 } },
-  ],
-}
+const MAP_STYLE = createHypRasterStyle({
+  backgroundLayerId: 'trace-bg',
+  backgroundColor: '#060B10',
+  rasterPaint: {
+    'raster-saturation': -0.8,
+    'raster-contrast': 0.3,
+    'raster-brightness-min': 0.1,
+    'raster-opacity': 0.8,
+  },
+})
 
 async function initAtlasMap() {
-  if (atlasMap) return
-  atlasMap = new maplibregl.Map({
+  if (atlasMap || !atlasMapContainer.value) return
+  atlasMap = createMap({
     container: atlasMapContainer.value,
     style: MAP_STYLE,
     center: [106.6, 30.4],
@@ -257,8 +308,15 @@ function stopTour() { isTouring.value = false; clearInterval(tourInterval) }
 
 function switchProduct(id) { activeProductId.value = id; stopTour(); selectedNodeId.value = 'origin'; setTimeout(() => selectMapNode('origin'), 100) }
 
-onMounted(() => { nextTick(initAtlasMap) })
-onUnmounted(() => { stopTour(); atlasMap?.remove() })
+onMounted(async () => {
+  await applyStudioProject()
+  if (!studioDisplayData.value) nextTick(initAtlasMap)
+})
+watch(studioProjectId, async () => {
+  await applyStudioProject()
+  if (!studioDisplayData.value && !atlasMap) nextTick(initAtlasMap)
+})
+onUnmounted(() => { stopTour(); removeMap(atlasMap) })
 </script>
 
 <style scoped>
