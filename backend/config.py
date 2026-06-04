@@ -15,6 +15,7 @@ RASTER_ZIP_ENTRY = "HYP_HR_SR_W_DR.tif"
 EXTRACTED_DIR = DATA_DIR / "extracted"
 RASTER_COG    = EXTRACTED_DIR / "HYP_HR_SR_W_DR_cog.tif"
 RASTER_TIF    = RASTER_COG   # COG with internal overviews — fast tile rendering
+MBTILES_PATH  = DATA_DIR / "tiles" / "hyp.mbtiles"  # Pre-sliced MBTiles — even faster than COG
 
 # Vector ZIPs
 PHYSICAL_ZIP = DATA_DIR / "10m_physical.zip"
