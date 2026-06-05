@@ -70,6 +70,21 @@
             <strong>{{ event.location }}</strong>
           </button>
         </div>
+        <div v-else class="panel-empty">
+          当前资产包没有可投影的路线时间线。
+        </div>
+      </aside>
+
+      <aside v-if="spatialNotice" class="hud-panel spatial-status-panel">
+        <span class="hud-kicker">Asset Spatial Data</span>
+        <h2>空间数据待补齐</h2>
+        <p>{{ spatialNotice }}</p>
+        <div v-if="unmappedNodes.length" class="unmapped-list">
+          <div v-for="item in unmappedNodes" :key="item.name">
+            <strong>{{ item.name }}</strong>
+            <span>{{ item.reason }}</span>
+          </div>
+        </div>
       </aside>
 
       <footer class="subtitle-dock">
@@ -170,6 +185,7 @@ const routeTimeline = computed(() =>
     .sort((a, b) => Number(a.year || 0) - Number(b.year || 0))
 )
 const productNodes = computed(() => props.displayData.spatial?.nodes || [])
+const unmappedNodes = computed(() => props.displayData.spatial?.unmappedNodes || [])
 const accentColor = computed(() => props.routeData?.color || props.displayData.colors?.accent || '#b8d46c')
 const productColor = computed(() => props.displayData.colors?.primary || '#78a6b8')
 const selectedKey = computed(() => {
@@ -189,6 +205,13 @@ const focusCoord = computed(() => {
   const coord = selectedEvent.value?.coordinates || productNodes.value[0]?.coord
   if (!Array.isArray(coord)) return props.displayData.origin || ''
   return `${Math.abs(coord[1]).toFixed(3)}N, ${Math.abs(coord[0]).toFixed(3)}E`
+})
+const spatialNotice = computed(() => {
+  if (!props.displayData.needsSpatialData && (productNodes.value.length || routeTimeline.value.length)) return ''
+  if (props.displayData.sourceAsset) {
+    return '这是 DeepSeek 资产包项目。系统未使用默认案例地图；需要在资产包中补充 map_nodes 或 routes/timeline 的经纬度后，地图才会显示真实节点和路线。'
+  }
+  return ''
 })
 
 function eventKey(event, index) {
@@ -531,6 +554,12 @@ h1 {
   min-height: 0;
 }
 
+.spatial-status-panel {
+  left: 44px;
+  bottom: 170px;
+  padding: 18px;
+}
+
 .hud-panel h2 {
   margin-top: 8px;
   font-family: var(--font-serif);
@@ -615,6 +644,49 @@ h1 {
 .timeline-track strong {
   font-size: 14px;
   font-weight: 500;
+}
+
+.panel-empty {
+  margin-top: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  line-height: 1.55;
+  padding: 10px;
+}
+
+.unmapped-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.unmapped-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 7px;
+}
+
+.unmapped-list strong,
+.unmapped-list span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unmapped-list strong {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.unmapped-list span {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
 }
 
 .subtitle-dock {

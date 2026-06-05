@@ -3,7 +3,7 @@
     v-if="studioDisplayData"
     :display-data="studioDisplayData"
     :route-data="studioRouteData"
-    :route-options="routeOptions"
+    :route-options="studioRouteOptions"
     fullscreen
     @select-event="selectStudioDisplayEvent"
     @select-route="selectStudioDisplayRoute"
@@ -155,13 +155,15 @@ const studioDisplayData = computed(() => {
   if (!id || project?.id !== id || project.outputType !== 'display' || project.outputs?.display?.contentConfirmed !== true) return null
   return studioStore.mergedDisplayData
 })
-const studioRouteData = computed(() => getRoute(studioDisplayData.value?.selectedRouteId))
+const studioRouteData = computed(() => studioDisplayData.value?.assetRouteData || getRoute(studioDisplayData.value?.selectedRouteId))
+const studioRouteOptions = computed(() => studioDisplayData.value?.assetRouteOptions?.length ? studioDisplayData.value.assetRouteOptions : routeOptions.value)
 
 async function applyStudioProject() {
   const id = studioProjectId.value
   if (!id) return
   const project = await studioStore.loadProject(id)
   if (!project) return
+  if (studioStore.mergedDisplayData?.assetRouteData) return
   await loadRoutes()
   const routeId = studioStore.mergedDisplayData?.selectedRouteId
   if (routeId) await loadRoute(routeId)
@@ -174,6 +176,7 @@ function selectStudioDisplayEvent(key) {
 async function selectStudioDisplayRoute(id) {
   studioStore.updateOutputField('display', 'selectedRouteId', id)
   studioStore.updateOutputField('display', 'selectedEventKey', null)
+  if (studioStore.mergedDisplayData?.assetRouteData) return
   await loadRoute(id)
 }
 

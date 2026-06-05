@@ -1,37 +1,41 @@
 <template>
-  <main class="import-page">
-    <section class="hero-strip">
+  <main class="asset-page">
+    <section class="asset-header">
       <div>
         <span class="eyebrow">Spatial Brand Asset Package</span>
         <h1>空间品牌资产生成器</h1>
-        <p>上传检测报告、品牌资料和产地信息，生成营销海报、实证白皮书与智慧大屏。</p>
+        <p>上传产品资料、检测报告、产地证明、表格和品牌文档，让 DeepSeek 提取证据、空间节点、视觉方向和可交付资产。</p>
       </div>
-      <div class="status-badge">资产生成器</div>
+      <div class="format-strip">
+        <span v-for="item in supportedFormats" :key="item">{{ item }}</span>
+      </div>
     </section>
 
-    <section class="workspace-grid">
-      <div class="upload-panel">
-        <div class="template-block">
-          <div class="section-title">
-            <span>选择案例模板</span>
-            <small>{{ selectedTemplate.origin }}</small>
+    <section class="asset-workspace">
+      <aside class="input-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">Source</span>
+            <h2>资料输入</h2>
           </div>
-          <div class="template-grid">
-            <button
-              v-for="item in productTemplates"
-              :key="item.id"
-              type="button"
-              class="template-card"
-              :class="{ active: item.id === selectedTemplateId }"
-              @click="selectTemplate(item.id)"
-            >
-              <strong>{{ item.name }}</strong>
-              <span>{{ item.origin }}</span>
-            </button>
-          </div>
+          <button v-if="files.length || manualText" type="button" class="ghost-btn" @click="resetAll">清空</button>
         </div>
 
-        <div
+        <div class="template-grid">
+          <button
+            v-for="item in templates"
+            :key="item.id"
+            type="button"
+            class="template-card"
+            :class="{ active: item.id === selectedTemplateId }"
+            @click="selectedTemplateId = item.id"
+          >
+            <strong>{{ item.name }}</strong>
+            <span>{{ item.origin }}</span>
+          </button>
+        </div>
+
+        <label
           class="dropzone"
           :class="{ dragging: isDragging }"
           @dragenter.prevent="isDragging = true"
@@ -43,265 +47,392 @@
             ref="fileInput"
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg"
+            accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,.png,.jpg,.jpeg,.webp"
             @change="onFileInput"
           />
-          <div class="upload-icon">↑</div>
-          <h2>拖拽资料到这里</h2>
-          <p>支持检测报告、品牌介绍、产地证明、产品图片等材料，系统将根据资料类型生成品牌资产包。</p>
-          <button type="button" @click="fileInput?.click()">选择本地文件</button>
-        </div>
+          <span class="upload-mark">+</span>
+          <strong>拖放资料到这里，或点击选择</strong>
+          <small>支持 PDF、DOCX、XLSX、CSV、TXT、Markdown、JSON 和图片素材。图片会作为视觉素材记录，暂不做 OCR。</small>
+        </label>
 
         <div class="file-list">
           <div class="section-title">
-            <span>资料清单</span>
-            <button v-if="files.length" type="button" @click="clearFiles">清空</button>
+            <span>文件队列</span>
+            <small>{{ files.length }} 个文件</small>
           </div>
-          <div v-if="!files.length" class="empty-state">也可以先使用当前案例模板资料，快速生成一套空间品牌资产包。</div>
+          <div v-if="!files.length" class="empty-box">还没有文件。你也可以只填写下方文字说明，让 DeepSeek 先生成一版资产方案。</div>
           <div v-for="file in files" :key="file.id" class="file-row">
             <div>
               <strong>{{ file.name }}</strong>
-              <small>{{ file.size }} · {{ file.type }}</small>
+              <small>{{ file.kind }} / {{ file.size }}</small>
             </div>
-            <span>{{ file.stage }}</span>
+            <button type="button" @click="removeFile(file.id)">移除</button>
           </div>
         </div>
 
-        <div class="ai-panel">
+        <div class="manual-block">
           <div class="section-title">
-            <span>DeepSeek 文档分析</span>
-            <button type="button" @click="fillTemplateText">填入模板示例</button>
+            <span>补充说明</span>
+            <button type="button" @click="fillTemplateText">填入示例</button>
           </div>
           <textarea
-            v-model="documentText"
-            placeholder="粘贴产品说明、检测报告摘要、品牌资料、产地证明或工艺流程文本。当前版本先分析文本；PDF/DOCX 自动解析可在后端继续扩展。"
-          ></textarea>
-          <div class="ai-actions">
-            <small>模型会输出产品、证据、空间可视化、品牌资产与风险评分。</small>
-            <button type="button" :disabled="isAnalyzing" @click="analyzeDocumentText">
-              {{ isAnalyzing ? '分析中...' : 'DeepSeek 分析文档' }}
-            </button>
-          </div>
-          <p v-if="analysisError" class="error-text">{{ analysisError }}</p>
-        </div>
-      </div>
-
-      <aside class="process-panel">
-        <div class="notice">
-          当前流程不会保存原始文件，生成结果将进入营销海报、实证白皮书与智慧大屏模块。
+            v-model="manualText"
+            placeholder="可补充产品名称、产地、检测指标、品牌定位、希望的视觉风格、目标渠道等。"
+          />
         </div>
 
-        <div class="score-card">
-          <div>
-            <span class="score-label">{{ aiPackage ? 'AI 可视化适配度' : '资料完整度' }}</span>
-            <strong>{{ completenessScore }}%</strong>
-          </div>
-          <div class="score-track">
-            <div class="score-fill" :style="{ width: `${completenessScore}%` }"></div>
-          </div>
-          <p>{{ completenessHint }}</p>
-        </div>
-
-        <div v-if="aiPackage" class="ai-summary">
-          <div class="package-head">
-            <div>
-              <span>识别产品</span>
-              <strong>{{ aiProductName }}</strong>
-            </div>
-            <small>{{ aiPackage.product.origin || selectedTemplate.origin }}</small>
-          </div>
-          <div class="score-grid">
-            <div v-for="item in aiScores" :key="item.label">
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
-            </div>
-          </div>
-          <div class="insight-list">
-            <strong>可视化建议</strong>
-            <p v-for="item in visualizationHints" :key="item">{{ item }}</p>
-          </div>
-        </div>
-
-        <div class="requirements">
-          <div v-for="item in materialChecks" :key="item.key" class="requirement-card" :class="{ ready: item.ready }">
-            <span>{{ item.index }}</span>
-            <div>
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.ready ? '已具备，可参与资产生成。' : item.desc }}</p>
-            </div>
-          </div>
-        </div>
-
-        <button class="generate-btn" type="button" :disabled="isGenerating" @click="startGeneration">
-          {{ isGenerating ? '生成中...' : '生成空间品牌资产包' }}
+        <button class="primary-btn" type="button" :disabled="isAnalyzing || !canAnalyze" @click="analyzeAssets">
+          {{ isAnalyzing ? 'DeepSeek 分析中...' : '开始生成资产分析' }}
         </button>
+        <p v-if="errorText" class="error-text">{{ errorText }}</p>
+      </aside>
 
-        <div v-if="isGenerating || completed" class="progress-box">
-          <div class="progress-head">
-            <span>{{ activeStep }}</span>
-            <strong>{{ progress }}%</strong>
+      <section class="output-panel">
+        <div class="progress-card">
+          <div class="panel-head compact">
+            <div>
+              <span class="eyebrow">AI Workflow</span>
+              <h2>可视化反馈</h2>
+            </div>
+            <strong>{{ progressPercent }}%</strong>
           </div>
-          <div class="progress-track">
-            <div class="progress-fill" :style="{ width: `${progress}%` }"></div>
-          </div>
-          <ol>
-            <li
-              v-for="(step, index) in steps"
-              :key="step"
-              :class="{ active: index === currentStepIndex, done: index < currentStepIndex || completed }"
-            >
-              {{ step }}
+          <div class="progress-track"><span :style="{ width: `${progressPercent}%` }" /></div>
+          <ol class="timeline">
+            <li v-for="step in visibleSteps" :key="step.key" :class="step.status">
+              <span>{{ step.index }}</span>
+              <div>
+                <strong>{{ step.title }}</strong>
+                <small>{{ step.detail }}</small>
+              </div>
             </li>
           </ol>
         </div>
 
-        <div v-if="completed" class="result-box">
-          <div class="package-head">
-            <div>
-              <span>资产包编号</span>
-              <strong>{{ packageId }}</strong>
+        <div v-if="analysis" class="result-grid">
+          <section class="result-card hero-result">
+            <span class="eyebrow">Product</span>
+            <h2>{{ productName }}</h2>
+            <p>{{ packageData.brand_assets.slogan || selectedTemplate.summary }}</p>
+            <div class="score-grid">
+              <div v-for="score in scoreCards" :key="score.label">
+                <span>{{ score.label }}</span>
+                <strong>{{ score.value }}%</strong>
+              </div>
             </div>
-            <small>{{ aiProductName || selectedTemplate.name }}</small>
-          </div>
-          <p>{{ aiSummary || selectedTemplate.summary }}</p>
-          <div class="asset-grid">
-            <div v-for="asset in generatedAssets" :key="asset.title" class="asset-card">
-              <strong>{{ asset.title }}</strong>
-              <span>{{ asset.desc }}</span>
+          </section>
+
+          <section class="result-card">
+            <span class="eyebrow">DeepSeek 可见分析</span>
+            <ul class="plain-list">
+              <li v-for="item in thinkingTrace" :key="item">{{ item }}</li>
+            </ul>
+          </section>
+
+          <section class="result-card">
+            <span class="eyebrow">文件解析结果</span>
+            <div v-for="file in extractionFiles" :key="file.name" class="extract-row">
+              <strong>{{ file.name }}</strong>
+              <small>{{ file.status }} / {{ file.chars }} chars</small>
+              <p>{{ file.preview || file.note }}</p>
             </div>
-          </div>
-          <div class="result-actions">
-            <button type="button" @click="openOutput('/marketing')">查看营销海报</button>
-            <button type="button" @click="openOutput('/archive')">查看实证白皮书</button>
-            <button type="button" @click="openOutput('/brand')">查看智慧大屏</button>
-          </div>
+          </section>
+
+          <section class="result-card">
+            <span class="eyebrow">证据与风险</span>
+            <h3>可用证据</h3>
+            <ul class="plain-list">
+              <li v-for="item in evidenceList" :key="item">{{ item }}</li>
+            </ul>
+            <h3>风险提示</h3>
+            <ul class="plain-list warning">
+              <li v-for="item in riskList" :key="item">{{ item }}</li>
+            </ul>
+          </section>
+
+          <section class="result-card">
+            <span class="eyebrow">引用定位</span>
+            <div v-if="citationList.length" class="citation-list">
+              <article v-for="item in citationList" :key="item.id || `${item.source}-${item.locator}`">
+                <div>
+                  <strong>{{ item.claim || '证据引用' }}</strong>
+                  <small>{{ item.source || '未标注来源' }} · {{ item.locator || '未标注位置' }}</small>
+                </div>
+                <p>{{ item.quote || 'DeepSeek 未返回原文摘录，建议打开原始资料复核。' }}</p>
+                <span>{{ Math.round((item.confidence || 0) * 100) }}%</span>
+              </article>
+            </div>
+            <div v-else class="empty-box">DeepSeek 暂未返回引用定位。建议在补充说明中明确报告页码、表格名称或认证编号后重新分析。</div>
+          </section>
+
+          <section class="result-card">
+            <span class="eyebrow">人工复核</span>
+            <div class="review-summary">
+              <strong>{{ reviewStatusLabel }}</strong>
+              <p>{{ reviewStatus.summary || '证据尚未人工复核。' }}</p>
+              <small>{{ reviewedCount }} / {{ reviewItems.length }} 项已标记复核</small>
+            </div>
+            <div v-if="reviewItems.length" class="review-list">
+              <label v-for="(item, index) in reviewItems" :key="reviewKey(item, index)">
+                <input
+                  type="checkbox"
+                  :checked="isReviewed(item, index)"
+                  @change="toggleReview(item, index, $event.target.checked)"
+                />
+                <span>
+                  <strong>{{ item.label }}</strong>
+                  <small>{{ reviewItemLabel(item, index) }} · {{ item.reason || '请核验原件、编号、日期和批次。' }}</small>
+                </span>
+              </label>
+            </div>
+            <div v-else class="empty-box">当前资产包没有返回具体复核项，建议至少人工核验产地证明、检测报告和宣传表述。</div>
+          </section>
+
+          <section class="result-card wide">
+            <span class="eyebrow">资产产出建议</span>
+            <div class="asset-grid">
+              <article v-for="asset in generatedAssets" :key="asset.title">
+                <strong>{{ asset.title }}</strong>
+                <p>{{ asset.desc }}</p>
+              </article>
+            </div>
+            <div class="action-row">
+              <button type="button" :disabled="studioCreating" @click="createStudioProject('poster')">
+                {{ studioCreating ? '创建中...' : '一键生成海报项目' }}
+              </button>
+              <button type="button" :disabled="studioCreating" @click="createStudioProject('archive')">生成白皮书项目</button>
+              <button type="button" :disabled="studioCreating" @click="createStudioProject('display')">生成大屏项目</button>
+              <button type="button" @click="openOutput('/marketing')">查看营销海报</button>
+              <button type="button" @click="openOutput('/archive')">查看白皮书</button>
+              <button type="button" @click="openOutput('/brand')">查看智慧大屏</button>
+            </div>
+            <p v-if="studioStatus" class="status-text">{{ studioStatus }}</p>
+            <p v-if="studioError" class="error-text">{{ studioError }}</p>
+          </section>
+
+          <section class="result-card wide">
+            <span class="eyebrow">业务流转</span>
+            <div class="business-flow">
+              <article v-for="step in businessSteps" :key="step.title" :class="{ ready: step.ready }">
+                <span>{{ step.index }}</span>
+                <strong>{{ step.title }}</strong>
+                <p>{{ step.detail }}</p>
+              </article>
+            </div>
+            <div class="action-row">
+              <button type="button" @click="copyPackage">复制资产包 JSON</button>
+              <button type="button" @click="downloadPackage">下载资产包 JSON</button>
+            </div>
+            <p v-if="copyStatus" class="status-text">{{ copyStatus }}</p>
+          </section>
+
+          <section class="result-card wide ai-chat-card">
+            <div class="chat-head">
+              <div>
+                <span class="eyebrow">DeepSeek Co-pilot</span>
+                <h2>和 AI 继续共创资产包</h2>
+              </div>
+              <button type="button" :disabled="chatLoading" @click="askAssetQuestion('请根据当前资产包，告诉我下一步最应该补齐哪些资料。')">
+                资料补齐建议
+              </button>
+            </div>
+
+            <div class="quick-chat">
+              <button v-for="prompt in assetPrompts" :key="prompt" type="button" :disabled="chatLoading" @click="askAssetQuestion(prompt)">
+                {{ prompt }}
+              </button>
+            </div>
+
+            <div class="asset-chat-log">
+              <div v-for="message in assetMessages" :key="message.id" class="asset-message" :class="message.role">
+                <span>{{ message.role === 'assistant' ? 'AI' : '你' }}</span>
+                <p>{{ message.content }}</p>
+              </div>
+              <div v-if="!assetMessages.length" class="chat-placeholder">
+                分析完成后可以继续追问，例如：如何做成小红书海报、白皮书还缺什么证据、智慧大屏应突出哪些节点。
+              </div>
+            </div>
+
+            <div v-if="chatRecommendations.length" class="recommendation-grid">
+              <article v-for="item in chatRecommendations" :key="`${item.target}-${item.title}`">
+                <span>{{ item.priority || 'medium' }}</span>
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.detail }}</p>
+              </article>
+            </div>
+
+            <ul v-if="chatNextActions.length" class="plain-list">
+              <li v-for="item in chatNextActions" :key="item">{{ item }}</li>
+            </ul>
+
+            <form class="asset-chat-form" @submit.prevent="sendAssetChat">
+              <textarea v-model="assetDraft" :disabled="chatLoading" placeholder="继续询问 DeepSeek：例如，帮我把这个资产包转成高端礼盒海报方向" />
+              <button type="submit" :disabled="chatLoading || !assetDraft.trim()">{{ chatLoading ? '思考中' : '发送' }}</button>
+            </form>
+            <p v-if="chatError" class="error-text">{{ chatError }}</p>
+          </section>
         </div>
-      </aside>
+
+        <div v-else class="empty-preview">
+          <span class="eyebrow">Ready</span>
+          <h2>等待资料分析</h2>
+          <p>完成分析后，这里会显示 DeepSeek 的可见处理步骤、文件解析情况、证据卡片、风险提示和资产产出建议。</p>
+        </div>
+      </section>
     </section>
   </main>
 </template>
 
 <script setup>
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { api } from '../utils/api.js'
 
 const router = useRouter()
 const fileInput = ref(null)
 const files = ref([])
+const manualText = ref('')
 const isDragging = ref(false)
-const isGenerating = ref(false)
 const isAnalyzing = ref(false)
-const completed = ref(false)
-const progress = ref(0)
-const currentStepIndex = ref(0)
+const errorText = ref('')
+const analysis = ref(null)
+const workflowState = ref('idle')
 const selectedTemplateId = ref('jasmine')
-const documentText = ref('')
-const analysisError = ref('')
-const aiPackage = ref(null)
-let timer = null
+const assetDraft = ref('')
+const assetMessages = ref([])
+const chatLoading = ref(false)
+const chatError = ref('')
+const chatRecommendations = ref([])
+const chatNextActions = ref([])
+const copyStatus = ref('')
+const studioCreating = ref(false)
+const studioError = ref('')
+const studioStatus = ref('')
+const reviewChecks = ref({})
 
-const productTemplates = [
-  { id: 'jasmine', name: '茉莉风味产品', origin: '广西横州', summary: '围绕茉莉花窨制、香气证据和产地场景生成一套空间品牌表达。' },
-  { id: 'coconut', name: '生椰风味产品', origin: '海南文昌', summary: '围绕热带原料、冷链加工和年轻消费场景生成品牌资产。' },
-  { id: 'pepper', name: '汉源花椒', origin: '四川雅安', summary: '围绕贡椒产地、山地生态和麻香指标生成实证型品牌资产。' },
-  { id: 'ham', name: '宣威火腿', origin: '云南宣威', summary: '围绕发酵工艺、山地气候和非遗叙事生成传播资产。' },
+const supportedFormats = ['PDF', 'DOCX', 'XLSX', 'CSV', 'TXT', 'MD', 'JSON', 'IMG']
+const assetPrompts = [
+  '帮我规划海报、白皮书和大屏的生产顺序',
+  '把这个资产包改成更适合招商路演',
+  '指出当前证据链最大的风险',
+  '给我三种视觉风格和色系方向',
 ]
 
-const steps = ['读取资料包', '提取产地与检测指标', '匹配空间节点', '生成海报、白皮书与智慧大屏']
+const templates = [
+  { id: 'jasmine', name: '茉莉茶饮', origin: '广西横州 / 福建宁德', summary: '围绕窨制工艺、花茶双产地和现代茶饮渠道生成品牌资产。' },
+  { id: 'coconut', name: '生椰饮品', origin: '海南文昌', summary: '围绕热带原料、冷链加工和年轻消费场景生成品牌资产。' },
+  { id: 'pepper', name: '汉源花椒', origin: '四川雅安', summary: '围绕贡椒产地、山地生态和麻香指标生成实证型品牌资产。' },
+  { id: 'rice', name: '五常大米', origin: '黑龙江五常', summary: '围绕寒地黑土、稻作周期和食味指标生成空间叙事。' },
+]
 
-const selectedTemplate = computed(() => productTemplates.find((item) => item.id === selectedTemplateId.value) || productTemplates[0])
-const activeStep = computed(() => steps[currentStepIndex.value] || '生成完成')
-const packageId = computed(() => `PKG-${selectedTemplate.value.id.toUpperCase()}-${new Date().getFullYear()}`)
+const selectedTemplate = computed(() => templates.find(item => item.id === selectedTemplateId.value) || templates[0])
+const canAnalyze = computed(() => files.value.length > 0 || manualText.value.trim().length >= 20)
+const packageData = computed(() => analysis.value?.asset_package || emptyPackage())
+const thinkingTrace = computed(() => analysis.value?.thinking_trace || [])
+const extractionFiles = computed(() => analysis.value?.extraction?.files || [])
+const productName = computed(() => packageData.value.product.name || selectedTemplate.value.name)
+const citationList = computed(() => Array.isArray(packageData.value.citations) ? packageData.value.citations : [])
+const reviewStatus = computed(() => packageData.value.review_status || { status: 'pending', summary: '证据尚未人工复核。', required_items: [] })
+const reviewItems = computed(() => Array.isArray(reviewStatus.value.required_items) ? reviewStatus.value.required_items : [])
+const reviewedCount = computed(() => reviewItems.value.filter((item, index) => isReviewed(item, index)).length)
 
-const materialChecks = computed(() => {
-  const hasReport = hasType('检测报告')
-  const hasBrand = hasType('品牌资料')
-  const hasOrigin = hasType('产地信息')
+const progressPercent = computed(() => {
+  const map = { idle: 0, uploading: 22, extracting: 45, thinking: 72, done: 100, error: 0 }
+  return map[workflowState.value] ?? 0
+})
+
+const visibleSteps = computed(() => {
+  const order = ['uploading', 'extracting', 'thinking', 'done']
+  const activeIndex = order.indexOf(workflowState.value)
+  const doneIndex = workflowState.value === 'done' ? order.length : activeIndex
   return [
-    { key: 'report', index: '01', title: '检测报告', desc: '缺少检测报告时，实证背书会偏弱。', ready: hasReport },
-    { key: 'brand', index: '02', title: '品牌资料', desc: '缺少品牌资料时，营销文案会偏模板化。', ready: hasBrand },
-    { key: 'origin', index: '03', title: '产地信息', desc: '缺少产地信息时，空间叙事会偏弱。', ready: hasOrigin },
+    { key: 'uploading', index: '01', title: '接收资料', detail: `${files.value.length} 个文件，${manualText.value.trim() ? '含补充说明' : '无补充说明'}` },
+    { key: 'extracting', index: '02', title: '解析格式', detail: '提取 PDF/DOCX/XLSX/CSV/文本内容，记录图片素材。' },
+    { key: 'thinking', index: '03', title: 'DeepSeek 分析', detail: '生成用户可见的分析步骤、证据、风险和视觉方向。' },
+    { key: 'done', index: '04', title: '资产包产出', detail: '沉淀为海报、白皮书、大屏和 Studio 编辑建议。' },
+  ].map((step, index) => ({
+    ...step,
+    status: workflowState.value === step.key ? 'active' : index < doneIndex ? 'done' : 'pending',
+  }))
+})
+
+const scoreCards = computed(() => {
+  const scores = packageData.value.scores
+  return [
+    { label: '资料完整度', value: scores.completeness },
+    { label: '证据强度', value: scores.evidence_strength },
+    { label: '可视化适配', value: scores.visualization_fit },
+    { label: '风险', value: scores.risk },
   ]
 })
 
-const completenessScore = computed(() => {
-  if (aiPackage.value) return aiPackage.value.scores.visualization_fit
-  if (!files.value.length) return 100
-  const readyCount = materialChecks.value.filter((item) => item.ready).length
-  return Math.round((readyCount / materialChecks.value.length) * 100)
-})
+const evidenceList = computed(() => [
+  ...toTextList(packageData.value.evidence.lab_indicators),
+  ...toTextList(packageData.value.evidence.certifications),
+  ...toTextList(packageData.value.evidence.origin_claims),
+  ...toTextList(packageData.value.evidence.process_steps),
+].slice(0, 8))
 
-const completenessHint = computed(() => {
-  if (aiPackage.value) {
-    return `AI 已完成结构化分析：证据强度 ${aiPackage.value.scores.evidence_strength}%，资料完整度 ${aiPackage.value.scores.completeness}%，风险 ${aiPackage.value.scores.risk}%。`
-  }
-  if (!files.value.length) return '当前将使用案例模板资料，快速生成完整资产包。'
-  if (completenessScore.value === 100) return '资料类型完整，可生成完整资产包。'
-  if (completenessScore.value >= 67) return '资料基本可用，但部分成果会使用模板补全。'
-  return '资料不足，建议补充检测、品牌或产地材料。'
-})
-
-const aiProductName = computed(() => aiPackage.value?.product?.name || '')
-
-const aiSummary = computed(() => {
-  if (!aiPackage.value) return ''
-  const slogan = aiPackage.value.brand_assets.slogan
-  if (slogan) return slogan
-  return `${aiProductName.value || selectedTemplate.value.name}适合围绕产地、工艺、检测证据与传播路径生成空间品牌资产。`
-})
-
-const aiScores = computed(() => {
-  const scores = aiPackage.value?.scores || {}
-  return [
-    { label: '完整度', value: `${scores.completeness ?? 0}%` },
-    { label: '证据强度', value: `${scores.evidence_strength ?? 0}%` },
-    { label: '可视化', value: `${scores.visualization_fit ?? 0}%` },
-    { label: '风险', value: `${scores.risk ?? 0}%` },
-  ]
-})
-
-const visualizationHints = computed(() => {
-  if (!aiPackage.value) return []
-  const data = aiPackage.value.visualization
-  return [
-    ...toTextList(data.map_nodes).slice(0, 2).map((item) => `地图节点：${item}`),
-    ...toTextList(data.routes).slice(0, 2).map((item) => `传播路线：${item}`),
-    ...toTextList(data.timeline).slice(0, 2).map((item) => `时间轴：${item}`),
-  ].slice(0, 5)
+const riskList = computed(() => {
+  const risks = toTextList(packageData.value.risks)
+  return risks.length ? risks : ['暂无高风险项，但仍建议人工复核检测指标、产地证明和宣传表述。']
 })
 
 const generatedAssets = computed(() => {
-  if (!aiPackage.value) {
-    return [
-      { title: '营销海报', desc: `${selectedTemplate.value.name}传播封面、卖点文案与视觉锚点。` },
-      { title: '实证白皮书', desc: '检测指标、产地证据、工艺说明与可信背书。' },
-      { title: '智慧大屏', desc: `${selectedTemplate.value.origin}空间节点、路径与品牌叙事。` },
-      { title: '分享资产', desc: '分享链接、嵌入代码与后续导出入口。' },
-    ]
-  }
-  const assets = aiPackage.value.brand_assets
-  const evidence = aiPackage.value.evidence
+  const brand = packageData.value.brand_assets
   return [
-    { title: '营销海报', desc: firstText(assets.poster_copy) || `${aiProductName.value}传播封面、卖点文案与视觉锚点。` },
-    { title: '实证白皮书', desc: firstText(assets.whitepaper_outline) || firstText(evidence.lab_indicators) || '检测指标、产地证据、工艺说明与可信背书。' },
-    { title: '智慧大屏', desc: firstText(assets.dashboard_cards) || firstText(aiPackage.value.visualization.map_nodes) || `${selectedTemplate.value.origin}空间节点、路径与品牌叙事。` },
-    { title: '风险与审核', desc: firstText(aiPackage.value.risks) || '未发现明显高风险项，建议进入人工复核。' },
+    { title: '营销海报', desc: firstText(brand.poster_copy) || '提炼主视觉、卖点文案、短句和传播标题。' },
+    { title: '实证白皮书', desc: firstText(brand.whitepaper_outline) || '组织检测指标、产地证据、工艺流程和风险说明。' },
+    { title: '智慧大屏', desc: firstText(brand.dashboard_cards) || firstText(packageData.value.visualization.map_nodes) || '生成空间节点、时间线和证据面板。' },
+    { title: '视觉方向', desc: firstText(brand.style_direction) || firstText(brand.layout_direction) || '给出色系、版式、材质和渠道适配建议。' },
   ]
 })
 
-function selectTemplate(id) {
-  selectedTemplateId.value = id
-  completed.value = false
-  aiPackage.value = null
-  analysisError.value = ''
-}
+const businessSteps = computed(() => {
+  const scores = packageData.value.scores
+  return [
+    {
+      index: '01',
+      title: '资料解析',
+      detail: `${extractionFiles.value.length} 个资料源已进入解析记录。`,
+      ready: extractionFiles.value.length > 0,
+    },
+    {
+      index: '02',
+      title: '证据审核',
+      detail: scores.evidence_strength >= 60 ? '证据强度可进入内容生产。' : '建议补充检测报告、认证或产地证明。',
+      ready: scores.evidence_strength >= 60,
+    },
+    {
+      index: '03',
+      title: 'AI 共创',
+      detail: assetMessages.value.length ? '已有对话建议，可继续细化输出方向。' : '使用下方对话框继续细化海报、白皮书和大屏。',
+      ready: assetMessages.value.length > 0,
+    },
+    {
+      index: '04',
+      title: 'Studio 编辑',
+      detail: '进入 Studio 后可继续编辑海报文案、主题、图片焦点和导出结果。',
+      ready: scores.visualization_fit >= 50,
+    },
+    {
+      index: '05',
+      title: '交付导出',
+      detail: '复制或下载 JSON，作为资产包记录和后续人工复核依据。',
+      ready: Boolean(analysis.value),
+    },
+  ]
+})
 
-function clearFiles() {
-  files.value = []
-  completed.value = false
-  aiPackage.value = null
-  analysisError.value = ''
-}
+const reviewStatusLabel = computed(() => {
+  const labels = {
+    pending: '等待人工复核',
+    needs_review: '需要重点复核',
+    in_review: '复核进行中',
+    approved: '已复核通过',
+    rejected: '复核未通过',
+  }
+  return labels[reviewStatus.value.status] || '等待人工复核'
+})
 
 function onDrop(event) {
   isDragging.value = false
@@ -314,93 +445,177 @@ function onFileInput(event) {
 }
 
 function addFiles(fileList) {
-  const incoming = Array.from(fileList).map((file) => ({
+  const incoming = Array.from(fileList || []).map(file => ({
     id: `${file.name}-${file.size}-${file.lastModified}`,
+    file,
     name: file.name,
     size: formatSize(file.size),
-    type: inferType(file.name),
-    stage: '待识别',
+    kind: inferKind(file.name),
   }))
   files.value = [...files.value, ...incoming]
-  completed.value = false
+  analysis.value = null
+  errorText.value = ''
+  workflowState.value = 'idle'
 }
 
-async function analyzeDocumentText() {
-  analysisError.value = ''
-  const text = documentText.value.trim()
-  if (text.length < 20) {
-    analysisError.value = '请先粘贴至少 20 个字的产品文档文本，或使用模板示例。'
-    return false
-  }
+function removeFile(id) {
+  files.value = files.value.filter(file => file.id !== id)
+}
 
+function resetAll() {
+  files.value = []
+  manualText.value = ''
+  analysis.value = null
+  errorText.value = ''
+  workflowState.value = 'idle'
+}
+
+async function analyzeAssets() {
+  if (!canAnalyze.value || isAnalyzing.value) return
   isAnalyzing.value = true
+  errorText.value = ''
+  analysis.value = null
+  workflowState.value = 'uploading'
+
   try {
-    const res = await fetch('/api/assets/analyze-text', {
+    const form = new FormData()
+    files.value.forEach(item => form.append('files', item.file))
+    form.append('manual_text', manualText.value)
+    form.append('template_id', selectedTemplate.value.id)
+    form.append('product_hint', selectedTemplate.value.name)
+    form.append('origin_hint', selectedTemplate.value.origin)
+
+    workflowState.value = 'extracting'
+    const response = await fetch('/api/assets/analyze-files', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text,
-        template_id: selectedTemplate.value.id,
-        product_hint: selectedTemplate.value.name,
-        origin_hint: selectedTemplate.value.origin,
-        file_names: files.value.map((file) => file.name),
-      }),
+      body: form,
     })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      throw new Error(data.detail || `HTTP ${res.status}`)
-    }
-    aiPackage.value = data.asset_package
-    completed.value = true
-    progress.value = 100
-    currentStepIndex.value = steps.length
-    return true
-  } catch (err) {
-    analysisError.value = `DeepSeek 分析失败：${err.message}`
-    return false
+
+    workflowState.value = 'thinking'
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`)
+
+    analysis.value = data
+    assetMessages.value = []
+    chatRecommendations.value = []
+    chatNextActions.value = []
+    studioError.value = ''
+    studioStatus.value = ''
+    reviewChecks.value = {}
+    workflowState.value = 'done'
+  } catch (error) {
+    workflowState.value = 'error'
+    errorText.value = `分析失败：${error.message}`
   } finally {
     isAnalyzing.value = false
   }
 }
 
-async function startGeneration() {
-  if (isGenerating.value) return
-  if (!files.value.length) addTemplateFiles()
-  if (documentText.value.trim() && !aiPackage.value) {
-    const ok = await analyzeDocumentText()
-    if (!ok) return
+async function createStudioProject(outputType = 'poster') {
+  if (!analysis.value || studioCreating.value) return
+  studioError.value = ''
+  studioStatus.value = ''
+
+  if (!localStorage.getItem('auth_token')) {
+    studioError.value = '需要先登录，才能把资产包保存为 Studio 项目。登录后请回到本页重新点击创建。'
+    return
   }
 
-  completed.value = false
-  isGenerating.value = true
-  progress.value = 0
-  currentStepIndex.value = 0
-  clearInterval(timer)
-
-  timer = setInterval(() => {
-    progress.value = Math.min(progress.value + 4, 100)
-    currentStepIndex.value = Math.min(Math.floor(progress.value / 25), steps.length - 1)
-    if (progress.value >= 100) {
-      clearInterval(timer)
-      isGenerating.value = false
-      completed.value = true
-      currentStepIndex.value = steps.length
-    }
-  }, 140)
+  studioCreating.value = true
+  try {
+    const response = await api('/api/studio/projects/from-asset-package', {
+      method: 'POST',
+      body: JSON.stringify({
+        asset_package: packageData.value,
+        extraction: analysis.value.extraction || {},
+        template_id: selectedTemplate.value.id,
+        output_type: outputType,
+        name: `${productName.value} · ${outputLabel(outputType)}项目`,
+      }),
+    })
+    if (!response.ok) throw new Error(response.error || response.detail || 'Studio 项目创建失败')
+    const projectId = response.data?.project?.id
+    studioStatus.value = 'Studio 项目已创建，正在打开编辑器。'
+    router.push({
+      path: '/studio',
+      query: {
+        project: projectId,
+        source: 'asset-generator',
+      },
+    })
+  } catch (error) {
+    studioError.value = `创建 Studio 项目失败：${error.message}`
+  } finally {
+    studioCreating.value = false
+  }
 }
 
-function addTemplateFiles() {
-  const prefix = selectedTemplate.value.name
-  files.value = [
-    { id: 'template-report', name: `${prefix}_风味检测报告.pdf`, size: '2.4 MB', type: '检测报告', stage: '模板资料' },
-    { id: 'template-brand', name: `${prefix}_品牌故事与包装资料.docx`, size: '860 KB', type: '品牌资料', stage: '模板资料' },
-    { id: 'template-origin', name: `${prefix}_产地与工艺节点.xlsx`, size: '512 KB', type: '产地信息', stage: '模板资料' },
-  ]
+async function askAssetQuestion(prompt) {
+  assetDraft.value = prompt
+  await sendAssetChat()
+}
+
+async function sendAssetChat() {
+  const content = assetDraft.value.trim()
+  if (!content || chatLoading.value || !analysis.value) return
+  const userMessage = { id: crypto.randomUUID(), role: 'user', content }
+  assetMessages.value.push(userMessage)
+  assetDraft.value = ''
+  chatLoading.value = true
+  chatError.value = ''
+
+  try {
+    const response = await fetch('/api/assets/asset-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: assetMessages.value.map(({ role, content }) => ({ role, content })),
+        asset_package: packageData.value,
+        extraction: analysis.value.extraction,
+      }),
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`)
+    assetMessages.value.push({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: data.reply || '我已经根据当前资产包生成建议。',
+    })
+    chatRecommendations.value = Array.isArray(data.recommendations) ? data.recommendations : []
+    chatNextActions.value = Array.isArray(data.next_actions) ? data.next_actions : []
+  } catch (error) {
+    chatError.value = `AI 对话失败：${error.message}`
+  } finally {
+    chatLoading.value = false
+  }
+}
+
+async function copyPackage() {
+  if (!analysis.value) return
+  const text = JSON.stringify(analysis.value, null, 2)
+  try {
+    await navigator.clipboard.writeText(text)
+    copyStatus.value = '资产包 JSON 已复制。'
+  } catch {
+    copyStatus.value = '复制失败，请使用下载 JSON。'
+  } finally {
+    setTimeout(() => { copyStatus.value = '' }, 1800)
+  }
+}
+
+function downloadPackage() {
+  if (!analysis.value) return
+  const blob = new Blob([JSON.stringify(analysis.value, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${selectedTemplate.value.id}-asset-package.json`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 function fillTemplateText() {
-  documentText.value = `${selectedTemplate.value.name}产自${selectedTemplate.value.origin}。产品资料包含产地环境、核心原料、传统工艺、检测指标和品牌故事。产地具有稳定供应基础，工艺节点包括原料采收、分级筛选、关键加工、品质检测和冷链仓储。品牌希望突出地方风味、真实产地、工艺传承和现代消费场景，并生成营销海报、实证白皮书和智慧大屏。`
-  analysisError.value = ''
+  manualText.value = `${selectedTemplate.value.name}来自${selectedTemplate.value.origin}。资料包含产地环境、核心原料、加工工艺、检测指标、品牌定位和目标消费场景。希望生成一套空间品牌资产：营销海报突出风味卖点和视觉记忆点，白皮书突出检测指标和产地证据，智慧大屏突出产地节点、传播路径和供应链可信度。`
 }
 
 function openOutput(path) {
@@ -408,22 +623,50 @@ function openOutput(path) {
     path,
     query: {
       case: selectedTemplate.value.id,
-      package: packageId.value,
+      source: 'asset-generator',
     },
   })
 }
 
-function hasType(type) {
-  if (!files.value.length) return true
-  return files.value.some((file) => file.type === type)
+function outputLabel(type) {
+  return {
+    poster: '海报',
+    archive: '白皮书',
+    display: '大屏',
+  }[type] || '产出'
 }
 
-function inferType(name) {
-  if (/检测|报告|report/i.test(name)) return '检测报告'
-  if (/品牌|包装|brand/i.test(name)) return '品牌资料'
-  if (/产地|基地|工艺|origin|craft/i.test(name)) return '产地信息'
-  if (/\.(png|jpg|jpeg)$/i.test(name)) return '产品图片'
-  return '待识别材料'
+function reviewKey(item, index) {
+  return `${item.label || 'review'}-${index}`
+}
+
+function isReviewed(item, index) {
+  return Boolean(reviewChecks.value[reviewKey(item, index)])
+}
+
+function toggleReview(item, index, checked) {
+  reviewChecks.value = {
+    ...reviewChecks.value,
+    [reviewKey(item, index)]: Boolean(checked),
+  }
+}
+
+function reviewItemLabel(item, index) {
+  if (isReviewed(item, index)) return '已标记复核'
+  const labels = {
+    pending: '待复核',
+    needs_review: '需重点复核',
+    in_review: '复核中',
+    approved: '模型判断通过',
+    rejected: '模型判断不通过',
+  }
+  return labels[item.status] || '待复核'
+}
+
+function inferKind(name) {
+  const suffix = name.split('.').pop()?.toUpperCase() || 'FILE'
+  if (['PNG', 'JPG', 'JPEG', 'WEBP'].includes(suffix)) return 'IMG'
+  return suffix
 }
 
 function formatSize(bytes) {
@@ -432,13 +675,12 @@ function formatSize(bytes) {
 }
 
 function firstText(value) {
-  const item = toTextList(value)[0]
-  return item || ''
+  return toTextList(value)[0] || ''
 }
 
 function toTextList(value) {
   if (!Array.isArray(value)) return []
-  return value.map((item) => {
+  return value.map(item => {
     if (typeof item === 'string') return item
     if (item && typeof item === 'object') {
       return item.title || item.name || item.label || item.desc || item.description || JSON.stringify(item)
@@ -447,124 +689,150 @@ function toTextList(value) {
   }).filter(Boolean)
 }
 
-onUnmounted(() => clearInterval(timer))
+function emptyPackage() {
+  return {
+    product: {},
+    evidence: { lab_indicators: [], certifications: [], origin_claims: [], process_steps: [] },
+    visualization: { map_nodes: [], routes: [], timeline: [], radar_metrics: [] },
+    brand_assets: { poster_copy: [], whitepaper_outline: [], dashboard_cards: [], style_direction: [], layout_direction: [] },
+    scores: { completeness: 0, evidence_strength: 0, visualization_fit: 0, risk: 0 },
+    risks: [],
+    citations: [],
+    review_status: { status: 'pending', summary: '证据尚未人工复核。', required_items: [] },
+  }
+}
 </script>
 
 <style scoped>
-.import-page {
+.asset-page {
   min-height: 100vh;
-  padding: calc(var(--navbar-h) + 42px) clamp(42px, 6vw, 96px) 56px;
-  background: #f6f0e7;
-  color: #2f2a22;
-  font-family: var(--font-sans);
+  padding: calc(var(--navbar-h) + 32px) clamp(32px, 4vw, 64px) 42px;
+  background: #f5f1e9;
+  color: var(--text);
 }
 
-.hero-strip {
+.asset-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 32px;
-  margin-bottom: 28px;
-  border-bottom: 1px solid rgba(101, 86, 62, 0.18);
-  padding-bottom: 24px;
+  gap: 28px;
+  margin-bottom: 22px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(74, 65, 55, 0.14);
+}
+
+.asset-header h1,
+.panel-head h2,
+.result-card h2 {
+  margin: 4px 0 0;
+  font-family: var(--font-serif);
+  color: var(--text);
+}
+
+.asset-header h1 {
+  font-size: 42px;
+}
+
+.asset-header p {
+  max-width: 780px;
+  margin: 10px 0 0;
+  color: var(--text-mid);
+  line-height: 1.7;
 }
 
 .eyebrow {
-  display: block;
-  margin-bottom: 10px;
-  color: #9f4a2d;
-  font-family: Georgia, serif;
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  color: var(--earth);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-h1 {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: clamp(38px, 4vw, 62px);
-  letter-spacing: 0;
-}
-
-.hero-strip p {
-  max-width: 760px;
-  margin: 16px 0 0;
-  color: #6b6254;
-  font-size: 17px;
-  line-height: 1.8;
-}
-
-.status-badge {
-  flex-shrink: 0;
-  border: 1px solid rgba(159, 74, 45, 0.28);
-  background: #fff8eb;
-  color: #9f4a2d;
-  border-radius: 999px;
-  padding: 11px 18px;
-  font-weight: 700;
-}
-
-.workspace-grid {
-  display: grid;
-  grid-template-columns: minmax(560px, 1.2fr) minmax(430px, 0.8fr);
-  gap: 24px;
-}
-
-.upload-panel,
-.process-panel {
-  border: 1px solid rgba(101, 86, 62, 0.14);
-  background: rgba(255, 252, 247, 0.72);
-  box-shadow: 0 18px 42px rgba(70, 54, 32, 0.08);
-}
-
-.upload-panel,
-.process-panel {
-  padding: 22px;
-}
-
-.template-block {
-  margin-bottom: 18px;
-}
-
-.section-title {
+.format-strip {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  color: #4b5637;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.format-strip span {
+  border: 1px solid rgba(139, 94, 52, 0.22);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255, 252, 247, 0.72);
+  color: var(--earth);
+  font-size: 11px;
   font-weight: 800;
 }
 
-.section-title small {
-  color: #9f4a2d;
-  font-weight: 700;
+.asset-workspace {
+  display: grid;
+  grid-template-columns: 430px minmax(0, 1fr);
+  gap: 18px;
 }
 
-.section-title button {
-  border: none;
+.input-panel,
+.output-panel > *,
+.result-card {
+  border: 1px solid rgba(74, 65, 55, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 252, 247, 0.84);
+  box-shadow: 0 16px 42px rgba(32, 27, 22, 0.07);
+}
+
+.input-panel {
+  padding: 16px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.panel-head.compact {
+  align-items: center;
+}
+
+.panel-head h2 {
+  font-size: 22px;
+}
+
+.ghost-btn,
+.section-title button,
+.file-row button {
+  border: 0;
   background: transparent;
-  color: #9f4a2d;
+  color: var(--earth);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .template-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .template-card {
-  min-height: 82px;
-  padding: 13px;
-  border: 1px solid rgba(101, 86, 62, 0.15);
+  min-height: 74px;
+  border: 1px solid rgba(74, 65, 55, 0.14);
   border-radius: 6px;
-  background: rgba(244, 239, 230, 0.62);
-  color: #2f2a22;
+  background: rgba(246, 243, 235, 0.7);
+  color: var(--text);
+  cursor: pointer;
+  padding: 11px;
   text-align: left;
 }
 
 .template-card.active {
-  border-color: rgba(159, 74, 45, 0.5);
-  background: #fff6e6;
-  box-shadow: inset 0 0 0 1px rgba(159, 74, 45, 0.2);
+  border-color: rgba(139, 94, 52, 0.42);
+  background: rgba(139, 94, 52, 0.08);
 }
 
 .template-card strong,
@@ -573,411 +841,671 @@ h1 {
 }
 
 .template-card span {
-  margin-top: 8px;
-  color: #7b7162;
-  font-size: 12px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .dropzone {
-  position: relative;
   display: grid;
   place-items: center;
-  min-height: 310px;
+  min-height: 220px;
+  border: 1.5px dashed rgba(94, 123, 80, 0.35);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 252, 247, 0.9), rgba(234, 230, 219, 0.65));
+  cursor: pointer;
+  padding: 20px;
   text-align: center;
-  border: 1.5px dashed rgba(79, 86, 55, 0.38);
-  background:
-    linear-gradient(135deg, rgba(255, 250, 240, 0.9), rgba(238, 230, 211, 0.55)),
-    repeating-linear-gradient(45deg, rgba(159, 74, 45, 0.04) 0 1px, transparent 1px 12px);
-  transition: border-color 180ms ease, background 180ms ease;
 }
 
 .dropzone.dragging {
-  border-color: #9f4a2d;
-  background: #fff6e6;
+  border-color: var(--earth);
+  background: rgba(139, 94, 52, 0.08);
 }
 
 .dropzone input {
   display: none;
 }
 
-.upload-icon {
-  width: 62px;
-  height: 62px;
+.upload-mark {
   display: grid;
   place-items: center;
-  margin-bottom: 14px;
-  border-radius: 50%;
-  background: #4b5637;
-  color: #fff8e9;
-  font-size: 34px;
-  line-height: 1;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--leaf);
+  color: #fffaf3;
+  font-size: 28px;
+  font-weight: 300;
 }
 
-.dropzone h2 {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 30px;
-}
-
-.dropzone p {
-  max-width: 560px;
-  margin: 12px auto 22px;
-  color: #756b5b;
-  line-height: 1.7;
-}
-
-button {
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.dropzone button,
-.generate-btn,
-.result-actions button {
-  height: 44px;
-  border: none;
-  border-radius: 6px;
-  background: #9f4a2d;
-  color: #fff8e9;
-  padding: 0 22px;
-  font-weight: 700;
-}
-
-.file-list {
-  margin-top: 20px;
-}
-
-.ai-panel {
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(101, 86, 62, 0.12);
-}
-
-.ai-panel textarea {
-  display: block;
-  width: 100%;
-  min-height: 190px;
-  resize: vertical;
-  border: 1px solid rgba(101, 86, 62, 0.18);
-  border-radius: 6px;
-  background: rgba(255, 252, 247, 0.82);
-  color: #2f2a22;
-  padding: 14px;
-  font: inherit;
-  line-height: 1.7;
-  outline: none;
-}
-
-.ai-panel textarea:focus {
-  border-color: rgba(159, 74, 45, 0.45);
-  box-shadow: 0 0 0 3px rgba(159, 74, 45, 0.08);
-}
-
-.ai-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
+.dropzone strong {
   margin-top: 12px;
 }
 
-.ai-actions small {
-  color: #7d7466;
+.dropzone small {
+  max-width: 320px;
+  margin-top: 8px;
+  color: var(--text-muted);
   line-height: 1.6;
 }
 
-.ai-actions button {
-  flex-shrink: 0;
-  height: 42px;
-  border: none;
+.file-list,
+.manual-block {
+  margin-top: 16px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--text-mid);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.section-title small {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.empty-box,
+.file-row,
+.extract-row {
+  border: 1px solid rgba(74, 65, 55, 0.1);
   border-radius: 6px;
-  background: #4b5637;
-  color: #fff8e9;
-  padding: 0 18px;
-  font-weight: 800;
+  background: rgba(246, 243, 235, 0.58);
+  padding: 10px;
 }
 
-.ai-actions button:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-
-.error-text {
-  margin: 10px 0 0;
-  color: #9f4a2d;
+.empty-box {
+  color: var(--text-muted);
+  font-size: 12px;
   line-height: 1.6;
-}
-
-.empty-state,
-.file-row {
-  border-top: 1px solid rgba(101, 86, 62, 0.12);
-  padding: 14px 2px;
-}
-
-.empty-state {
-  color: #897f70;
 }
 
 .file-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
+  margin-top: 8px;
 }
 
 .file-row strong,
 .file-row small {
   display: block;
-}
-
-.file-row small {
-  margin-top: 5px;
-  color: #7d7466;
-}
-
-.file-row span {
-  color: #9f4a2d;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.notice {
-  padding: 14px 16px;
-  border-left: 4px solid #9f4a2d;
-  background: #fff6e7;
-  color: #675846;
-  line-height: 1.7;
+.file-row small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
-.score-card {
-  margin-top: 18px;
-  padding: 18px;
-  background: #fffaf2;
-  border: 1px solid rgba(101, 86, 62, 0.14);
+textarea {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  border: 1px solid rgba(74, 65, 55, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 252, 247, 0.9);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.6;
+  outline: none;
+  padding: 10px;
 }
 
-.score-card > div:first-child,
-.progress-head,
-.package-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
+.primary-btn,
+.action-row button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--text);
+  color: #fffaf3;
+  cursor: pointer;
+  font-weight: 850;
+  padding: 0 14px;
 }
 
-.score-label,
-.package-head span {
-  color: #7b7162;
+.primary-btn {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.primary-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.action-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.error-text {
+  margin: 10px 0 0;
+  color: var(--carmine);
   font-size: 12px;
+  line-height: 1.6;
 }
 
-.score-card strong {
-  font-family: Georgia, serif;
-  font-size: 28px;
-  color: #4b5637;
+.output-panel {
+  min-width: 0;
 }
 
-.score-track,
+.progress-card {
+  padding: 16px;
+}
+
+.progress-card strong {
+  color: var(--earth);
+}
+
 .progress-track {
   height: 8px;
   overflow: hidden;
-  margin-top: 10px;
-  background: #e6dccb;
   border-radius: 999px;
+  background: rgba(74, 65, 55, 0.12);
 }
 
-.score-fill,
-.progress-fill {
+.progress-track span {
+  display: block;
   height: 100%;
-  background: linear-gradient(90deg, #9f4a2d, #d6a24a);
-  transition: width 160ms linear;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--earth), var(--leaf));
+  transition: width 220ms ease;
 }
 
-.score-card p {
-  margin: 12px 0 0;
-  color: #746b5d;
-  line-height: 1.6;
-}
-
-.ai-summary {
-  margin-top: 18px;
-  padding: 18px;
-  background: #fffaf2;
-  border: 1px solid rgba(101, 86, 62, 0.14);
-}
-
-.score-grid {
+.timeline {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 16px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.score-grid div {
+.timeline li {
+  display: flex;
+  gap: 10px;
+  min-height: 76px;
+  border: 1px solid rgba(74, 65, 55, 0.1);
+  border-radius: 6px;
+  background: rgba(246, 243, 235, 0.55);
+  padding: 10px;
+}
+
+.timeline li.active {
+  border-color: rgba(139, 94, 52, 0.4);
+  background: rgba(139, 94, 52, 0.08);
+}
+
+.timeline li.done {
+  border-color: rgba(94, 123, 80, 0.28);
+  background: rgba(94, 123, 80, 0.08);
+}
+
+.timeline span {
+  color: var(--earth);
+  font-family: Georgia, serif;
+  font-weight: 850;
+}
+
+.timeline strong,
+.timeline small {
+  display: block;
+}
+
+.timeline small {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.result-card {
+  min-width: 0;
+  padding: 16px;
+}
+
+.result-card.wide,
+.hero-result {
+  grid-column: 1 / -1;
+}
+
+.hero-result p {
+  margin: 10px 0 0;
+  color: var(--text-mid);
+  line-height: 1.6;
+}
+
+.score-grid,
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.score-grid div,
+.asset-grid article {
+  border: 1px solid rgba(74, 65, 55, 0.1);
+  border-radius: 6px;
+  background: rgba(246, 243, 235, 0.64);
   padding: 12px;
-  background: rgba(244, 239, 230, 0.72);
-  border: 1px solid rgba(101, 86, 62, 0.1);
 }
 
 .score-grid span,
-.insight-list strong {
+.score-grid strong {
   display: block;
-  color: #7b7162;
-  font-size: 12px;
+}
+
+.score-grid span {
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .score-grid strong {
-  display: block;
   margin-top: 6px;
-  color: #4b5637;
-  font-family: Georgia, serif;
+  color: var(--leaf);
   font-size: 22px;
 }
 
-.insight-list {
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(101, 86, 62, 0.12);
-}
-
-.insight-list p {
-  margin: 8px 0 0;
-  color: #746b5d;
-  line-height: 1.6;
-}
-
-.requirements {
-  display: grid;
-  gap: 12px;
-  margin: 18px 0;
-}
-
-.requirement-card {
-  display: flex;
-  gap: 14px;
-  padding: 16px;
-  background: rgba(244, 239, 230, 0.7);
-  border: 1px solid rgba(101, 86, 62, 0.1);
-}
-
-.requirement-card.ready {
-  border-color: rgba(75, 86, 55, 0.25);
-  background: rgba(234, 241, 222, 0.68);
-}
-
-.requirement-card span {
-  color: #9f4a2d;
-  font-family: Georgia, serif;
-  font-weight: 800;
-}
-
-.requirement-card strong {
-  display: block;
-  margin-bottom: 6px;
-}
-
-.requirement-card p {
-  margin: 0;
-  color: #786f61;
-  line-height: 1.6;
-}
-
-.generate-btn {
-  width: 100%;
-  height: 50px;
-  background: #4b5637;
-}
-
-.generate-btn:disabled {
-  opacity: 0.72;
-  cursor: wait;
-}
-
-.progress-box,
-.result-box {
-  margin-top: 18px;
-  padding: 18px;
-  background: #fffaf2;
-  border: 1px solid rgba(101, 86, 62, 0.14);
-}
-
-ol {
+.plain-list {
   display: grid;
   gap: 8px;
-  margin: 16px 0 0;
-  padding-left: 20px;
-  color: #8a8071;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-li.active {
-  color: #9f4a2d;
-  font-weight: 800;
-}
-
-li.done {
-  color: #4b5637;
-}
-
-.package-head strong {
-  display: block;
-  margin-top: 5px;
-  color: #4b5637;
-}
-
-.package-head small {
-  color: #9f4a2d;
-  font-weight: 800;
-}
-
-.result-box p {
-  margin: 14px 0;
-  color: #746b5d;
-  line-height: 1.7;
-}
-
-.asset-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.asset-card {
-  min-height: 86px;
-  padding: 14px;
-  background: rgba(244, 239, 230, 0.65);
-  border: 1px solid rgba(101, 86, 62, 0.1);
-}
-
-.asset-card strong,
-.asset-card span {
-  display: block;
-}
-
-.asset-card span {
-  margin-top: 8px;
-  color: #766d5f;
-  font-size: 13px;
+.plain-list li {
+  border-left: 3px solid rgba(94, 123, 80, 0.36);
+  background: rgba(246, 243, 235, 0.64);
+  color: var(--text-mid);
+  padding: 8px 10px;
   line-height: 1.55;
 }
 
-.result-actions {
+.plain-list.warning li {
+  border-left-color: rgba(198, 61, 66, 0.42);
+}
+
+.citation-list,
+.review-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.citation-list article {
+  position: relative;
+  border: 1px solid rgba(74, 65, 55, 0.11);
+  border-radius: 6px;
+  background: rgba(246, 243, 235, 0.64);
+  padding: 10px 48px 10px 10px;
+}
+
+.citation-list strong,
+.citation-list small,
+.citation-list p,
+.citation-list span {
+  display: block;
+}
+
+.citation-list strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.citation-list small {
+  margin-top: 4px;
+  color: var(--earth);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.citation-list p {
+  margin: 8px 0 0;
+  color: var(--text-mid);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.citation-list > article > span {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border-radius: 4px;
+  background: rgba(94, 123, 80, 0.12);
+  color: var(--leaf);
+  font-size: 10px;
+  font-weight: 850;
+  padding: 4px 6px;
+}
+
+.review-summary {
+  border: 1px solid rgba(94, 123, 80, 0.16);
+  border-radius: 6px;
+  background: rgba(94, 123, 80, 0.07);
+  padding: 10px;
+}
+
+.review-summary strong,
+.review-summary p,
+.review-summary small {
+  display: block;
+}
+
+.review-summary strong {
+  color: var(--leaf);
+  font-size: 13px;
+}
+
+.review-summary p {
+  margin: 6px 0 0;
+  color: var(--text-mid);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.review-summary small {
+  margin-top: 7px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.review-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid rgba(74, 65, 55, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 252, 247, 0.7);
+  padding: 9px;
+  cursor: pointer;
+}
+
+.review-list input {
+  margin-top: 3px;
+  accent-color: var(--leaf);
+}
+
+.review-list strong,
+.review-list small {
+  display: block;
+}
+
+.review-list strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.review-list small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.extract-row {
+  margin-top: 8px;
+}
+
+.extract-row strong,
+.extract-row small {
+  display: block;
+}
+
+.extract-row small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.extract-row p,
+.asset-grid p {
+  margin: 8px 0 0;
+  color: var(--text-mid);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.action-row {
   display: flex;
   flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.business-flow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
+  margin-top: 12px;
 }
 
-.result-actions button {
-  background: #9f4a2d;
+.business-flow article {
+  min-height: 132px;
+  border: 1px solid rgba(74, 65, 55, 0.1);
+  border-radius: 6px;
+  background: rgba(246, 243, 235, 0.64);
+  padding: 12px;
 }
 
-@media (max-width: 1180px) {
-  .workspace-grid,
-  .template-grid,
-  .score-grid {
-    grid-template-columns: 1fr;
-  }
+.business-flow article.ready {
+  border-color: rgba(94, 123, 80, 0.28);
+  background: rgba(94, 123, 80, 0.08);
+}
 
-  .ai-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
+.business-flow span,
+.business-flow strong,
+.business-flow p {
+  display: block;
+}
+
+.business-flow span {
+  color: var(--earth);
+  font-family: Georgia, serif;
+  font-weight: 850;
+}
+
+.business-flow strong {
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.business-flow p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.status-text {
+  margin: 10px 0 0;
+  color: var(--leaf);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ai-chat-card {
+  background: rgba(249, 252, 245, 0.88);
+}
+
+.chat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.chat-head h2 {
+  margin: 5px 0 0;
+  color: var(--leaf);
+  font-family: var(--font-serif);
+  font-size: 22px;
+}
+
+.chat-head button,
+.quick-chat button,
+.asset-chat-form button {
+  border: 0;
+  border-radius: 5px;
+  background: var(--leaf);
+  color: #fffaf3;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  padding: 9px 12px;
+}
+
+.chat-head button:disabled,
+.quick-chat button:disabled,
+.asset-chat-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.quick-chat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quick-chat button {
+  background: rgba(94, 123, 80, 0.12);
+  color: var(--leaf);
+}
+
+.asset-chat-log {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+
+.asset-message,
+.chat-placeholder {
+  border: 1px solid rgba(74, 65, 55, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 252, 247, 0.78);
+  padding: 10px;
+}
+
+.chat-placeholder {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.asset-message.assistant {
+  border-color: rgba(94, 123, 80, 0.2);
+}
+
+.asset-message span {
+  color: var(--earth);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.asset-message.assistant span {
+  color: var(--leaf);
+}
+
+.asset-message p {
+  margin: 5px 0 0;
+  color: var(--text-mid);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.recommendation-grid article {
+  border-left: 3px solid rgba(94, 123, 80, 0.42);
+  background: rgba(255, 252, 247, 0.72);
+  padding: 10px;
+}
+
+.recommendation-grid span,
+.recommendation-grid strong,
+.recommendation-grid p {
+  display: block;
+}
+
+.recommendation-grid span {
+  color: var(--earth);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.recommendation-grid strong {
+  margin-top: 5px;
+  color: var(--text);
+}
+
+.recommendation-grid p {
+  margin: 7px 0 0;
+  color: var(--text-mid);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.asset-chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.asset-chat-form textarea {
+  min-height: 62px;
+}
+
+.empty-preview {
+  display: grid;
+  place-items: center;
+  min-height: 420px;
+  padding: 40px;
+  text-align: center;
+}
+
+.empty-preview h2 {
+  margin: 8px 0 0;
+  font-family: var(--font-serif);
+  font-size: 30px;
+}
+
+.empty-preview p {
+  max-width: 440px;
+  color: var(--text-muted);
+  line-height: 1.7;
 }
 </style>

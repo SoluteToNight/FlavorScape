@@ -55,6 +55,7 @@
                   <span>{{ outputLabel(project.outputType) }}</span>
                   <span>·</span>
                   <span>{{ stageLabel(project.stage) }}</span>
+                  <span v-if="project.sourceType" class="source-badge">AI资产包</span>
                 </div>
               </template>
             </div>
@@ -147,3 +148,15 @@ function deleteProject(id) {
   }
 }
 </script>
+
+<style scoped>
+.source-badge {
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: rgba(94, 123, 80, 0.12);
+  color: var(--leaf);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 4px;
+}
+</style>

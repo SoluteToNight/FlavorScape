@@ -160,6 +160,11 @@
                 <strong>{{ activeProject?.name }}</strong>
                 <small>{{ activeContentConfirmed ? '正在编辑交付物' : '等待模块确认' }}</small>
               </div>
+              <div v-if="sourceAssetLabel" class="source-asset-card">
+                <span>Asset Source</span>
+                <strong>{{ sourceAssetLabel }}</strong>
+                <small>{{ sourceReviewLabel }}</small>
+              </div>
               <CreativeEditor v-if="activeContentConfirmed" />
               <div v-else class="studio-empty-note">
                 确认内容模块后，这里会出现{{ activeOutputLabel }}的文案、视觉风格和交互设置。
@@ -249,7 +254,7 @@
                 v-else-if="activeOutput === 'display'"
                 :display-data="displayData"
                 :route-data="activeRouteData"
-                :route-options="routeOptions"
+                :route-options="displayRouteOptions"
                 :scale="previewScale"
                 framed
                 @select-event="selectDisplayEvent"
@@ -302,6 +307,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import html2canvas from 'html2canvas'
+import { useRoute } from 'vue-router'
 import BrandDisplayExperience from '../components/BrandDisplayExperience.vue'
 import CreativeEditor from '../components/CreativeEditor.vue'
 import ImportFlow from '../components/ImportFlow.vue'
@@ -315,13 +321,15 @@ import { useSpreadRoutes } from '../composables/useSpreadRoutes'
 import { useStudioStore } from '../stores/studio'
 
 const store = useStudioStore()
+const route = useRoute()
 const { cases: productCases, getById } = useProductCases()
 const { routeOptions, loadRoutes, loadRoute, getRoute } = useSpreadRoutes()
 
 const activeProject = computed(() => store.activeProject)
-const activeProductName = computed(() => store.activeProductCase?.name || '未选择产品')
+const activeProductName = computed(() => store.activeSourceAsset?.assetPackage?.product?.name || store.activeProductCase?.name || '未选择产品')
 const activeOutput = computed(() => store.activeOutput)
 const activeContentConfirmed = computed(() => store.activeContentConfirmed)
+const activeSourceAsset = computed(() => store.activeSourceAsset)
 const waitingForProjects = computed(() => store.loading && !store.remoteLoaded)
 const posterData = computed(() => store.mergedPosterData)
 const archiveData = computed(() => store.mergedArchiveData)
@@ -331,7 +339,8 @@ const currentOutputData = computed(() => ({
   archive: archiveData.value,
   display: displayData.value,
 }[activeOutput.value]))
-const activeRouteData = computed(() => getRoute(displayData.value?.selectedRouteId))
+const activeRouteData = computed(() => displayData.value?.assetRouteData || getRoute(displayData.value?.selectedRouteId))
+const displayRouteOptions = computed(() => displayData.value?.assetRouteOptions?.length ? displayData.value.assetRouteOptions : routeOptions.value)
 
 const isImporting = ref(false)
 const importingProduct = ref(null)
@@ -428,6 +437,25 @@ const saveStateLabel = computed(() => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '已保存'
   return `已保存 ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+})
+
+const sourceAssetLabel = computed(() => {
+  const source = activeSourceAsset.value
+  if (!source) return ''
+  const productName = source.assetPackage?.product?.name
+  return productName ? `DeepSeek 资产包：${productName}` : 'DeepSeek 资产包'
+})
+
+const sourceReviewLabel = computed(() => {
+  const status = activeSourceAsset.value?.reviewStatus?.status || activeSourceAsset.value?.assetPackage?.review_status?.status
+  const labels = {
+    pending: '等待人工复核',
+    needs_review: '需要重点复核',
+    in_review: '复核进行中',
+    approved: '已复核通过',
+    rejected: '复核未通过',
+  }
+  return labels[status] || '证据来源已随项目保存'
 })
 
 function outputLabel(type) {
@@ -570,12 +598,15 @@ function selectDisplayRoute(id) {
 }
 
 async function ensureDisplayRoute() {
-  if (!displayData.value?.selectedRouteId) return
+  if (displayData.value?.assetRouteData || !displayData.value?.selectedRouteId) return
   await loadRoute(displayData.value.selectedRouteId)
 }
 
 onMounted(async () => {
   await store.loadRemoteProjects()
+  if (typeof route.query.project === 'string' && route.query.project) {
+    await store.loadProject(route.query.project)
+  }
   loadRoutes()
   ensureDisplayRoute()
   previewScale.value = defaultPreviewScales[activeOutput.value] || 0.72
@@ -1379,6 +1410,42 @@ watch(
 }
 
 .inspector-summary small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.source-asset-card {
+  margin: -2px 12px 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(94, 123, 80, 0.18);
+  border-radius: 6px;
+  background: rgba(94, 123, 80, 0.07);
+}
+
+.source-asset-card span,
+.source-asset-card strong,
+.source-asset-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-asset-card span {
+  color: var(--leaf);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.source-asset-card strong {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.source-asset-card small {
   margin-top: 3px;
   color: var(--text-muted);
   font-size: 11px;

@@ -65,15 +65,26 @@ const curvedPath = computed(() => {
 
 <style scoped>
 .static-geo-map {
+  position: relative;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
   display: grid;
   place-items: center;
+  contain: layout paint;
 }
 
 .carto-svg-viewport {
-  overflow: visible;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
   color: var(--t-primary);
+  object-fit: contain;
 }
 
 .map-province-path {
