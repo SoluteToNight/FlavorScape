@@ -627,7 +627,10 @@ def _call_deepseek_json(messages: list[dict[str, str]], max_tokens: int) -> dict
     with urllib.request.urlopen(req, timeout=120) as response:
         raw = response.read().decode("utf-8")
     envelope = json.loads(raw)
-    content = envelope["choices"][0]["message"]["content"]
+    choices = envelope.get("choices") or []
+    if not choices:
+        raise ValueError("DeepSeek returned no choices")
+    content = str(choices[0].get("message", {}).get("content") or "")
     try:
         return _parse_json_content(content)
     except ValueError:
@@ -641,16 +644,23 @@ def _call_deepseek_json(messages: list[dict[str, str]], max_tokens: int) -> dict
 
 
 def _repair_json_response(content: str, original_messages: list[dict[str, str]], max_tokens: int) -> str:
+    original_task = {
+        "system": original_messages[0].get("content", "") if original_messages else "",
+        "user": original_messages[1].get("content", "") if len(original_messages) > 1 else "",
+    }
     repair_messages = [
         {
             "role": "system",
-            "content": "你是 JSON 修复器。请把用户提供的文本转换为合法 JSON，只输出 JSON，不要 Markdown。",
+            "content": (
+                "你是 JSON 修复器。请把用户提供的模型回复转换为合法 JSON 对象，只输出 JSON，不要 Markdown。"
+                "如果回复中已经包含 JSON，请提取并修正为合法 JSON；如果只包含自然语言，请按原任务 required_schema 生成同等语义的 JSON 对象。"
+            ),
         },
         {
             "role": "user",
             "content": json.dumps(
                 {
-                    "original_task": original_messages[0].get("content", "") if original_messages else "",
+                    "original_task": original_task,
                     "non_json_response": content,
                 },
                 ensure_ascii=False,
@@ -677,7 +687,10 @@ def _repair_json_response(content: str, original_messages: list[dict[str, str]],
     with urllib.request.urlopen(req, timeout=120) as response:
         raw = response.read().decode("utf-8")
     envelope = json.loads(raw)
-    return envelope["choices"][0]["message"]["content"]
+    choices = envelope.get("choices") or []
+    if not choices:
+        raise ValueError("DeepSeek repair returned no choices")
+    return str(choices[0].get("message", {}).get("content") or "")
 
 
 def _require_deepseek() -> None:
@@ -691,26 +704,74 @@ def _require_deepseek() -> None:
 def _parse_json_content(content: str) -> dict[str, Any]:
     content = _strip_json_fence(content)
     try:
-        return json.loads(content)
+        parsed = json.loads(content)
     except json.JSONDecodeError:
         candidate = _extract_json_object(content)
         if candidate is None:
             raise ValueError("DeepSeek returned non-JSON content")
-        return json.loads(candidate)
+        parsed = json.loads(candidate)
+    if not isinstance(parsed, dict):
+        raise ValueError("DeepSeek returned JSON, but not a JSON object")
+    return parsed
 
 
 def _strip_json_fence(content: str) -> str:
-    value = content.strip()
-    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", value, flags=re.S | re.I)
+    value = content.strip().lstrip("\ufeff")
+    fence = re.match(r"^```(?:json|JSON)?\s*(.*?)\s*```$", value, flags=re.S)
     return fence.group(1).strip() if fence else value
 
 
 def _extract_json_object(content: str) -> str | None:
+    decoder = json.JSONDecoder()
+    candidates: list[tuple[int, int, str]] = []
+    for match in re.finditer(r"\{", content):
+        start = match.start()
+        try:
+            parsed, end = decoder.raw_decode(content[start:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            candidates.append((_json_candidate_score(parsed), end, content[start:start + end]))
+    if not candidates:
+        return _extract_balanced_json_object(content)
+    candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return candidates[0][2]
+
+
+def _json_candidate_score(value: dict[str, Any]) -> int:
+    score = len(json.dumps(value, ensure_ascii=False))
+    for key in ("asset_package", "thinking_trace", "reply", "suggestions", "recommendations", "next_actions"):
+        if key in value:
+            score += 10000
+    return score
+
+
+def _extract_balanced_json_object(content: str) -> str | None:
     start = content.find("{")
-    end = content.rfind("}")
-    if start == -1 or end == -1 or end <= start:
+    if start == -1:
         return None
-    return content[start:end + 1]
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(content)):
+        char = content[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return content[start:index + 1]
+    return None
 
 
 def _fallback_from_text(content: str, messages: list[dict[str, str]]) -> dict[str, Any]:

@@ -420,12 +420,16 @@ const creationLead = computed(() => {
 
 const previewFrameStyle = computed(() => ({
   width: `${activeFrame.value.width * previewScale.value}px`,
-  height: `${activeFrame.value.height * previewScale.value}px`,
+  ...(activeOutput.value === 'poster'
+    ? { minHeight: `${activeFrame.value.height * previewScale.value}px` }
+    : { height: `${activeFrame.value.height * previewScale.value}px` }),
 }))
 
 const exportLayerStyle = computed(() => ({
   width: `${activeFrame.value.width}px`,
-  height: `${activeFrame.value.height}px`,
+  ...(activeOutput.value === 'poster'
+    ? { minHeight: `${activeFrame.value.height}px` }
+    : { height: `${activeFrame.value.height}px` }),
 }))
 
 const saveStateLabel = computed(() => {
@@ -558,15 +562,20 @@ async function exportCurrent(scale = 3) {
     await waitForImages(el)
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
 
+    const captureWidth = activeFrame.value.width
+    const captureHeight = activeOutput.value === 'poster'
+      ? Math.ceil(Math.max(activeFrame.value.height, el.scrollHeight, el.getBoundingClientRect().height))
+      : activeFrame.value.height
+
     const canvas = await html2canvas(el, {
       scale,
       useCORS: true,
       backgroundColor: exportBackground(),
       logging: false,
-      width: activeFrame.value.width,
-      height: activeFrame.value.height,
-      windowWidth: activeFrame.value.width,
-      windowHeight: activeFrame.value.height,
+      width: captureWidth,
+      height: captureHeight,
+      windowWidth: captureWidth,
+      windowHeight: captureHeight,
     })
 
     const filename = exportFilename()

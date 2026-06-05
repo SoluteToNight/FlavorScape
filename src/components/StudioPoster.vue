@@ -175,13 +175,19 @@ const cssVars = computed(() => {
 
 .marketing-poster {
   width: 440px;
-  height: 860px;
+  min-height: 860px;
+  height: auto;
   background-color: var(--t-bg);
   color: var(--t-text);
   box-shadow: 0 40px 80px rgba(0,0,0,0.15);
   position: relative;
   overflow: hidden;
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.poster-layout-container {
+  min-height: 860px;
+  height: auto !important;
 }
 
 .canvas-hairline-frame {
