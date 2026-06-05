@@ -22,6 +22,7 @@ if _proj_data.exists():
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .config import CORS_ORIGINS
 from .db.connection import close_pool, init_pool
@@ -108,6 +109,10 @@ app.include_router(tiles.router)
 app.include_router(ingredient_router)
 app.include_router(auth_router)
 app.include_router(studio_router)
+
+_static_dir = Path(__file__).resolve().parent / "static" / "uploads"
+if _static_dir.exists():
+    app.mount("/uploads", StaticFiles(directory=str(_static_dir)), name="uploads")
 
 
 @app.get("/health")

@@ -30,8 +30,8 @@
           role="button"
           tabindex="0"
           class="w-full text-left px-2.5 py-2 cursor-pointer"
-          @click="store.switchProject(project.id)"
-          @keydown.enter.prevent="store.switchProject(project.id)"
+          @click="emit('select-project', project.id)"
+          @keydown.enter.prevent="emit('select-project', project.id)"
         >
           <div class="flex items-start gap-2">
             <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" :class="stageClass(project.stage)" />
@@ -55,6 +55,7 @@
                   <span>{{ outputLabel(project.outputType) }}</span>
                   <span>·</span>
                   <span>{{ stageLabel(project.stage) }}</span>
+                  <span v-if="project.sourceType" class="source-badge">AI资产包</span>
                 </div>
               </template>
             </div>
@@ -96,7 +97,7 @@
 import { ref } from 'vue'
 import { useStudioStore } from '../stores/studio'
 
-defineEmits(['new-project'])
+const emit = defineEmits(['new-project', 'select-project'])
 
 const store = useStudioStore()
 const editingId = ref(null)
@@ -147,3 +148,15 @@ function deleteProject(id) {
   }
 }
 </script>
+
+<style scoped>
+.source-badge {
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: rgba(94, 123, 80, 0.12);
+  color: var(--leaf);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 4px;
+}
+</style>

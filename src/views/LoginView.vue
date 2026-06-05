@@ -94,8 +94,7 @@ async function submit() {
   try {
     const res = await authStore.login(username.value, password.value)
     if (res.ok) {
-      const redirect = route.query.redirect || '/'
-      router.push(redirect)
+      router.push(safeRedirect(route.query.redirect))
     } else {
       errorMsg.value = res.error || '登录失败，请重试'
     }
@@ -104,6 +103,13 @@ async function submit() {
   } finally {
     busy.value = false
   }
+}
+
+function safeRedirect(value) {
+  const redirect = Array.isArray(value) ? value[0] : value
+  if (typeof redirect !== 'string') return '/'
+  if (!redirect.startsWith('/') || redirect.startsWith('//')) return '/'
+  return redirect
 }
 </script>
 

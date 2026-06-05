@@ -33,12 +33,12 @@
         </div>
 
         <div class="hero-actions" aria-label="首页操作">
-          <button class="primary-action" type="button" @click="router.push('/map')">
+          <button class="primary-action" type="button" @click="router.push('/studio')">
             <span>开始寻味之旅</span>
             <span class="action-icon">→</span>
           </button>
-          <button class="secondary-action" type="button" @click="router.push('/map')">
-            <span>探索风味地图</span>
+          <button class="secondary-action" type="button" @click="router.push('/spread')">
+            <span>探索传播图谱</span>
             <span class="play-dot">▷</span>
           </button>
         </div>
@@ -61,7 +61,7 @@ const capabilities = [
   { title: '食材溯源', desc: '追溯风味根脉', path: '/spread', icon: pinIcon },
   { title: '工艺文明', desc: '解码匠心技艺', path: '/archive', icon: leafIcon },
   { title: '路线迁徙', desc: '重现风味流动', path: '/map', icon: routeIcon },
-  { title: '品牌叙事', desc: '讲述风味故事', path: '/marketing', icon: bookIcon },
+  { title: '品牌叙事', desc: '讲述风味故事', path: '/studio', icon: bookIcon },
 ]
 
 </script>
@@ -84,10 +84,13 @@ const capabilities = [
 
 .cover-map {
   position: absolute;
-  inset: 0;
+  top: calc(var(--navbar-h) * 0.7);
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: -3;
   width: 100%;
-  height: 100%;
+  height: calc(100% - (var(--navbar-h) * 0.7));
   object-fit: cover;
   object-position: center 26px;
   filter: saturate(0.98) contrast(1.01);
@@ -95,7 +98,10 @@ const capabilities = [
 
 .cover-wash {
   position: absolute;
-  inset: 0;
+  top: calc(var(--navbar-h) * 0.7);
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: -2;
   pointer-events: none;
   background:
@@ -106,7 +112,7 @@ const capabilities = [
 .hero-copy {
   position: absolute;
   left: var(--hero-offset-x);
-  top: max(calc(var(--navbar-h) + 61px), calc(var(--hero-offset-y) + 25px));
+  top: max(calc(var(--navbar-h) + 76px), calc(var(--hero-offset-y) + 40px));
   z-index: 2;
   width: var(--hero-copy-w);
 }

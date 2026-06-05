@@ -48,8 +48,8 @@
               <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
             </svg>
           </div>
-          <div class="font-['Inter',sans-serif] text-[22px] font-light text-text leading-none">—</div>
-          <div class="text-2xs text-text-muted tracking-[0.08em]">收藏节点</div>
+          <div class="font-['Inter',sans-serif] text-[22px] font-light text-text leading-none">{{ projectCount }}</div>
+          <div class="text-2xs text-text-muted tracking-[0.08em]">工作台项目</div>
         </div>
         <div class="stat-card flex flex-col items-center gap-2 py-[18px] px-3 rounded-[14px] bg-[rgba(255,252,247,0.50)] border border-glass-border transition-all">
           <div class="stat-icon stat-icon-water">
@@ -66,25 +66,25 @@
               <path d="M12 20V10M18 20V4M6 20v-4"/>
             </svg>
           </div>
-          <div class="font-['Inter',sans-serif] text-[22px] font-light text-text leading-none">—</div>
+          <div class="font-['Inter',sans-serif] text-[22px] font-light text-text leading-none">{{ daysSinceRegister }}</div>
           <div class="text-2xs text-text-muted tracking-[0.08em]">探索天数</div>
         </div>
       </div>
 
       <!-- Actions -->
       <div class="flex flex-col gap-2.5">
-        <RouterLink to="/map" class="action-btn inline-flex items-center justify-center gap-2.5 h-[46px] rounded-[12px] font-sans text-base font-medium tracking-[0.08em] no-underline cursor-pointer transition-all action-primary">
+        <RouterLink to="/studio" class="action-btn inline-flex items-center justify-center gap-2.5 h-[46px] rounded-[12px] font-sans text-base font-medium tracking-[0.08em] no-underline cursor-pointer transition-all action-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          进入工作台
+        </RouterLink>
+
+        <RouterLink to="/map" class="action-btn inline-flex items-center justify-center gap-2.5 h-[46px] rounded-[12px] font-sans text-base font-medium tracking-[0.08em] no-underline cursor-pointer transition-all action-secondary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
           </svg>
           探索风味底图
-        </RouterLink>
-
-        <RouterLink to="/library" class="action-btn inline-flex items-center justify-center gap-2.5 h-[46px] rounded-[12px] font-sans text-base font-medium tracking-[0.08em] no-underline cursor-pointer transition-all action-secondary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          </svg>
-          浏览基因库
         </RouterLink>
 
         <button class="action-btn inline-flex items-center justify-center gap-2.5 h-[46px] rounded-[12px] font-sans text-base font-medium tracking-[0.08em] no-underline cursor-pointer transition-all action-danger" @click="handleLogout">
@@ -104,9 +104,11 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
+import { useStudioStore } from '../stores/studio.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const studioStore = useStudioStore()
 
 const avatarUrl = computed(() => {
   const name = encodeURIComponent(authStore.user?.username || '?')
@@ -121,6 +123,18 @@ const formattedDate = computed(() => {
   } catch {
     return raw.split(' ')[0] || raw
   }
+})
+
+const projectCount = computed(() => studioStore.projectList.length || '—')
+const daysSinceRegister = computed(() => {
+  const raw = authStore.user?.created_at
+  if (!raw) return '—'
+  try {
+    const created = new Date(raw)
+    const now = new Date()
+    const diff = Math.max(1, Math.ceil((now - created) / (1000 * 60 * 60 * 24)))
+    return diff
+  } catch { return '—' }
 })
 
 function handleLogout() {

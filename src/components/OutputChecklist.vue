@@ -47,7 +47,7 @@
         {{ activeContentConfirmed ? '打开完整预览页面' : '内容模块未确认' }}
       </button>
       <p v-if="isDisplayOutput" class="text-2xs text-text-muted mt-2 leading-[1.5]">
-        智慧大屏是动态演示，不生成 PNG；完整预览挂载在 /brand。
+        智慧大屏是动态演示，不生成 PNG；可通过下方按钮打开完整预览。
       </p>
       <p v-if="!activeContentConfirmed" class="text-2xs text-text-muted mt-2 leading-[1.5]">先确认内容模块后才能生成交付动作。</p>
       <p v-if="exportError" class="text-2xs text-carmine mt-2 leading-[1.5]">{{ exportError }}</p>
@@ -119,6 +119,7 @@ const activeContentConfirmed = computed(() => store.activeContentConfirmed)
 const posterData = computed(() => store.mergedPosterData)
 const archiveData = computed(() => store.mergedArchiveData)
 const displayData = computed(() => store.mergedDisplayData)
+const activeLayout = computed(() => store.activeLayout)
 
 const labels = {
   poster: '海报',
@@ -147,10 +148,10 @@ const activeStatusLabel = computed(() =>
 const filename = computed(() => {
   const title = currentData.value?.title || activeLabel.value
   const suffix = activeOutput.value === 'poster'
-    ? currentData.value?.theme || 'nature'
+    ? activeLayout.value?.themeId || currentData.value?.theme || 'nature'
     : activeOutput.value === 'display'
       ? currentData.value?.interactionMode || 'product'
-      : 'archive'
+      : activeLayout.value?.themeId || 'archive'
   return `${title}-${activeLabel.value}-${suffix}.png`.replace(/[\\/:*?"<>|]/g, '-')
 })
 
@@ -161,7 +162,7 @@ const copyTitle = computed(() => {
 })
 
 const brandPreviewUrl = computed(() =>
-  activeProject.value ? `/brand?project=${encodeURIComponent(activeProject.value.id)}` : '/brand'
+  activeProject.value ? `/studio?section=display&project=${encodeURIComponent(activeProject.value.id)}` : '/studio?section=display'
 )
 
 const exportButtonLabel = computed(() => {
@@ -194,11 +195,24 @@ async function copyText(type) {
 
 function copyPayload(type) {
   if (type === 'xiaohongshu' || type === 'ecommerce') return posterData.value?.copy?.[type] || ''
-  if (type === 'brief') return posterBrief.value
-  if (type === 'archive') return archiveBrief.value
+  if (type === 'brief') return activeLayout.value ? layoutBrief.value : posterBrief.value
+  if (type === 'archive') return activeLayout.value ? layoutBrief.value : archiveBrief.value
   if (type === 'display') return JSON.stringify(displayData.value, null, 2)
   return ''
 }
+
+const layoutBrief = computed(() => {
+  if (!activeLayout.value || !activeProject.value) return ''
+  const text = extractLayoutText(activeLayout.value.elements || [])
+  return [
+    `项目：${activeProject.value.name}`,
+    `产出：${activeLabel.value}`,
+    `画布：${activeLayout.value.width}×${activeLayout.value.height}`,
+    `主题：${activeLayout.value.themeId}`,
+    '',
+    text,
+  ].filter(Boolean).join('\n')
+})
 
 const posterBrief = computed(() => {
   if (!posterData.value || !activeProject.value) return ''
@@ -264,6 +278,24 @@ function formatTime(value) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function extractLayoutText(elements) {
+  return elements
+    .flatMap(element => {
+      const own = [
+        element.content,
+        element.kicker,
+        element.subtitle,
+        ...(element.evidence || []).map(item => `${item.label} ${item.value}`),
+      ].filter(Boolean)
+      const children = Array.isArray(element.children) ? extractLayoutText(element.children) : ''
+      return [...own, children]
+    })
+    .filter(Boolean)
+    .map(value => String(value).replace(/<[^>]+>/g, '').trim())
+    .filter(Boolean)
+    .join('\n')
 }
 </script>
 

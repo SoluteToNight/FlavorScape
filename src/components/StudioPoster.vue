@@ -1,13 +1,17 @@
 <template>
   <article
     class="marketing-poster relative"
-    :class="[themeLayout, themeFont]"
+    :class="[themeLayout, themeFont, paramLayout, paramDensity, paramImage, paramMetric]"
     :style="{ ...cssVars, transform: `scale(${scale})`, transformOrigin: 'top left' }"
   >
     <div class="canvas-hairline-frame" />
     <div class="poster-layout-container relative z-[5] flex flex-col h-full px-8 py-10 gap-8">
       <header class="poster-section-hero">
-        <div v-if="posterData.modules?.mainImage !== false && posterData.heroImage" class="hero-image-frame relative bg-[var(--t-paper)] overflow-hidden">
+        <div
+          v-if="posterData.modules?.mainImage !== false && posterData.heroImage"
+          class="hero-image-frame relative bg-[var(--t-paper)] overflow-hidden"
+          :style="{ height: imageHeight }"
+        >
           <img
             :src="posterData.heroImage"
             :alt="posterData.title"
@@ -19,9 +23,9 @@
 
         <div v-if="posterData.modules?.brandCopy !== false" class="hero-text-cluster">
           <div class="title-wrap">
-            <span v-if="theme === 'nature'" class="badge-tag">真实产地 · 空间溯源 · 品牌资产</span>
+            <span v-if="theme === 'nature'" class="badge-tag">{{ templateParams.badgeText }}</span>
             <span v-if="theme === 'heritage'" class="badge-tag seal">印</span>
-            <h1 class="brand-title">{{ posterData.title }}</h1>
+            <h1 class="brand-title" :style="{ fontSize: titleFontSize }">{{ posterData.title }}</h1>
           </div>
           <p v-if="posterData.subtitle" class="product-summary-desc text-[13px] opacity-80 m-0 leading-[1.5]">{{ posterData.subtitle }}</p>
           <div v-if="posterData.poeticLine" class="poetic-bar text-[12px] italic opacity-70">{{ posterData.poeticLine }}</div>
@@ -73,6 +77,16 @@ const props = defineProps({
 })
 
 const theme = computed(() => props.posterData?.theme || 'nature')
+const templateParams = computed(() => ({
+  layout: 'balanced',
+  palette: 'default',
+  density: 'normal',
+  imageShape: 'standard',
+  metricStyle: 'cards',
+  titleScale: 100,
+  badgeText: '真实产地 · 空间溯源 · 品牌资产',
+  ...(props.posterData?.templateParams || {}),
+}))
 
 const themeLayout = computed(() => {
   const map = { nature: 'layout-nature', heritage: 'layout-heritage', indigo: 'layout-indigo' }
@@ -83,6 +97,11 @@ const themeFont = computed(() => {
   const map = { nature: 'font-modern', heritage: 'font-classical', indigo: 'font-serif-modern' }
   return map[theme.value] || 'font-modern'
 })
+
+const paramLayout = computed(() => `param-layout-${templateParams.value.layout || 'balanced'}`)
+const paramDensity = computed(() => `param-density-${templateParams.value.density || 'normal'}`)
+const paramImage = computed(() => `param-image-${templateParams.value.imageShape || 'standard'}`)
+const paramMetric = computed(() => `param-metric-${templateParams.value.metricStyle || 'cards'}`)
 
 const themeSubtitle = computed(() => {
   const map = { nature: '好食溯源', heritage: '山河空间志', indigo: '原产地拓印' }
@@ -100,6 +119,17 @@ const showNarrativeSection = computed(() =>
 )
 
 const narrativeHtml = computed(() => sanitizeNarrative(props.posterData?.narrative || ''))
+const titleFontSize = computed(() => {
+  const base = { nature: 36, heritage: 42, indigo: 38 }[theme.value] || 36
+  const scale = Number(templateParams.value.titleScale || 100) / 100
+  return `${Math.round(base * scale)}px`
+})
+const imageHeight = computed(() => {
+  const base = { nature: 320, heritage: 260, indigo: 220 }[theme.value] || 320
+  const densityDelta = { compact: -36, normal: 0, airy: 28 }[templateParams.value.density] || 0
+  const shapeDelta = templateParams.value.imageShape === 'full' ? 42 : 0
+  return `${Math.max(170, base + densityDelta + shapeDelta)}px`
+})
 
 function sanitizeNarrative(value) {
   return String(value)
@@ -114,7 +144,13 @@ const cssVars = computed(() => {
     heritage: { primary: '#3c3127', accent: '#a1352a', bg: '#f6f3eb', paper: '#efe9dd', text: '#595045' },
     indigo:   { primary: '#ffffff', accent: '#a6c6d9', bg: '#10223d', paper: '#19335a', text: '#dbeafe' },
   }
-  const c = colors[theme.value] || colors.nature
+  const palettes = {
+    default: {},
+    fresh: { accent: '#6f9f7a', paper: '#eef4ec' },
+    warm: { accent: '#b56b3c', paper: '#f4eadb' },
+    noir: { primary: '#f8efe0', accent: '#d6b56d', bg: '#171411', paper: '#252018', text: '#f5ead8' },
+  }
+  const c = { ...(colors[theme.value] || colors.nature), ...(palettes[templateParams.value.palette] || {}) }
   const isIndigo = theme.value === 'indigo'
   const isNature = theme.value === 'nature'
 
@@ -260,4 +296,60 @@ const cssVars = computed(() => {
 .layout-indigo .metric-block { flex: 1; border: 1px solid rgba(255,255,255,0.3); padding: 12px 8px; text-align: center; background: rgba(25, 51, 90, 0.4); }
 .layout-indigo .m-label { font-size: 9px; color: var(--t-accent); display: block; }
 .layout-indigo .m-value { font-size: 14px; margin-top: 4px; display: block; }
+
+.param-density-compact .poster-layout-container {
+  gap: 18px;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.param-density-airy .poster-layout-container {
+  gap: 34px;
+}
+
+.param-layout-editorial .poster-section-narrative {
+  border-left: 4px solid color-mix(in srgb, var(--t-accent) 52%, transparent);
+}
+
+.param-layout-evidence .poster-section-metrics {
+  order: 2;
+}
+
+.param-layout-evidence .metric-block {
+  border-color: color-mix(in srgb, var(--t-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--t-paper) 84%, var(--t-accent) 16%);
+  padding: 12px;
+}
+
+.param-image-arch .hero-image-frame {
+  border-radius: 160px 160px 8px 8px !important;
+}
+
+.param-image-full .hero-image-frame {
+  width: calc(100% + 64px) !important;
+  margin-left: -32px;
+  margin-right: -32px;
+  border-radius: 0 !important;
+}
+
+.param-metric-inline .poster-section-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.param-metric-inline .metric-block {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 0;
+  text-align: left;
+}
+
+.param-metric-inline .m-label,
+.param-metric-inline .m-value {
+  margin: 0;
+}
 </style>

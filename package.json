@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lucide/vue": "^1.17.0",
     "cors": "^2.8.5",
     "d3-geo": "^3.1.1",
     "express": "^4.19.2",

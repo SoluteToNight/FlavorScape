@@ -12,9 +12,9 @@
         <RouterLink
           v-for="item in navItems"
           :key="item.name"
-          :to="item.path"
+          :to="item.to"
           class="nav-link no-underline text-sm font-medium text-text-mid tracking-[0.02em] px-[15px] py-1.5 rounded-full transition-all relative whitespace-nowrap"
-          :class="{ active: route.name === item.name }"
+          :class="{ active: isActive(item) }"
         >
           {{ item.label }}
         </RouterLink>
@@ -112,27 +112,39 @@ import { ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app.js'
 import { useAuthStore } from '../stores/auth.js'
+import { useStudioStore } from '../stores/studio.js'
 import { api } from '../utils/api.js'
 
 const route  = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const studioStore = useStudioStore()
 
 const isHome = computed(() => route.name === 'home')
 const isMap  = computed(() => route.name === 'map')
-const isProduct = computed(() => ['brand', 'spread', 'marketing', 'archive', 'studio', 'import'].includes(route.name))
+const isProduct = computed(() => ['spread', 'archive', 'studio', 'import'].includes(route.name))
 
-const navItems = [
-  { name: 'studio',    path: '/studio',    label: '创作工作台' },
-  { name: 'home',      path: '/',          label: '产品入口' },
-  { name: 'brand',     path: '/brand',     label: '智慧大屏' },
-  { name: 'marketing', path: '/marketing', label: '营销海报' },
-  { name: 'archive',   path: '/archive',   label: '实证白皮书' },
-  { name: 'import',    path: '/import',    label: '资产导入' },
-  { name: 'spread',    path: '/spread',    label: '传播图谱' },
-  { name: 'map',       path: '/map',       label: '风味底图' },
-]
+const studioLink = computed(() => (
+  studioStore.activeProjectId
+    ? { path: '/studio', query: { projectId: studioStore.activeProjectId } }
+    : { path: '/studio' }
+))
+
+const navItems = computed(() => [
+  { name: 'home',    to: '/',                                      label: '首页' },
+  { name: 'studio',  to: studioLink.value,                         label: '工作台' },
+  { name: 'archive', to: '/archive',                               label: '白皮书' },
+  { name: 'import',  to: { path: '/studio', query: { section: 'import' } }, label: '资产导入' },
+  { name: 'spread',  to: '/spread',                                label: '传播图谱' },
+  { name: 'map',     to: '/map',                                   label: '风味地图' },
+])
+
+function isActive(item) {
+  if (item.name === 'import') return route.name === 'studio' && route.query.section === 'import'
+  if (item.name === 'studio') return route.name === 'studio' && route.query.section !== 'import'
+  return route.name === item.name
+}
 
 const searchOpen    = ref(false)
 const showDropdown  = ref(false)
